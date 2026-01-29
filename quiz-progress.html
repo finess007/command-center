@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knowledge Quiz Dashboard</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 24px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { 
+            font-size: 2rem; 
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, #00d4ff, #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle { color: #888; margin-bottom: 24px; }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #00d4ff, #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .stat-label { font-size: 0.85rem; color: #888; margin-top: 4px; }
+        
+        /* Leitner Boxes */
+        .boxes-section { margin-bottom: 32px; }
+        .section-title { font-size: 1.25rem; margin-bottom: 16px; color: #fff; }
+        .leitner-boxes {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+        .leitner-box {
+            min-width: 200px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .box-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .box-title { font-weight: 600; }
+        .box-count {
+            background: rgba(124, 58, 237, 0.3);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+        .box-interval { font-size: 0.75rem; color: #666; margin-bottom: 12px; }
+        .box-items { display: flex; flex-direction: column; gap: 8px; }
+        .figure-chip {
+            background: rgba(255,255,255,0.08);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .figure-chip.needs-review { border-left: 3px solid #f59e0b; }
+        .figure-chip.mastered { border-left: 3px solid #10b981; }
+        .category-badge {
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+        .category-conqueror { background: #dc262630; color: #f87171; }
+        .category-explorer { background: #2563eb30; color: #60a5fa; }
+        .category-scientist { background: #16a34a30; color: #4ade80; }
+        .category-artist { background: #9333ea30; color: #c084fc; }
+        .category-modern { background: #ea580c30; color: #fb923c; }
+        
+        /* Session History */
+        .history-section { margin-bottom: 32px; }
+        .session-card {
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 12px;
+        }
+        .session-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .session-date { font-weight: 600; }
+        .session-score {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+        .score-good { background: #10b98130; color: #10b981; }
+        .score-ok { background: #f59e0b30; color: #f59e0b; }
+        .score-needs-work { background: #ef444430; color: #ef4444; }
+        .session-details { display: flex; gap: 24px; font-size: 0.85rem; color: #888; }
+        .correct-list { color: #4ade80; }
+        .missed-list { color: #f87171; }
+        
+        /* Due Today */
+        .due-section { margin-bottom: 32px; }
+        .due-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+        }
+        .due-card {
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-left: 3px solid #f59e0b;
+        }
+        .due-name { font-weight: 600; margin-bottom: 4px; }
+        .due-fact { font-size: 0.8rem; color: #888; line-height: 1.4; }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            color: #555;
+            font-size: 0.8rem;
+            margin-top: 32px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        /* Progress Bar */
+        .progress-section { margin-bottom: 32px; }
+        .progress-bar {
+            height: 24px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+        }
+        .progress-segment {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 600;
+            transition: width 0.3s ease;
+        }
+        .seg-box0 { background: #ef4444; }
+        .seg-box1 { background: #f59e0b; }
+        .seg-box2 { background: #eab308; }
+        .seg-box3 { background: #84cc16; }
+        .seg-box4 { background: #22c55e; }
+        .seg-box5 { background: #10b981; }
+        .progress-legend {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 12px;
+            font-size: 0.75rem;
+            color: #888;
+        }
+        .legend-item { display: flex; align-items: center; gap: 6px; }
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 Knowledge Quest</h1>
+        
+        <!-- Mission Statement -->
+        <div class="mission-box" style="background: rgba(124, 58, 237, 0.1); border: 1px solid rgba(124, 58, 237, 0.3); border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+            <h2 style="font-size: 1.1rem; margin-bottom: 12px; color: #c084fc;">🎯 The Goal: 300+ Figures</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 0.85rem;">
+                <div>
+                    <strong style="color: #00d4ff;">What 300+ figures gets you:</strong>
+                    <ul style="margin-top: 8px; padding-left: 20px; color: #aaa; line-height: 1.6;">
+                        <li>Never blank in conversations about history, culture, art</li>
+                        <li>More mental models ("this is like when Napoleon...")</li>
+                        <li>Pattern recognition across eras (history rhymes)</li>
+                        <li>Credibility — people assume you're educated</li>
+                        <li>Better reading comprehension (references click)</li>
+                    </ul>
+                </div>
+                <div>
+                    <strong style="color: #00d4ff;">What makes someone "really smart":</strong>
+                    <ol style="margin-top: 8px; padding-left: 20px; color: #aaa; line-height: 1.6;">
+                        <li><b>Connecting ideas</b> — "Gutenberg enabled Luther"</li>
+                        <li><b>First principles</b> — understanding why, not just what</li>
+                        <li><b>Asking good questions</b> — Socratic method > memorization</li>
+                        <li><b>Updating beliefs</b> — change your mind with evidence</li>
+                        <li><b>Applying knowledge</b> — predict business, markets, life</li>
+                    </ol>
+                </div>
+            </div>
+            <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; color: #888; font-size: 0.9rem;">
+                <strong style="color: #fff;">The Formula:</strong> Broad knowledge (300+) × Deep thinking × Real-world application = <span style="color: #10b981;">Actually Smart</span>
+            </div>
+        </div>
+        <p class="subtitle">General knowledge spaced repetition tracker</p>
+        
+        <div id="dashboard"></div>
+        
+        <div class="footer">
+            Built by Nova ✨ · Last updated: <span id="update-time"></span>
+        </div>
+    </div>
+
+    <script>
+        // Quiz data - updated by Nova or regenerated from quiz-state.json
+        const quizData = {
+  "config": {
+    "questionsPerSession": 5,
+    "intervals": [
+      1,
+      3,
+      7,
+      14,
+      30
+    ],
+    "started": "2026-01-28"
+  },
+  "stats": {
+    "totalQuestions": 48,
+    "totalCorrect": 34,
+    "sessionsCompleted": 2,
+    "currentStreak": 1
+  },
+  "figures": [
+    {
+      "id": "alexander",
+      "name": "Alexander the Great",
+      "category": "conqueror",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "correct"
+    },
+    {
+      "id": "caesar",
+      "name": "Julius Caesar",
+      "category": "conqueror",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "correct"
+    },
+    {
+      "id": "napoleon",
+      "name": "Napoleon Bonaparte",
+      "category": "conqueror",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "correct"
+    },
+    {
+      "id": "genghis",
+      "name": "Genghis Khan",
+      "category": "conqueror",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "correct"
+    },
+    {
+      "id": "columbus",
+      "name": "Christopher Columbus",
+      "category": "explorer",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "partial",
+      "note": "Got Columbus, missed Queen Isabella"
+    },
+    {
+      "id": "magellan",
+      "name": "Ferdinand Magellan",
+      "category": "explorer",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "correct"
+    },
+    {
+      "id": "amundsen",
+      "name": "Roald Amundsen",
+      "category": "explorer",
+      "box": 0,
+      "nextReview": "2026-01-30",
+      "lastResult": "missed",
+      "note": "First to South Pole (Norway)"
+    },
+    {
+      "id": "newton",
+      "name": "Isaac Newton",
+      "category": "scientist",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "correct"
+    },
+    {
+      "id": "darwin",
+      "name": "Charles Darwin",
+      "category": "scientist",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "correct"
+    },
+    {
+      "id": "einstein",
+      "name": "Albert Einstein",
+      "category": "scientist",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "correct"
+    },
+    {
+      "id": "curie",
+      "name": "Marie Curie",
+      "category": "scientist",
+      "box": 2,
+      "nextReview": "2026-02-01",
+      "lastResult": "correct"
+    },
+    {
+      "id": "copernicus",
+      "name": "Nicolaus Copernicus",
+      "category": "scientist",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "correct"
+    },
+    {
+      "id": "pythagoras",
+      "name": "Pythagoras",
+      "category": "scientist",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "correct"
+    },
+    {
+      "id": "socrates",
+      "name": "Socrates",
+      "category": "philosopher",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "correct",
+      "note": "Taught Plato, Socratic method"
+    },
+    {
+      "id": "plato",
+      "name": "Plato",
+      "category": "philosopher",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "correct",
+      "note": "The Academy, The Republic, Allegory of the Cave"
+    },
+    {
+      "id": "aristotle",
+      "name": "Aristotle",
+      "category": "philosopher",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "partial",
+      "note": "Got Aristotle, missed The Lyceum"
+    },
+    {
+      "id": "confucius",
+      "name": "Confucius",
+      "category": "philosopher",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "correct"
+    },
+    {
+      "id": "leonardo",
+      "name": "Leonardo da Vinci",
+      "category": "artist",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "correct",
+      "note": "Mona Lisa + inventor/Renaissance man"
+    },
+    {
+      "id": "michelangelo",
+      "name": "Michelangelo",
+      "category": "artist",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "correct",
+      "note": "Sistine Chapel (4 years), David statue"
+    },
+    {
+      "id": "vangogh",
+      "name": "Vincent van Gogh",
+      "category": "artist",
+      "box": 0,
+      "nextReview": "2026-01-30",
+      "lastResult": "missed",
+      "note": "Starry Night, cut ear, post-impressionist"
+    },
+    {
+      "id": "vermeer",
+      "name": "Johannes Vermeer",
+      "category": "artist",
+      "box": 0,
+      "nextReview": "2026-01-30",
+      "lastResult": "missed",
+      "note": "Girl with a Pearl Earring, Dutch Golden Age"
+    },
+    {
+      "id": "shakespeare",
+      "name": "William Shakespeare",
+      "category": "writer",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "partial",
+      "note": "Missed Globe Theatre and wife Anne Hathaway"
+    },
+    {
+      "id": "dante",
+      "name": "Dante Alighieri",
+      "category": "writer",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "correct",
+      "note": "Divine Comedy"
+    },
+    {
+      "id": "tolstoy",
+      "name": "Leo Tolstoy",
+      "category": "writer",
+      "box": 0,
+      "nextReview": "2026-01-30",
+      "lastResult": "missed",
+      "note": "War and Peace, Anna Karenina - epic/sweeping"
+    },
+    {
+      "id": "homer",
+      "name": "Homer",
+      "category": "writer",
+      "box": 0,
+      "nextReview": "2026-01-30",
+      "lastResult": "missed",
+      "note": "Iliad, Odyssey - knew but couldn't recall"
+    },
+    {
+      "id": "beethoven",
+      "name": "Ludwig van Beethoven",
+      "category": "composer",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "correct",
+      "note": "Went deaf, 9th Symphony"
+    },
+    {
+      "id": "mozart",
+      "name": "Wolfgang Amadeus Mozart",
+      "category": "composer",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "correct",
+      "note": "Child prodigy, died at 35"
+    },
+    {
+      "id": "vivaldi",
+      "name": "Antonio Vivaldi",
+      "category": "composer",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "correct",
+      "note": "Four Seasons, Venetian priest"
+    },
+    {
+      "id": "washington",
+      "name": "George Washington",
+      "category": "leader",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "correct"
+    },
+    {
+      "id": "churchill",
+      "name": "Winston Churchill",
+      "category": "leader",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "correct"
+    },
+    {
+      "id": "gandhi",
+      "name": "Mahatma Gandhi",
+      "category": "leader",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "correct"
+    },
+    {
+      "id": "mandela",
+      "name": "Nelson Mandela",
+      "category": "leader",
+      "box": 0,
+      "nextReview": "2026-01-30",
+      "lastResult": "missed",
+      "note": "27 years prison, South Africa - knew but couldn't recall"
+    },
+    {
+      "id": "stalin",
+      "name": "Joseph Stalin",
+      "category": "leader",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "correct"
+    },
+    {
+      "id": "henryviii",
+      "name": "Henry VIII",
+      "category": "leader",
+      "box": 0,
+      "nextReview": "2026-01-30",
+      "lastResult": "missed",
+      "note": "6 wives, Church of England - confused with King James"
+    },
+    {
+      "id": "cleopatra",
+      "name": "Cleopatra",
+      "category": "leader",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "correct"
+    },
+    {
+      "id": "joanofarc",
+      "name": "Joan of Arc",
+      "category": "leader",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "correct"
+    },
+    {
+      "id": "luther",
+      "name": "Martin Luther",
+      "category": "religious",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "correct",
+      "note": "95 Theses, Protestant Reformation"
+    },
+    {
+      "id": "gutenberg",
+      "name": "Johannes Gutenberg",
+      "category": "inventor",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "correct",
+      "note": "Printing press 1440"
+    },
+    {
+      "id": "bell",
+      "name": "Alexander Graham Bell",
+      "category": "inventor",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "correct"
+    },
+    {
+      "id": "freud",
+      "name": "Sigmund Freud",
+      "category": "scientist",
+      "box": 1,
+      "nextReview": "2026-01-30",
+      "lastResult": "correct"
+    },
+    {
+      "id": "nightingale",
+      "name": "Florence Nightingale",
+      "category": "leader",
+      "box": 0,
+      "nextReview": "2026-01-30",
+      "lastResult": "missed",
+      "note": "Crimean War nurse, founded modern nursing"
+    },
+    {
+      "id": "keller",
+      "name": "Helen Keller",
+      "category": "leader",
+      "box": 0,
+      "nextReview": "2026-01-30",
+      "lastResult": "missed",
+      "note": "Blind/deaf activist, teacher Anne Sullivan"
+    },
+    {
+      "id": "douglass",
+      "name": "Frederick Douglass",
+      "category": "leader",
+      "box": 0,
+      "nextReview": "2026-01-30",
+      "lastResult": "missed",
+      "note": "Escaped slave, abolitionist"
+    }
+  ],
+  "sessions": [
+    {
+      "date": "2026-01-28",
+      "questions": 5,
+      "correct": 1,
+      "percentage": 20
+    },
+    {
+      "date": "2026-01-29",
+      "questions": 48,
+      "correct": 34,
+      "percentage": 71,
+      "notes": "First full session. Strong on scientists, philosophers, conquerors. Weak on: Van Gogh, Vermeer, Nightingale, Amundsen, Keller, Douglass, Tolstoy, Homer, Mandela, Henry VIII"
+    }
+  ],
+  "toReview": [
+    "vangogh",
+    "vermeer",
+    "nightingale",
+    "amundsen",
+    "keller",
+    "douglass",
+    "tolstoy",
+    "homer",
+    "mandela",
+    "henryviii"
+  ]
+};
+
+        function render() {
+            const today = new Date().toISOString().split('T')[0];
+            const totalFigures = quizData.figures.length;
+            
+            // Calculate stats
+            const boxCounts = [0, 0, 0, 0, 0, 0];
+            let dueToday = [];
+            
+            quizData.figures.forEach(f => {
+                boxCounts[f.box || 0]++;
+                if (f.nextReview <= today) {
+                    dueToday.push(f);
+                }
+            });
+            
+            // Use stats from quizData if available
+            const totalAnswered = quizData.stats?.totalQuestions || 0;
+            const totalCorrect = quizData.stats?.totalCorrect || 0;
+            const masteredCount = boxCounts[4] + boxCounts[5];
+            const learningCount = boxCounts[1] + boxCounts[2] + boxCounts[3];
+            const accuracy = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
+            const daysSinceStart = Math.ceil((new Date() - new Date(quizData.config.started)) / (1000 * 60 * 60 * 24));
+            
+            let html = `
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number">${totalFigures}</div>
+                        <div class="stat-label">Total Figures</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${dueToday.length}</div>
+                        <div class="stat-label">Due Today</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${accuracy}%</div>
+                        <div class="stat-label">Accuracy</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${quizData.sessions.length}</div>
+                        <div class="stat-label">Sessions</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${daysSinceStart}</div>
+                        <div class="stat-label">Days Active</div>
+                    </div>
+                </div>
+                
+                <div class="progress-section">
+                    <div class="section-title">🎯 Mastery Progress</div>
+                    <div class="progress-bar">
+                        ${boxCounts.map((count, i) => count > 0 ? `
+                            <div class="progress-segment seg-box${i}" style="width: ${(count/totalFigures)*100}%">
+                                ${count}
+                            </div>
+                        ` : '').join('')}
+                    </div>
+                    <div class="progress-legend">
+                        <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div>New</div>
+                        <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div>1 day</div>
+                        <div class="legend-item"><div class="legend-dot" style="background:#eab308"></div>3 days</div>
+                        <div class="legend-item"><div class="legend-dot" style="background:#84cc16"></div>7 days</div>
+                        <div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div>14 days</div>
+                        <div class="legend-item"><div class="legend-dot" style="background:#10b981"></div>Mastered</div>
+                    </div>
+                </div>
+            `;
+            
+            // Due Today section
+            if (dueToday.length > 0) {
+                html += `
+                    <div class="due-section">
+                        <div class="section-title">📅 Due for Review Today (${dueToday.length})</div>
+                        <div class="due-grid">
+                            ${dueToday.slice(0, 8).map(f => `
+                                <div class="due-card">
+                                    <div class="due-name">${f.name}</div>
+                                    <div class="due-fact">${f.note || f.fact || ''}</div>
+                                </div>
+                            `).join('')}
+                            ${dueToday.length > 8 ? `<div class="due-card" style="display:flex;align-items:center;justify-content:center;color:#888">+${dueToday.length - 8} more</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Leitner Boxes
+            const boxLabels = ['Box 0: New', 'Box 1: 1 day', 'Box 2: 3 days', 'Box 3: 7 days', 'Box 4: 14 days', 'Box 5: Mastered'];
+            html += `
+                <div class="boxes-section">
+                    <div class="section-title">📦 Leitner Boxes</div>
+                    <div class="leitner-boxes">
+                        ${boxLabels.map((label, i) => {
+                            const figuresInBox = quizData.figures.filter(f => f.box === i);
+                            return `
+                                <div class="leitner-box">
+                                    <div class="box-header">
+                                        <span class="box-title">${label.split(':')[0]}</span>
+                                        <span class="box-count">${figuresInBox.length}</span>
+                                    </div>
+                                    <div class="box-interval">${label.split(':')[1] || ''}</div>
+                                    <div class="box-items">
+                                        ${figuresInBox.slice(0, 5).map(f => `
+                                            <div class="figure-chip ${f.nextReview <= today ? 'needs-review' : ''}">
+                                                <span>${f.name}</span>
+                                                <span class="category-badge category-${f.category}">${f.category}</span>
+                                            </div>
+                                        `).join('')}
+                                        ${figuresInBox.length > 5 ? `<div class="figure-chip" style="color:#666;justify-content:center">+${figuresInBox.length - 5} more</div>` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+            
+            // Session History
+            if (quizData.sessions && quizData.sessions.length > 0) {
+                html += `
+                    <div class="history-section">
+                        <div class="section-title">📊 Session History</div>
+                        ${quizData.sessions.slice().reverse().map(s => {
+                            const pct = s.percentage || (s.questions > 0 ? Math.round((s.correct / s.questions) * 100) : 0);
+                            const scoreClass = pct >= 60 ? 'score-good' : pct >= 40 ? 'score-ok' : 'score-needs-work';
+                            return `
+                                <div class="session-card">
+                                    <div class="session-header">
+                                        <span class="session-date">${s.date}</span>
+                                        <span class="session-score ${scoreClass}">${s.correct}/${s.questions} (${pct}%)</span>
+                                    </div>
+                                    ${s.notes ? `<div class="session-details" style="color:#888;font-size:0.8rem;">${s.notes}</div>` : ''}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+            }
+            
+            document.getElementById('dashboard').innerHTML = html;
+            document.getElementById('update-time').textContent = new Date().toLocaleString();
+        }
+        
+        render();
+    </script>
+</body>
+</html>
