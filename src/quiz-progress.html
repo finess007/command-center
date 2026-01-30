@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knowledge Quest - Progress</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            color: #fff;
+            font-size: 2.5rem;
+        }
+        h1 span { color: #ffd700; }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .stat-card .number {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #ffd700;
+        }
+        .stat-card .label {
+            color: #888;
+            margin-top: 8px;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .section h2 {
+            margin-bottom: 20px;
+            color: #fff;
+            font-size: 1.4rem;
+        }
+        
+        .sessions-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .session-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+        }
+        .session-date { font-weight: 600; }
+        .session-score {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        .session-score.high { color: #4ade80; }
+        .session-score.medium { color: #fbbf24; }
+        .session-score.low { color: #f87171; }
+        
+        .figures-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 12px;
+        }
+        .figure-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+            border-left: 4px solid;
+        }
+        .figure-card.box-0 { border-color: #f87171; }
+        .figure-card.box-1 { border-color: #fbbf24; }
+        .figure-card.box-2 { border-color: #4ade80; }
+        .figure-card.box-3 { border-color: #22d3ee; }
+        .figure-card.box-4 { border-color: #a78bfa; }
+        
+        .figure-name { font-weight: 500; }
+        .figure-category {
+            font-size: 0.75rem;
+            color: #888;
+            text-transform: uppercase;
+        }
+        .figure-box {
+            font-size: 0.8rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .category-filter {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        .filter-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.1);
+            color: #e0e0e0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .filter-btn:hover, .filter-btn.active {
+            background: #ffd700;
+            color: #1a1a2e;
+        }
+        
+        .review-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .review-tag {
+            padding: 8px 16px;
+            background: rgba(248, 113, 113, 0.2);
+            border: 1px solid #f87171;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ffd700, #ff8c00);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        
+        .chart-container {
+            height: 200px;
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            padding-top: 20px;
+        }
+        .chart-bar {
+            flex: 1;
+            background: linear-gradient(180deg, #ffd700, #ff8c00);
+            border-radius: 4px 4px 0 0;
+            position: relative;
+            min-width: 40px;
+        }
+        .chart-bar .label {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.7rem;
+            color: #888;
+            white-space: nowrap;
+        }
+        .chart-bar .value {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #ffd700;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧠 Knowledge <span>Quest</span></h1>
+        
+        <div class="stats-grid" id="stats"></div>
+        
+        <div class="section">
+            <h2>📈 Session History</h2>
+            <div class="chart-container" id="chart"></div>
+            <div style="height: 40px;"></div>
+            <div class="sessions-list" id="sessions"></div>
+        </div>
+        
+        <div class="section">
+            <h2>🔴 Need Review</h2>
+            <div class="review-list" id="review"></div>
+        </div>
+        
+        <div class="section">
+            <h2>📚 All Figures (<span id="figure-count">0</span>)</h2>
+            <div class="category-filter" id="filters"></div>
+            <div class="figures-grid" id="figures"></div>
+        </div>
+    </div>
+
+    <script>
+        // QUIZ_DATA_START
+        const quizData = {"config": {"questionsPerSession": 5, "intervals": [1, 3, 7, 14, 30], "started": "2026-01-28"}, "stats": {"totalQuestions": 127, "totalCorrect": 95, "sessionsCompleted": 3, "currentStreak": 2}, "figures": [{"id": "alexander", "name": "Alexander the Great", "category": "conqueror", "box": 2, "nextReview": "2026-02-02", "lastResult": "correct"}, {"id": "caesar", "name": "Julius Caesar", "category": "conqueror", "box": 2, "nextReview": "2026-02-02", "lastResult": "correct"}, {"id": "napoleon", "name": "Napoleon Bonaparte", "category": "conqueror", "box": 2, "nextReview": "2026-02-02", "lastResult": "correct"}, {"id": "genghis", "name": "Genghis Khan", "category": "conqueror", "box": 2, "nextReview": "2026-02-02", "lastResult": "correct"}, {"id": "hannibal", "name": "Hannibal Barca", "category": "conqueror", "box": 1, "nextReview": "2026-01-31", "lastResult": "correct", "note": "Crossed Alps with elephants to attack Rome"}, {"id": "columbus", "name": "Christopher Columbus", "category": "explorer", "box": 1, "nextReview": "2026-01-31", "lastResult": "partial", "note": "Found America but Vespucci named it"}, {"id": "vespucci", "name": "Amerigo Vespucci", "category": "explorer", "box": 1, "nextReview": "2026-01-31", "lastResult": "correct", "note": "America named after him"}, {"id": "magellan", "name": "Ferdinand Magellan", "category": "explorer", "box": 2, "nextReview": "2026-02-02", "lastResult": "correct"}, {"id": "amundsen", "name": "Roald Amundsen", "category": "explorer", "box": 1, "nextReview": "2026-01-31", "lastResult": "correct", "note": "First to South Pole"}, {"id": "marcopolo", "name": "Marco Polo", "category": "explorer", "box": 1, "nextReview": "2026-01-31", "lastResult": "correct", "note": "Venetian merchant, traveled to China, served Kublai Khan"}, {"id": "newton", "name": "Isaac Newton", "category": "scientist", "box": 2, "nextReview": "2026-02-02", "lastResult": "correct"}, {"id": "darwin", "name": "Charles Darwin", "category": "scientist", "box": 2, "nextReview": "2026-02-02", "lastResult": "correct", "note": "HMS Beagle, Origin of Species, Galápagos finches"}, {"id": "einstein", "name": "Albert Einstein", "category": "scientist", "box": 2, "nextReview": "2026-02-02", "lastResult": "correct"}, {"id": "curie", "name": "Marie Curie", "category": "scientist", "box": 2, "nextReview": "2026-02-02", "lastResult": "correct", "note": "Chemistry + Physics Nobel"}, {"id": "copernicus", "name": "Nicolaus Copernicus", "category": "scientist", "box": 2, "nextReview": "2026-02-02", "lastResult": "correct", "note": "Heliocentrism first, published on deathbed"}, {"id": "galileo", "name": "Galileo Galilei", "category": "scientist", "box": 1, "nextReview": "2026-01-31", "lastResult": "correct", "note": "Proved heliocentrism, house arrest, 'And yet it moves'"}, {"id": "fleming", "name": "Alexander Fleming", "category": "scientist", "box": 1, "nextReview": "2026-01-31", "lastResult": "correct", "note": "Discovered penicillin 1928"}, {"id": "freud", "name": "Sigmund Freud", "category": "scientist", "box": 2, "nextReview": "2026-02-02", "lastResult": "correct"}, {"id": "socrates", "name": "Socrates", "category": "philosopher", "box": 1, "nextReview": "2026-01-31", "lastResult": "correct", "note": "Hemlock, taught Plato, 'I know that I know nothing'"}, {"id": "plato", "name": "Plato", "category": "philosopher", "box": 2, "nextReview": "2026-02-02", "lastResult": "correct", "note": "The Academy, The Republic"}, {"id": "aristotle", "name": "Aristotle", "category": "philosopher", "box": 2, "nextReview": "2026-02-02", "lastResult": "correct", "note": "The Lyceum, taught Alexander the Great"}, {"id": "confucius", "name": "Confucius", "category": "philosopher", "box": 2, "nextReview": "2026-02-02", "lastResult": "correct"}, {"id": "nietzsche", "name": "Friedrich Nietzsche", "category": "philosopher", "box": 1, "nextReview": "2026-01-31", "lastResult": "correct", "note": "God is dead, Thus Spoke Zarathustra, German"}, {"id": "descartes", "name": "René Descartes", "category": "philosopher", "box": 0, "nextReview": "2026-01-31", "lastResult": "missed", "note": "Cogito ergo sum, Cartesian coordinates"}, {"id": "marx", "name": "Karl Marx", "category": "philosopher", "box": 1, "nextReview": "2026-01-31", "lastResult": "correct", "note": "Communist Manifesto, class struggle"}, {"id": "leonardo", "name": "Leonardo da Vinci", "category": "artist", "box": 2, "nextReview": "2026-02-02", "lastResult": "correct", "note": "Mona Lisa, Renaissance polymath, mirror writing"}, {"id": "michelangelo", "name": "Michelangelo", "category": "artist", "box": 2, "nextReview": "2026-02-02", "lastResult": "correct", "note": "Sistine Chapel (neck strain!), David statue"}, {"id": "raphael", "name": "Raphael", "category": "artist", "box": 1, "nextReview": "2026-01-31", "lastResult": "new", "note": "School of Athens, Madonnas, died at 37"}, {"id": "botticelli", "name": "Sandro Botticelli", "category": "artist", "box": 1, "nextReview": "2026-01-31", "lastResult": "new", "note": "Birth of Venus"}, {"id": "vangogh", "name": "Vincent van Gogh", "category": "artist", "box": 1, "nextReview": "2026-01-31", "lastResult": "correct", "note": "Starry Night, ear, Post-Impressionism"}, {"id": "shakespeare", "name": "William Shakespeare", "category": "writer", "box": 2, "nextReview": "2026-02-02", "lastResult": "correct", "note": "Globe Theatre, wife Anne Hathaway, second-best bed"}, {"id": "dante", "name": "Dante Alighieri", "category": "writer", "box": 2, "nextReview": "2026-02-02", "lastResult": "correct", "note": "Divine Comedy"}, {"id": "tolstoy", "name": "Leo Tolstoy", "category": "writer", "box": 1, "nextReview": "2026-01-31", "lastResult": "correct", "note": "War and Peace, Anna Karenina (epic, sweeping)"}, {"id": "dostoevsky", "name": "Fyodor Dostoevsky", "category": "writer", "box": 1, "nextReview": "2026-01-31", "lastResult": "correct", "note": "Crime and Punishment, Brothers Karamazov (psychological, dark)"}, {"id": "orwell", "name": "George Orwell", "category": "writer", "box": 1, "nextReview": "2026-01-31", "lastResult": "correct", "note": "1984, Animal Farm, real name Eric Blair"}, {"id": "cervantes", "name": "Miguel de Cervantes", "category": "writer", "box": 0, "nextReview": "2026-01-31", "lastResult": "missed", "note": "Don Quixote, first modern novel"}, {"id": "suntzu", "name": "Sun Tzu", "category": "writer", "box": 1, "nextReview": "2026-01-31", "lastResult": "correct", "note": "The Art of War"}, {"id": "beethoven", "name": "Ludwig van Beethoven", "category": "composer", "box": 2, "nextReview": "2026-02-02", "lastResult": "correct", "note": "Went deaf, 9th Symphony"}, {"id": "mozart", "name": "Wolfgang Amadeus Mozart", "category": "composer", "box": 2, "nextReview": "2026-02-02", "lastResult": "correct", "note": "Child prodigy from age 5"}, {"id": "washington", "name": "George Washington", "category": "leader", "box": 2, "nextReview": "2026-02-02", "lastResult": "correct"}, {"id": "churchill", "name": "Winston Churchill", "category": "leader", "box": 2, "nextReview": "2026-02-02", "lastResult": "correct", "note": "WWII, blood toil tears sweat"}, {"id": "gandhi", "name": "Mahatma Gandhi", "category": "leader", "box": 2, "nextReview": "2026-02-02", "lastResult": "correct"}, {"id": "lincoln", "name": "Abraham Lincoln", "category": "leader", "box": 1, "nextReview": "2026-01-31", "lastResult": "correct"}, {"id": "stalin", "name": "Joseph Stalin", "category": "leader", "box": 2, "nextReview": "2026-02-02", "lastResult": "correct"}, {"id": "lenin", "name": "Vladimir Lenin", "category": "leader", "box": 1, "nextReview": "2026-01-31", "lastResult": "correct", "note": "Bolsheviks, founded Soviet Union"}, {"id": "henryviii", "name": "Henry VIII", "category": "leader", "box": 1, "nextReview": "2026-01-31", "lastResult": "correct", "note": "6 wives, broke from Catholic Church"}, {"id": "elizabethi", "name": "Elizabeth I", "category": "leader", "box": 1, "nextReview": "2026-01-31", "lastResult": "correct", "note": "Virgin Queen, defeated Spanish Armada"}, {"id": "cleopatra", "name": "Cleopatra", "category": "leader", "box": 1, "nextReview": "2026-01-31", "lastResult": "correct", "note": "Greek (Ptolemaic), NOT Egyptian"}, {"id": "joanofarc", "name": "Joan of Arc", "category": "leader", "box": 2, "nextReview": "2026-02-02", "lastResult": "correct", "note": "Led France in Hundred Years War"}, {"id": "marieantoinette", "name": "Marie Antoinette", "category": "leader", "box": 1, "nextReview": "2026-01-31", "lastResult": "correct", "note": "French queen, guillotined, never said 'let them eat cake'"}, {"id": "mehmedii", "name": "Mehmed II", "category": "leader", "box": 1, "nextReview": "2026-01-31", "lastResult": "correct", "note": "Conquered Constantinople 1453, ended Byzantine Empire"}, {"id": "luther", "name": "Martin Luther", "category": "religious", "box": 2, "nextReview": "2026-02-02", "lastResult": "correct", "note": "95 Theses, Protestant Reformation"}, {"id": "gutenberg", "name": "Johannes Gutenberg", "category": "inventor", "box": 2, "nextReview": "2026-02-02", "lastResult": "correct", "note": "Printing press 1440"}, {"id": "edison", "name": "Thomas Edison", "category": "inventor", "box": 1, "nextReview": "2026-01-31", "lastResult": "correct", "note": "Lightbulb, 1000+ patents, DC current"}, {"id": "tesla", "name": "Nikola Tesla", "category": "inventor", "box": 1, "nextReview": "2026-01-31", "lastResult": "correct", "note": "AC current, rival of Edison"}, {"id": "nightingale", "name": "Florence Nightingale", "category": "leader", "box": 1, "nextReview": "2026-01-31", "lastResult": "correct", "note": "Crimean War, founded modern nursing (NOT Red Cross)"}, {"id": "dunant", "name": "Henri Dunant", "category": "leader", "box": 1, "nextReview": "2026-01-31", "lastResult": "correct", "note": "Founded Red Cross, first Nobel Peace Prize"}, {"id": "octavian", "name": "Augustus/Octavian", "category": "leader", "box": 1, "nextReview": "2026-01-31", "lastResult": "correct", "note": "First Roman Emperor, adopted son of Caesar"}], "sessions": [{"date": "2026-01-28", "questions": 5, "correct": 1, "percentage": 20}, {"date": "2026-01-29", "questions": 48, "correct": 34, "percentage": 71, "notes": "First full session. Strong on scientists, philosophers, conquerors."}, {"date": "2026-01-30", "questions": 79, "correct": 61, "percentage": 77, "notes": "80 questions (1 skipped). Locked: Michelangelo, Nietzsche, Vespucci, Mehmed II, Tolstoy/Dostoevsky distinction. Learned: Copernicus vs Galileo, Renaissance Big Three, Henri Dunant (Red Cross)."}], "toReview": ["cervantes", "descartes"], "removed": ["keller", "douglass"]};
+        // QUIZ_DATA_END
+
+        function render() {
+            // Stats
+            const accuracy = Math.round((quizData.stats.totalCorrect / quizData.stats.totalQuestions) * 100);
+            document.getElementById('stats').innerHTML = `
+                <div class="stat-card">
+                    <div class="number">${quizData.stats.totalQuestions}</div>
+                    <div class="label">Questions Asked</div>
+                </div>
+                <div class="stat-card">
+                    <div class="number">${accuracy}%</div>
+                    <div class="label">Accuracy</div>
+                    <div class="progress-bar"><div class="progress-fill" style="width: ${accuracy}%"></div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="number">${quizData.figures.length}</div>
+                    <div class="label">Figures Tracked</div>
+                </div>
+                <div class="stat-card">
+                    <div class="number">${quizData.stats.currentStreak}</div>
+                    <div class="label">Day Streak 🔥</div>
+                </div>
+            `;
+
+            // Chart
+            const maxPct = Math.max(...quizData.sessions.map(s => s.percentage));
+            document.getElementById('chart').innerHTML = quizData.sessions.map(s => `
+                <div class="chart-bar" style="height: ${(s.percentage / 100) * 180}px">
+                    <div class="value">${s.percentage}%</div>
+                    <div class="label">${s.date.slice(5)}</div>
+                </div>
+            `).join('');
+
+            // Sessions
+            document.getElementById('sessions').innerHTML = quizData.sessions.slice().reverse().map(s => `
+                <div class="session-item">
+                    <div>
+                        <div class="session-date">${s.date}</div>
+                        <div style="color:#888;font-size:0.85rem">${s.correct}/${s.questions} correct${s.notes ? ' • ' + s.notes.slice(0,50) + '...' : ''}</div>
+                    </div>
+                    <div class="session-score ${s.percentage >= 75 ? 'high' : s.percentage >= 50 ? 'medium' : 'low'}">${s.percentage}%</div>
+                </div>
+            `).join('');
+
+            // Review
+            const reviewFigures = quizData.figures.filter(f => quizData.toReview.includes(f.id));
+            document.getElementById('review').innerHTML = reviewFigures.length ? 
+                reviewFigures.map(f => `<span class="review-tag">${f.name}${f.note ? ' — ' + f.note : ''}</span>`).join('') :
+                '<span style="color:#4ade80">All caught up! 🎉</span>';
+
+            // Filters
+            const categories = [...new Set(quizData.figures.map(f => f.category))].sort();
+            document.getElementById('filters').innerHTML = `
+                <button class="filter-btn active" data-cat="all">All</button>
+                ${categories.map(c => `<button class="filter-btn" data-cat="${c}">${c}</button>`).join('')}
+            `;
+
+            // Figures
+            document.getElementById('figure-count').textContent = quizData.figures.length;
+            renderFigures('all');
+
+            // Filter events
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    renderFigures(btn.dataset.cat);
+                });
+            });
+        }
+
+        function renderFigures(category) {
+            const filtered = category === 'all' ? quizData.figures : quizData.figures.filter(f => f.category === category);
+            const sorted = filtered.sort((a, b) => a.box - b.box);
+            
+            document.getElementById('figures').innerHTML = sorted.map(f => `
+                <div class="figure-card box-${f.box}" title="${f.note || ''}">
+                    <div>
+                        <div class="figure-name">${f.name}</div>
+                        <div class="figure-category">${f.category}</div>
+                    </div>
+                    <div class="figure-box">Box ${f.box}</div>
+                </div>
+            `).join('');
+        }
+
+        render();
+    </script>
+</body>
+</html>
