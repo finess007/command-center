@@ -60,7 +60,7 @@ PYEOF
 
 # Encrypt with staticrypt
 echo "🔐 Encrypting..."
-npx staticrypt "$TEMPLATE" -p "$PASSWORD" -o "$OUTPUT" --short
+npx staticrypt "$TEMPLATE" -p "$PASSWORD" -d "$(dirname "$OUTPUT")"
 
 echo "✅ Dashboard updated and encrypted!"
 echo "📁 Output: $OUTPUT"

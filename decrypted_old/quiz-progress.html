@@ -149,58 +149,6 @@
             font-size: 0.9rem;
         }
         
-        .boxes-container {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 16px;
-        }
-        @media (max-width: 900px) {
-            .boxes-container { grid-template-columns: repeat(3, 1fr); }
-        }
-        @media (max-width: 600px) {
-            .boxes-container { grid-template-columns: 1fr; }
-        }
-        .box-column {
-            background: rgba(255,255,255,0.03);
-            border-radius: 12px;
-            padding: 16px;
-            border-top: 4px solid;
-        }
-        .box-column.box-0 { border-color: #f87171; }
-        .box-column.box-1 { border-color: #fbbf24; }
-        .box-column.box-2 { border-color: #4ade80; }
-        .box-column.box-3 { border-color: #22d3ee; }
-        .box-column.box-4 { border-color: #a78bfa; }
-        .box-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        .box-title { font-weight: 600; font-size: 0.95rem; }
-        .box-count {
-            background: rgba(255,255,255,0.1);
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 0.8rem;
-        }
-        .box-interval { font-size: 0.75rem; color: #888; }
-        .box-figures {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        .box-figure {
-            font-size: 0.85rem;
-            padding: 6px 10px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 6px;
-        }
-        
         .progress-bar {
             height: 8px;
             background: rgba(255,255,255,0.1);
@@ -268,12 +216,6 @@
         </div>
         
         <div class="section">
-            <h2>📦 Spaced Repetition Boxes</h2>
-            <p style="color:#888;margin-bottom:20px;font-size:0.9rem">Figures move up a box when answered correctly, down when missed. Higher box = longer review interval.</p>
-            <div class="boxes-container" id="boxes"></div>
-        </div>
-        
-        <div class="section">
             <h2>📚 All Figures (<span id="figure-count">0</span>)</h2>
             <div class="category-filter" id="filters"></div>
             <div class="figures-grid" id="figures"></div>
@@ -333,29 +275,6 @@
             document.getElementById('review').innerHTML = reviewFigures.length ? 
                 reviewFigures.map(f => `<span class="review-tag">${f.name}${f.note ? ' — ' + f.note : ''}</span>`).join('') :
                 '<span style="color:#4ade80">All caught up! 🎉</span>';
-
-            // Boxes (Leitner System)
-            const boxLabels = ['Box 0: New/Missed', 'Box 1: Learning', 'Box 2: Familiar', 'Box 3: Known', 'Box 4: Mastered'];
-            const boxIntervals = ['Review daily', '1-day interval', '3-day interval', '7-day interval', '14+ days'];
-            let boxesHtml = '';
-            for (let i = 0; i <= 4; i++) {
-                const figuresInBox = quizData.figures.filter(f => f.box === i);
-                boxesHtml += `
-                    <div class="box-column box-${i}">
-                        <div class="box-header">
-                            <div>
-                                <div class="box-title">${boxLabels[i]}</div>
-                                <div class="box-interval">${boxIntervals[i]}</div>
-                            </div>
-                            <span class="box-count">${figuresInBox.length}</span>
-                        </div>
-                        <div class="box-figures">
-                            ${figuresInBox.length ? figuresInBox.map(f => `<div class="box-figure" title="${f.note || ''}">${f.name}</div>`).join('') : '<div style="color:#666;font-size:0.8rem">Empty</div>'}
-                        </div>
-                    </div>
-                `;
-            }
-            document.getElementById('boxes').innerHTML = boxesHtml;
 
             // Filters
             const categories = [...new Set(quizData.figures.map(f => f.category))].sort();
