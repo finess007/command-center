@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Tracker — Ivo + Nova</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+        .container { max-width: 1900px; margin: 0 auto; }
+        h1 { 
+            text-align: center; 
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, #00d4ff, #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle { text-align: center; color: #888; margin-bottom: 24px; }
+        
+        .overnight-section {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        .overnight-header { font-size: 1rem; color: #c084fc; margin-bottom: 8px; }
+        .no-overnight { color: #666; font-size: 0.9rem; }
+        
+        .board-header {
+            display: grid;
+            grid-template-columns: 80px repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 8px;
+            padding: 0 8px;
+        }
+        .column-header {
+            text-align: center;
+            font-weight: 600;
+            font-size: 1rem;
+            padding: 12px;
+            border-radius: 8px;
+        }
+        .col-backlog { background: rgba(107, 114, 128, 0.2); color: #9ca3af; }
+        .col-next { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+        .col-doing { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .col-done { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+        
+        .board {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .lane {
+            display: grid;
+            grid-template-columns: 80px repeat(4, 1fr);
+            gap: 12px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 12px;
+            padding: 8px;
+        }
+        
+        .lane-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 1.5rem;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            transform: rotate(180deg);
+            padding: 16px 8px;
+            border-radius: 8px;
+        }
+        .lane.ivo .lane-label { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+        .lane.nova .lane-label { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+        .lane.shared .lane-label { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+        
+        .column {
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            padding: 12px;
+            min-height: 120px;
+        }
+        
+        .task-card {
+            background: rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            border-left: 3px solid #666;
+            font-size: 0.85rem;
+        }
+        .lane.ivo .task-card { border-left-color: #3b82f6; }
+        .lane.nova .task-card { border-left-color: #a855f7; }
+        .lane.shared .task-card { border-left-color: #22c55e; }
+        
+        .task-title { margin-bottom: 4px; }
+        .task-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.7rem;
+            color: #888;
+        }
+        .priority {
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-size: 0.6rem;
+            font-weight: 600;
+        }
+        .priority.P1 { background: #ef444430; color: #f87171; }
+        .priority.P2 { background: #f59e0b30; color: #fbbf24; }
+        .priority.P3 { background: #22c55e30; color: #4ade80; }
+        .blocked { color: #ef4444; font-size: 0.7rem; margin-top: 4px; }
+        .recurring { color: #a855f7; font-size: 0.7rem; margin-top: 4px; }
+        
+        .empty-state {
+            color: #444;
+            font-size: 0.8rem;
+            text-align: center;
+            padding: 24px 12px;
+        }
+        
+        .footer {
+            text-align: center;
+            color: #555;
+            font-size: 0.8rem;
+            margin-top: 24px;
+        }
+        
+        @media (max-width: 1000px) {
+            .board-header, .lane {
+                grid-template-columns: 1fr;
+            }
+            .lane-label {
+                writing-mode: horizontal-tb;
+                transform: none;
+            }
+            .board-header { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📋 Task Tracker</h1>
+        <p class="subtitle">Ivo + Nova — Backlog → Next → Doing → Done</p>
+        
+        <div class="overnight-section">
+            <div class="overnight-header">🌙 Built Overnight</div>
+            <div id="overnightList"></div>
+        </div>
+        
+        <div class="board-header">
+            <div></div>
+            <div class="column-header col-backlog">📋 Backlog</div>
+            <div class="column-header col-next">⏭️ Next</div>
+            <div class="column-header col-doing">🔨 Doing</div>
+            <div class="column-header col-done">✅ Done</div>
+        </div>
+        
+        <div class="board">
+            <div class="lane ivo">
+                <div class="lane-label">🧑 Ivo</div>
+                <div class="column" id="ivoBacklog"></div>
+                <div class="column" id="ivoNext"></div>
+                <div class="column" id="ivoDoing"></div>
+                <div class="column" id="ivoDone"></div>
+            </div>
+            
+            <div class="lane nova">
+                <div class="lane-label">🤖 Nova</div>
+                <div class="column" id="novaBacklog"></div>
+                <div class="column" id="novaNext"></div>
+                <div class="column" id="novaDoing"></div>
+                <div class="column" id="novaDone"></div>
+            </div>
+            
+            <div class="lane shared">
+                <div class="lane-label">🤝 Shared</div>
+                <div class="column" id="sharedBacklog"></div>
+                <div class="column" id="sharedNext"></div>
+                <div class="column" id="sharedDoing"></div>
+                <div class="column" id="sharedDone"></div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            Last updated: <span id="lastUpdated">—</span>
+        </div>
+    </div>
+    
+    <script>
+        function renderTasks(tasks, containerId) {
+            const container = document.getElementById(containerId);
+            if (!tasks || tasks.length === 0) {
+                container.innerHTML = '<div class="empty-state">—</div>';
+                return;
+            }
+            container.innerHTML = tasks.slice(0, 6).map(t => `
+                <div class="task-card">
+                    <div class="task-title">${t.task}</div>
+                    <div class="task-meta">
+                        ${t.priority ? `<span class="priority ${t.priority}">${t.priority}</span>` : '<span></span>'}
+                        <span>${t.completed || t.added || ''}</span>
+                    </div>
+                    ${t.blocked ? `<div class="blocked">⚠️ ${t.blocked}</div>` : ''}
+                    ${t.recurring ? `<div class="recurring">🔄 Recurring</div>` : ''}
+                </div>
+            `).join('') + (tasks.length > 6 ? `<div class="empty-state">+${tasks.length - 6} more</div>` : '');
+        }
+        
+        async function loadData() {
+            try {
+                const response = await fetch('nova-tasks.json');
+                const data = await response.json();
+                
+                const ivo = data.ivo || {backlog: [], next: [], doing: [], done: []};
+                const nova = data.nova || {backlog: [], next: [], doing: [], done: []};
+                const shared = data.shared || {backlog: [], next: [], doing: [], done: []};
+                const overnight = data.overnightBuilds || [];
+                
+                renderTasks(ivo.backlog, 'ivoBacklog');
+                renderTasks(ivo.next, 'ivoNext');
+                renderTasks(ivo.doing, 'ivoDoing');
+                renderTasks(ivo.done, 'ivoDone');
+                renderTasks(nova.backlog, 'novaBacklog');
+                renderTasks(nova.next, 'novaNext');
+                renderTasks(nova.doing, 'novaDoing');
+                renderTasks(nova.done, 'novaDone');
+                renderTasks(shared.backlog, 'sharedBacklog');
+                renderTasks(shared.next, 'sharedNext');
+                renderTasks(shared.doing, 'sharedDoing');
+                renderTasks(shared.done, 'sharedDone');
+                
+                document.getElementById('overnightList').innerHTML = overnight.length > 0 
+                    ? overnight.slice(0, 3).map(o => `<div>${o.description} <span style="color:#888">(${o.date})</span></div>`).join('')
+                    : '<div class="no-overnight">No overnight builds yet — check back tomorrow! 🌅</div>';
+                
+                document.getElementById('lastUpdated').textContent = data.lastUpdated 
+                    ? new Date(data.lastUpdated).toLocaleString() 
+                    : '—';
+                    
+            } catch (e) {
+                console.error('Failed to load:', e);
+            }
+        }
+        
+        loadData();
+    </script>
+</body>
+</html>
