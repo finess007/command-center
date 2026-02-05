@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kanban</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+      color: #e8e8e8;
+      min-height: 100vh;
+      padding: 18px;
+    }
+    a.back {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      color: #888;
+      text-decoration: none;
+      font-size: 0.9rem;
+      z-index: 1000;
+      background: rgba(0,0,0,0.5);
+      padding: 8px 12px;
+      border-radius: 8px;
+    }
+
+    .wrap { max-width: 1200px; margin: 0 auto; padding-top: 40px; }
+    header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+    h1 { margin: 0; font-size: 1.6rem; }
+    .sub { color: #888; font-size: 0.9rem; margin-top: 6px; }
+
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: flex-end; }
+    .btn {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.14);
+      color: #e8e8e8;
+      padding: 8px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .btn.primary { background: rgba(167, 139, 250, 0.22); border-color: rgba(167, 139, 250, 0.35); }
+    .btn.danger { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.35); }
+
+    .status {
+      margin-top: 10px;
+      background: rgba(34,197,94,0.08);
+      border: 1px solid rgba(34,197,94,0.22);
+      color: #4ade80;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.85rem;
+    }
+    .status.warn {
+      background: rgba(234,179,8,0.08);
+      border-color: rgba(234,179,8,0.22);
+      color: #fbbf24;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(220px, 1fr));
+      gap: 12px;
+      align-items: start;
+      overflow-x: auto;
+      padding-bottom: 14px;
+    }
+
+    .col {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 14px;
+      padding: 12px;
+      min-height: 220px;
+    }
+    .col-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .col-title { font-weight: 700; font-size: 0.95rem; }
+    .count { background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.12); padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; color: #bbb; }
+
+    .dropzone {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 180px;
+      border-radius: 12px;
+    }
+    .dropzone.drag-over { outline: 2px dashed rgba(167, 139, 250, 0.55); outline-offset: 6px; }
+
+    .card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 12px;
+      padding: 10px;
+      cursor: pointer;
+    }
+    .card.dragging { opacity: 0.5; }
+    .card-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 6px; }
+    .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+    .pill {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      color: #cfcfcf;
+    }
+    .pill.p0 { border-color: rgba(239,68,68,0.35); background: rgba(239,68,68,0.14); color: #fecaca; }
+    .pill.p1 { border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.14); color: #fde68a; }
+    .pill.p2 { border-color: rgba(59,130,246,0.35); background: rgba(59,130,246,0.14); color: #bfdbfe; }
+    .pill.p3 { border-color: rgba(34,197,94,0.35); background: rgba(34,197,94,0.14); color: #bbf7d0; }
+    .desc { color: #9ca3af; font-size: 0.82rem; line-height: 1.35; }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      padding: 16px;
+    }
+    .modal {
+      width: min(720px, 100%);
+      background: #121220;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 14px;
+      padding: 14px;
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .modal-header h2 { margin: 0; font-size: 1.05rem; }
+    .x { background: transparent; border: none; color: #aaa; font-size: 1.4rem; cursor: pointer; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    label { display: block; color: #aaa; font-size: 0.75rem; margin: 10px 0 6px; }
+    input, textarea, select {
+      width: 100%;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #fff;
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 0.9rem;
+    }
+    textarea { min-height: 110px; resize: vertical; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 12px; flex-wrap: wrap; }
+
+    @media (max-width: 1100px) {
+      .board { grid-template-columns: repeat(5, 260px); }
+    }
+    @media (max-width: 640px) {
+      .grid2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Dashboard</a>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>🗂️ Kanban</h1>
+        <div class="sub">Lightweight board inside Command Center. Stores locally in your browser (with import/export backups).</div>
+      </div>
+      <div class="actions">
+        <button class="btn primary" id="addBtn">+ Add card</button>
+        <button class="btn" id="exportBtn">Export</button>
+        <button class="btn" id="importBtn">Import</button>
+        <button class="btn danger" id="resetBtn">Reset local (use server seed)</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none" />
+      </div>
+    </header>
+
+    <div class="status" id="status">Loading…</div>
+
+    <div class="board" id="board"></div>
+  </div>
+
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h2 id="modalTitle">Card</h2>
+        <button class="x" id="closeModal">×</button>
+      </div>
+
+      <label>Title *</label>
+      <input id="fTitle" placeholder="What needs doing?" />
+
+      <label>Description</label>
+      <textarea id="fDesc" placeholder="Details…"></textarea>
+
+      <div class="grid2">
+        <div>
+          <label>Owner</label>
+          <select id="fOwner">
+            <option value="">—</option>
+            <option value="Nova">Nova</option>
+            <option value="Ivo">Ivo</option>
+          </select>
+        </div>
+        <div>
+          <label>Priority</label>
+          <select id="fPriority">
+            <option value="">—</option>
+            <option value="P0">P0</option>
+            <option value="P1">P1</option>
+            <option value="P2">P2</option>
+            <option value="P3">P3</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <label>Column</label>
+          <select id="fColumn"></select>
+        </div>
+        <div>
+          <label>Due date</label>
+          <input id="fDue" type="date" />
+        </div>
+      </div>
+
+      <label>Tags (comma-separated)</label>
+      <input id="fTags" placeholder="e.g. openclaw, upgrade" />
+
+      <div class="modal-actions">
+        <button class="btn danger" id="deleteBtn">Delete</button>
+        <button class="btn" id="cancelBtn">Cancel</button>
+        <button class="btn primary" id="saveBtn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'command-center-kanban';
+    const STORAGE_META = 'command-center-kanban-meta';
+    const SEED_URL = 'data/kanban-data.json';
+
+    let state = null;
+    let seed = null;
+    let editingId = null;
+
+    const statusEl = document.getElementById('status');
+    const boardEl = document.getElementById('board');
+
+    function nowIso() { return new Date().toISOString(); }
+
+    function setStatus(text, kind='ok') {
+      statusEl.textContent = text;
+      statusEl.className = kind === 'warn' ? 'status warn' : 'status';
+    }
+
+    function saveLocal() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      localStorage.setItem(STORAGE_META, JSON.stringify({ savedAt: nowIso() }));
+    }
+
+    function loadLocal() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      try { return JSON.parse(raw); } catch { return null; }
+    }
+
+    function cardSort(a,b){ return (a.position||0) - (b.position||0); }
+
+    function normalizePositions() {
+      state.columns.forEach(col => {
+        const cards = state.cards.filter(c => c.column === col).sort(cardSort);
+        cards.forEach((c, idx) => c.position = idx);
+      });
+    }
+
+    function render() {
+      const counts = {};
+      state.columns.forEach(c => counts[c] = 0);
+      state.cards.forEach(c => { counts[c.column] = (counts[c.column]||0) + 1; });
+
+      boardEl.innerHTML = state.columns.map(col => {
+        const cards = state.cards.filter(c => c.column === col).sort(cardSort);
+        return `
+          <div class="col" data-col="${col}">
+            <div class="col-header">
+              <div class="col-title">${col}</div>
+              <div class="count">${cards.length}</div>
+            </div>
+            <div class="dropzone" data-drop="${col}">
+              ${cards.map(renderCard).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      enableDnD();
+    }
+
+    function pill(cls, text){ return `<span class="pill ${cls}">${text}</span>`; }
+
+    function renderCard(c) {
+      const pri = (c.priority || '').toLowerCase();
+      const priPill = c.priority ? pill(pri, c.priority) : '';
+      const ownerPill = c.owner ? pill('', c.owner) : '';
+      const duePill = c.due ? pill('', `Due ${c.due}`) : '';
+      const tags = (c.tags || []).slice(0,3).map(t => pill('', t)).join('');
+      const desc = c.description ? `<div class="desc">${escapeHtml(c.description).slice(0, 220)}${c.description.length>220?'…':''}</div>` : '';
+      return `
+        <div class="card" draggable="true" data-id="${c.id}">
+          <div class="card-title">${escapeHtml(c.title)}</div>
+          <div class="meta">${ownerPill}${priPill}${duePill}${tags}</div>
+          ${desc}
+        </div>
+      `;
+    }
+
+    function escapeHtml(str){
+      return String(str || '')
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'",'&#39;');
+    }
+
+    function enableDnD() {
+      document.querySelectorAll('.card').forEach(card => {
+        card.addEventListener('click', () => openEdit(card.dataset.id));
+        card.addEventListener('dragstart', e => {
+          card.classList.add('dragging');
+          e.dataTransfer.setData('text/plain', card.dataset.id);
+        });
+        card.addEventListener('dragend', () => card.classList.remove('dragging'));
+      });
+
+      document.querySelectorAll('.dropzone').forEach(zone => {
+        zone.addEventListener('dragover', e => {
+          e.preventDefault();
+          zone.classList.add('drag-over');
+        });
+        zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+        zone.addEventListener('drop', e => {
+          e.preventDefault();
+          zone.classList.remove('drag-over');
+          const id = e.dataTransfer.getData('text/plain');
+          const col = zone.dataset.drop;
+          moveCard(id, col);
+        });
+      });
+    }
+
+    function moveCard(id, newCol) {
+      const c = state.cards.find(x => String(x.id) === String(id));
+      if (!c) return;
+      c.column = newCol;
+      // put at end of column
+      const maxPos = Math.max(-1, ...state.cards.filter(x => x.column === newCol).map(x => x.position ?? 0));
+      c.position = maxPos + 1;
+      normalizePositions();
+      saveLocal();
+      render();
+    }
+
+    async function init() {
+      // load seed
+      try {
+        const res = await fetch(SEED_URL + '?t=' + Date.now());
+        seed = await res.json();
+      } catch {
+        seed = { columns: ['Backlog','Next','Doing','Waiting','Done'], cards: [] };
+      }
+
+      const local = loadLocal();
+      if (local && local.columns && local.cards) {
+        state = local;
+        setStatus('✅ Loaded Kanban from this browser (localStorage). Use Export for backup.', 'ok');
+      } else {
+        state = seed;
+        setStatus('✅ Loaded Kanban seed from server. First save happens automatically.', 'ok');
+        normalizePositions();
+        saveLocal();
+      }
+
+      // populate column select
+      const colSel = document.getElementById('fColumn');
+      colSel.innerHTML = state.columns.map(c => `<option value="${c}">${c}</option>`).join('');
+
+      render();
+    }
+
+    // Modal handlers
+    const backdrop = document.getElementById('modalBackdrop');
+    const closeModalBtn = document.getElementById('closeModal');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const saveBtn = document.getElementById('saveBtn');
+    const deleteBtn = document.getElementById('deleteBtn');
+
+    function openModal() { backdrop.style.display = 'flex'; }
+    function closeModal() { backdrop.style.display = 'none'; editingId = null; }
+
+    function openNew() {
+      editingId = null;
+      document.getElementById('modalTitle').textContent = 'Add card';
+      document.getElementById('fTitle').value = '';
+      document.getElementById('fDesc').value = '';
+      document.getElementById('fOwner').value = '';
+      document.getElementById('fPriority').value = '';
+      document.getElementById('fTags').value = '';
+      document.getElementById('fDue').value = '';
+      document.getElementById('fColumn').value = 'Backlog';
+      deleteBtn.style.display = 'none';
+      openModal();
+    }
+
+    function openEdit(id) {
+      const c = state.cards.find(x => String(x.id) === String(id));
+      if (!c) return;
+      editingId = String(c.id);
+      document.getElementById('modalTitle').textContent = 'Edit card';
+      document.getElementById('fTitle').value = c.title || '';
+      document.getElementById('fDesc').value = c.description || '';
+      document.getElementById('fOwner').value = c.owner || '';
+      document.getElementById('fPriority').value = c.priority || '';
+      document.getElementById('fTags').value = (c.tags || []).join(', ');
+      document.getElementById('fDue').value = c.due || '';
+      document.getElementById('fColumn').value = c.column || 'Backlog';
+      deleteBtn.style.display = 'inline-block';
+      openModal();
+    }
+
+    function saveCard() {
+      const title = document.getElementById('fTitle').value.trim();
+      if (!title) { alert('Title is required'); return; }
+
+      const payload = {
+        title,
+        description: document.getElementById('fDesc').value.trim(),
+        owner: document.getElementById('fOwner').value,
+        priority: document.getElementById('fPriority').value,
+        tags: document.getElementById('fTags').value.split(',').map(s => s.trim()).filter(Boolean),
+        due: document.getElementById('fDue').value,
+        column: document.getElementById('fColumn').value
+      };
+
+      if (!editingId) {
+        const id = String(Date.now());
+        const maxPos = Math.max(-1, ...state.cards.filter(x => x.column === payload.column).map(x => x.position ?? 0));
+        state.cards.push({
+          id,
+          ...payload,
+          position: maxPos + 1,
+          createdAt: new Date().toISOString().slice(0,10)
+        });
+      } else {
+        const c = state.cards.find(x => String(x.id) === String(editingId));
+        if (!c) return;
+        const oldCol = c.column;
+        Object.assign(c, payload);
+        if (oldCol !== c.column) {
+          const maxPos = Math.max(-1, ...state.cards.filter(x => x.column === c.column).map(x => x.position ?? 0));
+          c.position = maxPos + 1;
+        }
+      }
+
+      normalizePositions();
+      saveLocal();
+      render();
+      closeModal();
+    }
+
+    function deleteCard() {
+      if (!editingId) return;
+      if (!confirm('Delete this card?')) return;
+      state.cards = state.cards.filter(x => String(x.id) !== String(editingId));
+      normalizePositions();
+      saveLocal();
+      render();
+      closeModal();
+    }
+
+    // Export/Import
+    function exportData() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `kanban-backup-${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importData(file) {
+      const r = new FileReader();
+      r.onload = () => {
+        try {
+          const data = JSON.parse(r.result);
+          if (!data || !Array.isArray(data.columns) || !Array.isArray(data.cards)) throw new Error('Invalid file');
+          state = data;
+          normalizePositions();
+          saveLocal();
+          // refresh column select
+          document.getElementById('fColumn').innerHTML = state.columns.map(c => `<option value="${c}">${c}</option>`).join('');
+          render();
+          setStatus('✅ Imported from file and saved locally.', 'ok');
+        } catch (e) {
+          alert('Import failed: ' + e.message);
+        }
+      };
+      r.readAsText(file);
+    }
+
+    function resetLocal() {
+      if (!confirm('Reset local board and reload server seed?')) return;
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(STORAGE_META);
+      location.reload();
+    }
+
+    document.getElementById('addBtn').addEventListener('click', openNew);
+    closeModalBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+    saveBtn.addEventListener('click', saveCard);
+    deleteBtn.addEventListener('click', deleteCard);
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeModal(); });
+
+    document.getElementById('exportBtn').addEventListener('click', exportData);
+    document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
+    document.getElementById('importFile').addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (file) importData(file);
+      e.target.value = '';
+    });
+    document.getElementById('resetBtn').addEventListener('click', resetLocal);
+
+    init();
+  </script>
+</body>
+</html>
