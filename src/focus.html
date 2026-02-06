@@ -1077,22 +1077,32 @@ async function analyzeVideo() {
         setStep(2, 'active');
         let transcriptData = null;
 
-        // Use configured transcript API (Cloudflare Worker, or fallback)
-        const TRANSCRIPT_API = localStorage.getItem('focus_transcript_api') || 'https://yt-transcript.ivo-tools.workers.dev';
-        try {
-            const tRes = await fetch(TRANSCRIPT_API, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ videoId })
-            });
-            if (tRes.ok) {
-                transcriptData = await tRes.json();
-            } else {
-                const err = await tRes.json().catch(() => ({}));
-                throw new Error(err.error || 'Transcript fetch failed');
+        // Try multiple transcript endpoints in order
+        const TRANSCRIPT_APIS = [
+            localStorage.getItem('focus_transcript_api'),
+            'http://localhost:3142',
+            'https://yt-transcript.ivo-tools.workers.dev'
+        ].filter(Boolean);
+
+        for (const api of TRANSCRIPT_APIS) {
+            try {
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), api.includes('localhost') ? 30000 : 15000);
+                const tRes = await fetch(api, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ videoId }),
+                    signal: controller.signal
+                });
+                clearTimeout(timeout);
+                if (tRes.ok) {
+                    const data = await tRes.json();
+                    if (data.transcript) { transcriptData = data; break; }
+                }
+            } catch(e) {
+                console.warn(`Transcript API ${api} failed:`, e.message);
+                continue;
             }
-        } catch(e) {
-            console.warn('Transcript fetch failed:', e.message);
         }
 
         if (!transcriptData || !transcriptData.transcript) {
@@ -1189,24 +1199,38 @@ async function reSummarize(videoId) {
     try {
         // If no transcript, fetch it first
         if (!video.transcript) {
-            const TRANSCRIPT_API = localStorage.getItem('focus_transcript_api') || 'https://yt-transcript.ivo-tools.workers.dev';
-            try {
-                const tRes = await fetch(TRANSCRIPT_API, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ videoId })
-                });
-                if (tRes.ok) {
-                    const tData = await tRes.json();
-                    video.transcript = tData.transcript;
-                    if (tData.duration > 0) video.duration = tData.duration;
-                    if (tData.title && !video.title) video.title = tData.title;
-                    if (tData.channel && !video.channel) video.channel = tData.channel;
-                }
-            } catch(e) { console.warn('Transcript fetch failed:', e.message); }
+            const TRANSCRIPT_APIS = [
+                localStorage.getItem('focus_transcript_api'),
+                'http://localhost:3142',
+                'https://yt-transcript.ivo-tools.workers.dev'
+            ].filter(Boolean);
+
+            for (const api of TRANSCRIPT_APIS) {
+                try {
+                    const controller = new AbortController();
+                    const timeout = setTimeout(() => controller.abort(), api.includes('localhost') ? 30000 : 15000);
+                    const tRes = await fetch(api, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ videoId }),
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeout);
+                    if (tRes.ok) {
+                        const tData = await tRes.json();
+                        if (tData.transcript) {
+                            video.transcript = tData.transcript;
+                            if (tData.duration > 0) video.duration = tData.duration;
+                            if (tData.title && !video.title) video.title = tData.title;
+                            if (tData.channel && !video.channel) video.channel = tData.channel;
+                            break;
+                        }
+                    }
+                } catch(e) { console.warn(`Transcript API ${api} failed:`, e.message); continue; }
+            }
         }
 
-        if (!video.transcript) throw new Error('No transcript available. Configure transcript API in Settings.');
+        if (!video.transcript) throw new Error('No transcript available. Try again or check if the video has captions.');
 
         const apiRes = await fetch('/api/summarize', {
             method: 'POST',
