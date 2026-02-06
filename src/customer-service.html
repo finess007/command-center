@@ -12,7 +12,31 @@
         .header h1 { font-size: 22px; font-weight: 600; }
         .header p { font-size: 13px; color: #888; }
         .header .badge { display: none; }
-        .header .logo { display: block; }
+        .header .logo { display: flex; align-items: center; justify-content: space-between; }
+        
+        .edit-toggle { background: none; border: 1px solid #ddd; padding: 6px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; color: #666; transition: all 0.2s; }
+        .edit-toggle:hover { border-color: #999; color: #222; }
+        .edit-toggle.active { background: #222; color: white; border-color: #222; }
+        
+        .save-bar { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: #222; color: white; padding: 12px 24px; z-index: 100; text-align: center; }
+        .save-bar.visible { display: flex; align-items: center; justify-content: center; gap: 12px; }
+        .save-bar button { padding: 6px 18px; border-radius: 6px; border: none; font-size: 13px; cursor: pointer; font-weight: 500; }
+        .save-bar .save-btn { background: #34c759; color: white; }
+        .save-bar .reset-btn { background: none; color: #999; border: 1px solid #555; }
+        .save-bar .status { font-size: 13px; color: #999; }
+        
+        body.editing .greeting,
+        body.editing .response,
+        body.editing .condition,
+        body.editing .note,
+        body.editing .section-desc,
+        body.editing .checklist-item .text,
+        body.editing .tips-box li,
+        body.editing .alert,
+        body.editing .info-box { outline: 1px dashed #ccc; outline-offset: 2px; border-radius: 4px; min-height: 1em; }
+        body.editing .greeting:focus,
+        body.editing .response:focus,
+        body.editing .condition:focus { outline-color: #007aff; background: #f0f7ff; }
         
         .nav { border-bottom: 1px solid #eee; padding: 0 32px; display: flex; gap: 0; overflow-x: auto; }
         .nav-tab { padding: 12px 18px; font-size: 13px; font-weight: 500; color: #999; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; }
@@ -88,6 +112,7 @@
                 <p>Alessa — Възстановяване на загубени продажби</p>
             </div>
             <span class="badge">RECOVERY</span>
+            <button class="edit-toggle" id="editToggle" onclick="toggleEditMode()">✏️ Редактирай</button>
         </div>
     </div>
     
@@ -507,7 +532,76 @@
         
     </div>
     
+    <div class="save-bar" id="saveBar">
+        <span class="status">Режим редактиране — кликни върху текст, за да го промениш</span>
+        <button class="save-btn" onclick="saveEdits()">💾 Запази</button>
+        <button class="reset-btn" onclick="resetEdits()">↩️ Върни оригинала</button>
+    </div>
+
     <script>
+        const STORAGE_KEY = 'alessa-cs-edits';
+        let editMode = false;
+        
+        // Load saved edits on page load
+        function loadEdits() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (!saved) return;
+            try {
+                const edits = JSON.parse(saved);
+                const editables = document.querySelectorAll('.greeting, .response, .condition, .note, .section-desc, .checklist-item .text, .tips-box li, .alert, .info-box');
+                edits.forEach(e => {
+                    if (editables[e.i]) editables[e.i].innerHTML = e.html;
+                });
+            } catch(err) {}
+        }
+        
+        function toggleEditMode() {
+            editMode = !editMode;
+            const btn = document.getElementById('editToggle');
+            const bar = document.getElementById('saveBar');
+            
+            if (editMode) {
+                document.body.classList.add('editing');
+                btn.classList.add('active');
+                btn.textContent = '✏️ Редактиране...';
+                bar.classList.add('visible');
+                document.querySelectorAll('.greeting, .response, .condition, .note, .section-desc, .checklist-item .text, .tips-box li, .alert, .info-box').forEach(el => {
+                    el.setAttribute('contenteditable', 'true');
+                });
+            } else {
+                document.body.classList.remove('editing');
+                btn.classList.remove('active');
+                btn.textContent = '✏️ Редактирай';
+                bar.classList.remove('visible');
+                document.querySelectorAll('[contenteditable]').forEach(el => {
+                    el.removeAttribute('contenteditable');
+                });
+            }
+        }
+        
+        function saveEdits() {
+            const editables = document.querySelectorAll('.greeting, .response, .condition, .note, .section-desc, .checklist-item .text, .tips-box li, .alert, .info-box');
+            const edits = [];
+            editables.forEach((el, i) => {
+                edits.push({ i, html: el.innerHTML });
+            });
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(edits));
+            
+            const bar = document.getElementById('saveBar');
+            const status = bar.querySelector('.status');
+            status.textContent = '✅ Запазено!';
+            setTimeout(() => { status.textContent = 'Режим редактиране — кликни върху текст, за да го промениш'; }, 2000);
+        }
+        
+        function resetEdits() {
+            if (!confirm('Сигурни ли сте? Ще се върнат оригиналните текстове.')) return;
+            localStorage.removeItem(STORAGE_KEY);
+            location.reload();
+        }
+        
+        // Load saved edits on startup
+        loadEdits();
+        
         // Tab navigation
         document.querySelectorAll('.nav-tab').forEach(tab => {
             tab.addEventListener('click', () => {
