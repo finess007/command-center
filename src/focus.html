@@ -1,0 +1,1530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus — YouTube Summarizer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f8fafc;
+            min-height: 100vh;
+            color: #1e293b;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Header */
+        .header {
+            background: #fff;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 20px 24px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-inner {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-icon {
+            width: 36px;
+            height: 36px;
+            background: #2563EB;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 18px;
+        }
+
+        .brand h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #0f172a;
+            letter-spacing: -0.5px;
+        }
+
+        .brand h1 span {
+            color: #94a3b8;
+            font-weight: 400;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            font-size: 18px;
+            transition: all 0.15s;
+        }
+
+        .btn-icon:hover {
+            background: #f1f5f9;
+            color: #334155;
+        }
+
+        .back-link {
+            text-decoration: none;
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: color 0.15s;
+        }
+
+        .back-link:hover { color: #2563EB; }
+
+        /* Container */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        /* Input Section */
+        .input-section {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .input-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #64748b;
+            margin-bottom: 12px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .input-row input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 15px;
+            font-family: inherit;
+            color: #1e293b;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+
+        .input-row input:focus {
+            border-color: #2563EB;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .input-row input::placeholder {
+            color: #94a3b8;
+        }
+
+        .btn-primary {
+            padding: 12px 24px;
+            background: #2563EB;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.15s;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .error-msg {
+            color: #ef4444;
+            font-size: 13px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .error-msg.show {
+            display: block;
+        }
+
+        /* Progress indicator for summarization */
+        .analyze-progress {
+            display: none;
+            margin-top: 16px;
+            padding: 16px;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 12px;
+        }
+
+        .analyze-progress.show {
+            display: block;
+        }
+
+        .progress-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .progress-step {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        .progress-step.active {
+            color: #2563EB;
+            font-weight: 500;
+        }
+
+        .progress-step.done {
+            color: #16a34a;
+        }
+
+        .progress-step .step-icon {
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .step-spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #bfdbfe;
+            border-top-color: #2563EB;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 18px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 4px;
+        }
+
+        .stat-value.blue { color: #2563EB; }
+        .stat-value.green { color: #16a34a; }
+        .stat-value.purple { color: #7c3aed; }
+
+        .stat-label {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Goal Progress */
+        .goal-section {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .goal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .goal-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #64748b;
+        }
+
+        .goal-count {
+            font-size: 14px;
+            font-weight: 600;
+            color: #2563EB;
+        }
+
+        .progress-track {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 99px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #2563EB, #3b82f6);
+            border-radius: 99px;
+            transition: width 0.5s ease;
+            min-width: 0;
+        }
+
+        .goal-dots {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            padding: 0 2px;
+        }
+
+        .goal-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            color: #94a3b8;
+            transition: all 0.3s;
+        }
+
+        .goal-dot.filled {
+            background: #2563EB;
+            border-color: #2563EB;
+            color: #fff;
+        }
+
+        /* Daily Digest */
+        .digest-section {
+            margin-bottom: 24px;
+        }
+
+        .digest-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .digest-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #64748b;
+        }
+
+        .digest-date {
+            font-size: 13px;
+            color: #94a3b8;
+        }
+
+        .empty-state {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 48px 24px;
+            text-align: center;
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-text {
+            font-size: 15px;
+            color: #94a3b8;
+            line-height: 1.6;
+        }
+
+        /* Video Card */
+        .video-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 12px;
+            transition: all 0.15s;
+        }
+
+        .video-card:hover {
+            border-color: #cbd5e1;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .video-card.completed {
+            border-left: 3px solid #16a34a;
+        }
+
+        .video-top {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            margin-bottom: 12px;
+        }
+
+        .video-play {
+            width: 44px;
+            height: 44px;
+            min-width: 44px;
+            background: #fee2e2;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            font-size: 20px;
+            transition: transform 0.15s;
+        }
+
+        .video-play:hover {
+            transform: scale(1.08);
+        }
+
+        .video-info { flex: 1; min-width: 0; }
+
+        .video-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 4px;
+            line-height: 1.4;
+        }
+
+        .video-meta {
+            font-size: 13px;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .video-meta .sep {
+            color: #e2e8f0;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 99px;
+        }
+
+        .badge.pending {
+            background: #fef3c7;
+            color: #b45309;
+        }
+
+        .badge.done {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .video-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        /* AI Summary Display */
+        .ai-summary {
+            margin-top: 14px;
+            padding: 16px;
+            background: linear-gradient(135deg, #f0f9ff 0%, #eff6ff 100%);
+            border: 1px solid #bfdbfe;
+            border-radius: 12px;
+        }
+
+        .ai-summary-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .ai-summary-header .ai-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #2563EB;
+            background: #dbeafe;
+            padding: 3px 10px;
+            border-radius: 6px;
+        }
+
+        .ai-summary-content {
+            font-size: 14px;
+            line-height: 1.7;
+            color: #1e293b;
+            white-space: pre-wrap;
+        }
+
+        .ai-summary-content h1, .ai-summary-content h2, .ai-summary-content h3 {
+            font-size: 15px;
+            font-weight: 700;
+            margin-top: 14px;
+            margin-bottom: 6px;
+            color: #0f172a;
+        }
+
+        .ai-summary-content ul, .ai-summary-content ol {
+            padding-left: 20px;
+            margin: 6px 0;
+        }
+
+        .ai-summary-content li {
+            margin-bottom: 4px;
+        }
+
+        /* Transcript Section */
+        .transcript-section {
+            margin-top: 12px;
+        }
+
+        .transcript-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #64748b;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px 0;
+            font-family: inherit;
+            transition: color 0.15s;
+        }
+
+        .transcript-toggle:hover {
+            color: #2563EB;
+        }
+
+        .transcript-toggle .arrow {
+            transition: transform 0.2s;
+            font-size: 11px;
+        }
+
+        .transcript-toggle .arrow.open {
+            transform: rotate(90deg);
+        }
+
+        .transcript-meta {
+            font-size: 12px;
+            color: #94a3b8;
+            font-weight: 400;
+        }
+
+        .transcript-box {
+            display: none;
+            margin-top: 8px;
+            padding: 14px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 13px;
+            line-height: 1.7;
+            color: #475569;
+        }
+
+        .transcript-box.open {
+            display: block;
+        }
+
+        /* Manual Summary Section (for videos without AI summary) */
+        .summary-area {
+            margin-top: 12px;
+        }
+
+        .summary-toggle {
+            font-size: 13px;
+            font-weight: 500;
+            color: #2563EB;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px 0;
+            font-family: inherit;
+        }
+
+        .summary-toggle:hover {
+            text-decoration: underline;
+        }
+
+        .summary-box {
+            display: none;
+            margin-top: 8px;
+        }
+
+        .summary-box.open {
+            display: block;
+        }
+
+        .summary-box textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: inherit;
+            color: #1e293b;
+            line-height: 1.6;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .summary-box textarea:focus {
+            border-color: #2563EB;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .summary-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .btn-sm {
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            font-family: inherit;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn-save {
+            background: #2563EB;
+            color: #fff;
+        }
+
+        .btn-save:hover { background: #1d4ed8; }
+
+        .btn-delete {
+            background: #fef2f2;
+            color: #ef4444;
+        }
+
+        .btn-delete:hover { background: #fee2e2; }
+
+        .btn-outline {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+        .btn-outline:hover { background: #e2e8f0; }
+
+        .btn-ai {
+            background: linear-gradient(135deg, #2563EB, #7c3aed);
+            color: #fff;
+        }
+
+        .btn-ai:hover {
+            opacity: 0.9;
+        }
+
+        /* All Videos Section */
+        .all-videos {
+            margin-top: 32px;
+        }
+
+        .all-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        /* Settings Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 200;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal {
+            background: #fff;
+            border-radius: 16px;
+            padding: 32px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+        }
+
+        .modal h2 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            color: #0f172a;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: #64748b;
+            margin-bottom: 6px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: inherit;
+            color: #1e293b;
+            outline: none;
+        }
+
+        .form-group input:focus {
+            border-color: #2563EB;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+
+        .time-saved {
+            font-size: 12px;
+            color: #16a34a;
+            font-weight: 500;
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .container { padding: 16px; }
+            .stats-bar { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+            .stat-card { padding: 12px; }
+            .stat-value { font-size: 1.4rem; }
+            .input-row { flex-direction: column; }
+            .btn-primary { width: 100%; text-align: center; }
+            .header-inner { padding: 0; }
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: #0f172a;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 300;
+            opacity: 0;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Re-summarize loading inside card */
+        .card-loading {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px;
+            background: #eff6ff;
+            border-radius: 10px;
+            margin-top: 12px;
+            font-size: 14px;
+            color: #2563EB;
+            font-weight: 500;
+        }
+
+        .card-loading .step-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #bfdbfe;
+            border-top-color: #2563EB;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <div class="header">
+        <div class="header-inner">
+            <div class="brand">
+                <div class="brand-icon">▶</div>
+                <h1>Focus<span>.</span></h1>
+            </div>
+            <div class="header-actions">
+                <a href="index.html" class="back-link">← Dashboard</a>
+                <button class="btn-icon" onclick="openSettings()" title="Settings">⚙️</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+
+        <!-- URL Input -->
+        <div class="input-section">
+            <div class="input-label">Add Video</div>
+            <div class="input-row">
+                <input type="text" id="urlInput" placeholder="Paste YouTube URL..." 
+                       onkeydown="if(event.key==='Enter')analyzeVideo()">
+                <button class="btn-primary" id="analyzeBtn" onclick="analyzeVideo()">Analyze →</button>
+            </div>
+            <div class="error-msg" id="errorMsg"></div>
+            <div class="analyze-progress" id="analyzeProgress">
+                <div class="progress-steps">
+                    <div class="progress-step" id="step1">
+                        <div class="step-icon">⏳</div>
+                        <span>Fetching video info...</span>
+                    </div>
+                    <div class="progress-step" id="step2">
+                        <div class="step-icon">⏳</div>
+                        <span>Extracting transcript & captions...</span>
+                    </div>
+                    <div class="progress-step" id="step3">
+                        <div class="step-icon">⏳</div>
+                        <span>Generating AI summary with Gemini...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-value blue" id="statReadTime">5m</div>
+                <div class="stat-label">Avg Read Time</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value green" id="statTimeSaved">0m</div>
+                <div class="stat-label">Time Saved</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value purple" id="statTotal">0</div>
+                <div class="stat-label">Total Videos</div>
+            </div>
+        </div>
+
+        <!-- Goal Progress -->
+        <div class="goal-section">
+            <div class="goal-header">
+                <div class="goal-title">Weekly Goal</div>
+                <div class="goal-count" id="goalCount">0 / 7</div>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+            <div class="goal-dots" id="goalDots"></div>
+        </div>
+
+        <!-- Daily Digest -->
+        <div class="digest-section">
+            <div class="digest-header">
+                <div class="digest-title">📋 Today's Digest</div>
+                <div class="digest-date" id="todayDate"></div>
+            </div>
+            <div id="todayVideos"></div>
+        </div>
+
+        <!-- All Videos -->
+        <div class="all-videos" id="allVideosSection" style="display:none">
+            <div class="all-header">
+                <div class="digest-title">📚 All Videos</div>
+                <button class="btn-sm btn-outline" onclick="toggleAllVideos()" id="toggleAllBtn">Show All</button>
+            </div>
+            <div id="allVideosList" style="display:none"></div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal">
+            <h2>⚙️ Settings</h2>
+            <div class="form-group">
+                <label>Weekly Video Goal</label>
+                <input type="number" id="settingsGoal" min="1" max="50" value="7">
+            </div>
+            <div class="form-group">
+                <label>Avg Read Time (minutes)</label>
+                <input type="number" id="settingsReadTime" min="1" max="30" value="5">
+            </div>
+            <div class="form-group">
+                <label>Export / Import Data</label>
+                <div style="display:flex;gap:8px;margin-top:4px">
+                    <button class="btn-sm btn-outline" onclick="exportData()">Export JSON</button>
+                    <button class="btn-sm btn-outline" onclick="document.getElementById('importFile').click()">Import JSON</button>
+                    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-sm btn-outline" onclick="closeSettings()">Cancel</button>
+                <button class="btn-sm btn-save" onclick="saveSettings()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+<script>
+// ===== Data Layer =====
+const STORAGE_KEY = 'focus-videos';
+
+function getStore() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+    return { videos: [], weeklyGoal: 7, settings: { avgReadTime: 5 } };
+}
+
+function saveStore(store) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+}
+
+// ===== YouTube Helpers =====
+function extractVideoId(url) {
+    url = url.trim();
+    const patterns = [
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/,
+        /^([a-zA-Z0-9_-]{11})$/
+    ];
+    for (const p of patterns) {
+        const m = url.match(p);
+        if (m) return m[1];
+    }
+    return null;
+}
+
+async function fetchVideoMeta(videoId) {
+    const res = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+    if (!res.ok) throw new Error('Video not found');
+    const data = await res.json();
+    return { title: data.title, channel: data.author_name };
+}
+
+// ===== Progress Steps UI =====
+function setStep(stepNum, state) {
+    const el = document.getElementById('step' + stepNum);
+    if (!el) return;
+    el.className = 'progress-step' + (state === 'active' ? ' active' : '') + (state === 'done' ? ' done' : '');
+    const iconEl = el.querySelector('.step-icon');
+    if (state === 'waiting') iconEl.innerHTML = '⏳';
+    else if (state === 'active') iconEl.innerHTML = '<div class="step-spinner"></div>';
+    else if (state === 'done') iconEl.innerHTML = '✅';
+    else if (state === 'error') iconEl.innerHTML = '❌';
+}
+
+function resetSteps() { setStep(1, 'waiting'); setStep(2, 'waiting'); setStep(3, 'waiting'); }
+
+// ===== Analyze Video =====
+async function analyzeVideo() {
+    const input = document.getElementById('urlInput');
+    const btn = document.getElementById('analyzeBtn');
+    const errEl = document.getElementById('errorMsg');
+    const progressEl = document.getElementById('analyzeProgress');
+    const url = input.value.trim();
+
+    errEl.classList.remove('show');
+    progressEl.classList.remove('show');
+
+    if (!url) { showError('Please paste a YouTube URL'); return; }
+
+    const videoId = extractVideoId(url);
+    if (!videoId) { showError('Invalid YouTube URL. Try youtube.com/watch?v=...'); return; }
+
+    const store = getStore();
+    if (store.videos.find(v => v.id === videoId)) { showError('This video is already in your queue'); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Analyzing...';
+    progressEl.classList.add('show');
+    resetSteps();
+
+    const fullUrl = `https://www.youtube.com/watch?v=${videoId}`;
+
+    try {
+        // Step 1: Fetch video metadata
+        setStep(1, 'active');
+        let meta = { title: '', channel: '' };
+        try { meta = await fetchVideoMeta(videoId); } catch(e) {}
+        setStep(1, 'done');
+
+        // Step 2: Fetch transcript
+        setStep(2, 'active');
+        let transcriptData = null;
+
+        // Use configured transcript API (Cloudflare Worker, or fallback)
+        const TRANSCRIPT_API = localStorage.getItem('focus_transcript_api') || 'https://yt-transcript.ivo-tools.workers.dev';
+        try {
+            const tRes = await fetch(TRANSCRIPT_API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ videoId })
+            });
+            if (tRes.ok) {
+                transcriptData = await tRes.json();
+            } else {
+                const err = await tRes.json().catch(() => ({}));
+                throw new Error(err.error || 'Transcript fetch failed');
+            }
+        } catch(e) {
+            console.warn('Transcript fetch failed:', e.message);
+        }
+
+        if (!transcriptData || !transcriptData.transcript) {
+            setStep(2, 'error');
+            const today = new Date().toISOString().split('T')[0];
+            const video = {
+                id: videoId, url: fullUrl,
+                title: meta.title || 'Untitled Video', channel: meta.channel || 'Unknown',
+                duration: 0, summary: '', transcript: '',
+                completed: false, dateAdded: today, dateCompleted: null
+            };
+            store.videos.unshift(video);
+            saveStore(store);
+            input.value = '';
+            progressEl.classList.remove('show');
+            showToast('⚠️ Added but transcript fetch failed');
+            renderAll();
+            return;
+        }
+
+        setStep(2, 'done');
+
+        // Step 3: Generate AI summary via Gemini
+        setStep(3, 'active');
+        let summary = '';
+        try {
+            const sumRes = await fetch('/api/summarize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    transcript: transcriptData.transcript,
+                    title: transcriptData.title || meta.title,
+                    channel: transcriptData.channel || meta.channel
+                })
+            });
+            if (sumRes.ok) {
+                const sumData = await sumRes.json();
+                summary = sumData.summary || '';
+            }
+        } catch(e) { console.warn('Summary failed:', e.message); }
+
+        setStep(3, summary ? 'done' : 'error');
+
+        const today = new Date().toISOString().split('T')[0];
+        const video = {
+            id: videoId, url: fullUrl,
+            title: transcriptData.title || meta.title || 'Untitled Video',
+            channel: transcriptData.channel || meta.channel || 'Unknown',
+            duration: transcriptData.duration || 0,
+            summary: summary,
+            transcript: transcriptData.transcript || '',
+            completed: !!summary,
+            dateAdded: today,
+            dateCompleted: summary ? today : null
+        };
+
+        store.videos.unshift(video);
+        saveStore(store);
+        input.value = '';
+
+        setTimeout(() => {
+            progressEl.classList.remove('show');
+            showToast(summary ? '✓ Video analyzed & summarized!' : '⚠️ Transcript saved but summary failed');
+            renderAll();
+        }, 500);
+
+    } catch (e) {
+        console.error('Analysis error:', e);
+        showError(e.message || 'Could not analyze video');
+        setTimeout(() => progressEl.classList.remove('show'), 1500);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Analyze →';
+    }
+}
+
+// ===== Re-summarize an existing video =====
+async function reSummarize(videoId) {
+    const store = getStore();
+    const video = store.videos.find(v => v.id === videoId);
+    if (!video) return;
+
+    const cardEl = document.querySelector(`.video-card[data-id="${videoId}"]`);
+    if (!cardEl) return;
+
+    let loadingEl = cardEl.querySelector('.card-loading');
+    if (!loadingEl) {
+        loadingEl = document.createElement('div');
+        loadingEl.className = 'card-loading';
+        loadingEl.innerHTML = '<div class="step-spinner"></div><span>Fetching transcript & generating summary...</span>';
+        cardEl.appendChild(loadingEl);
+    }
+
+    try {
+        // If no transcript, fetch it first
+        if (!video.transcript) {
+            const TRANSCRIPT_API = localStorage.getItem('focus_transcript_api') || 'https://yt-transcript.ivo-tools.workers.dev';
+            try {
+                const tRes = await fetch(TRANSCRIPT_API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ videoId })
+                });
+                if (tRes.ok) {
+                    const tData = await tRes.json();
+                    video.transcript = tData.transcript;
+                    if (tData.duration > 0) video.duration = tData.duration;
+                    if (tData.title && !video.title) video.title = tData.title;
+                    if (tData.channel && !video.channel) video.channel = tData.channel;
+                }
+            } catch(e) { console.warn('Transcript fetch failed:', e.message); }
+        }
+
+        if (!video.transcript) throw new Error('No transcript available. Configure transcript API in Settings.');
+
+        const apiRes = await fetch('/api/summarize', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ transcript: video.transcript, title: video.title, channel: video.channel })
+        });
+
+        if (!apiRes.ok) {
+            const errData = await apiRes.json().catch(() => ({}));
+            throw new Error(errData.error || 'Failed to summarize');
+        }
+
+        const data = await apiRes.json();
+        video.summary = data.summary || '';
+        video.completed = true;
+        video.dateCompleted = new Date().toISOString().split('T')[0];
+
+        saveStore(store);
+        showToast('✓ Summary generated!');
+        renderAll();
+    } catch (e) {
+        if (loadingEl) loadingEl.remove();
+        showToast('❌ ' + e.message);
+    }
+}
+
+function showError(msg) {
+    const el = document.getElementById('errorMsg');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 5000);
+}
+
+// ===== Markdown-ish rendering =====
+function renderMarkdown(text) {
+    if (!text) return '';
+    let html = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+    html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+    html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+    html = html.replace(/^[\-\*] (.+)$/gm, '<li>$1</li>');
+    html = html.replace(/((?:<li>.*?<\/li>\n?)+)/g, '<ul>$1</ul>');
+    html = html.replace(/^\d+\.\s(.+)$/gm, '<li>$1</li>');
+    html = html.replace(/\n\n/g, '<br><br>');
+    html = html.replace(/\n/g, '<br>');
+    html = html.replace(/<br><(h[123]|ul|ol)/g, '<$1');
+    html = html.replace(/<\/(h[123]|ul|ol)><br>/g, '</$1>');
+    return html;
+}
+
+// ===== Rendering =====
+function formatDuration(secs) {
+    if (!secs || secs <= 0) return '—';
+    const m = Math.floor(secs / 60);
+    if (m >= 60) { const h = Math.floor(m / 60); return `${h}h ${m % 60}m`; }
+    return `${m}m`;
+}
+
+function getToday() { return new Date().toISOString().split('T')[0]; }
+
+function getWeekStart() {
+    const now = new Date();
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+    const start = new Date(now);
+    start.setDate(diff);
+    return start.toISOString().split('T')[0];
+}
+
+function getWordCount(text) { return text ? text.trim().split(/\s+/).length : 0; }
+
+function getReadTime(wc) { const m = Math.ceil(wc / 200); return m < 1 ? '< 1 min' : `${m} min`; }
+
+function renderVideoCard(video, showDate) {
+    const badge = video.completed
+        ? '<span class="badge done">✓ Done</span>'
+        : '<span class="badge pending">Pending</span>';
+
+    const timeSaved = video.duration > 0 && video.completed
+        ? `<span class="time-saved">Saved ${formatDuration(video.duration - (getStore().settings.avgReadTime * 60))}</span>`
+        : '';
+
+    const dateInfo = showDate ? `<span class="sep">·</span> ${video.dateAdded}` : '';
+    const durationInfo = video.duration > 0 ? formatDuration(video.duration) : 'Duration N/A';
+
+    let aiSummaryHtml = '';
+    if (video.summary) {
+        aiSummaryHtml = `
+        <div class="ai-summary">
+            <div class="ai-summary-header"><span class="ai-badge">✨ AI Summary</span></div>
+            <div class="ai-summary-content">${renderMarkdown(video.summary)}</div>
+        </div>`;
+    }
+
+    let transcriptHtml = '';
+    if (video.transcript) {
+        const wc = getWordCount(video.transcript);
+        transcriptHtml = `
+        <div class="transcript-section">
+            <button class="transcript-toggle" onclick="toggleTranscript('${video.id}')">
+                <span class="arrow" id="arrow-${video.id}">▶</span>
+                📄 View Full Transcript
+                <span class="transcript-meta">(${wc.toLocaleString()} words · ${getReadTime(wc)} read)</span>
+            </button>
+            <div class="transcript-box" id="transcript-${video.id}">${escapeHtml(video.transcript)}</div>
+        </div>`;
+    }
+
+    const summaryAreaHtml = `
+    <div class="summary-area">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            ${!video.summary ? `<button class="btn-sm btn-ai" onclick="reSummarize('${video.id}')">✨ Generate AI Summary</button>` : ''}
+            <button class="summary-toggle" onclick="toggleSummary('${video.id}')">
+                ${video.summary ? '✏️ Edit Summary' : '✏️ Add Manual Summary'}
+            </button>
+            <button class="btn-sm btn-delete" onclick="deleteVideo('${video.id}')">Delete</button>
+        </div>
+        <div class="summary-box" id="summary-${video.id}">
+            <textarea id="text-${video.id}" placeholder="Paste or write the summary here...">${escapeHtml(video.summary)}</textarea>
+            <div class="summary-actions">
+                <button class="btn-sm btn-save" onclick="saveSummary('${video.id}')">Save Summary</button>
+                ${video.duration === 0 ? `<button class="btn-sm btn-outline" onclick="promptDuration('${video.id}')">Set Duration</button>` : ''}
+            </div>
+        </div>
+    </div>`;
+
+    return `
+    <div class="video-card ${video.completed ? 'completed' : ''}" data-id="${video.id}">
+        <div class="video-top">
+            <a href="${video.url}" target="_blank" class="video-play" title="Watch on YouTube">▶️</a>
+            <div class="video-info">
+                <div class="video-title">${escapeHtml(video.title)}</div>
+                <div class="video-meta">
+                    ${escapeHtml(video.channel)} <span class="sep">·</span> ${durationInfo} ${dateInfo}
+                </div>
+            </div>
+            <div class="video-actions">${badge} ${timeSaved}</div>
+        </div>
+        ${aiSummaryHtml}
+        ${transcriptHtml}
+        ${summaryAreaHtml}
+    </div>`;
+}
+
+function renderAll() {
+    const store = getStore();
+    const today = getToday();
+    const weekStart = getWeekStart();
+
+    const todayVids = store.videos.filter(v => v.dateAdded === today);
+    const todayEl = document.getElementById('todayVideos');
+    if (todayVids.length === 0) {
+        todayEl.innerHTML = `<div class="empty-state"><div class="empty-icon">🎬</div><div class="empty-text">No videos yet today.<br>Paste a YouTube URL above to start learning.</div></div>`;
+    } else {
+        todayEl.innerHTML = todayVids.map(v => renderVideoCard(v, false)).join('');
+    }
+
+    const otherVids = store.videos.filter(v => v.dateAdded !== today);
+    const allSection = document.getElementById('allVideosSection');
+    if (otherVids.length > 0) {
+        allSection.style.display = 'block';
+        document.getElementById('allVideosList').innerHTML = otherVids.map(v => renderVideoCard(v, true)).join('');
+    } else {
+        allSection.style.display = 'none';
+    }
+
+    const completedVids = store.videos.filter(v => v.completed);
+    const totalTimeSaved = completedVids.reduce((acc, v) => {
+        return v.duration > 0 ? acc + Math.max(0, v.duration - store.settings.avgReadTime * 60) : acc;
+    }, 0);
+
+    document.getElementById('statReadTime').textContent = `${store.settings.avgReadTime}m`;
+    document.getElementById('statTimeSaved').textContent = formatDuration(totalTimeSaved);
+    document.getElementById('statTotal').textContent = store.videos.length;
+
+    const weekCompleted = completedVids.filter(v => v.dateCompleted >= weekStart).length;
+    const goal = store.weeklyGoal;
+    const pct = Math.min(100, Math.round((weekCompleted / goal) * 100));
+    document.getElementById('goalCount').textContent = `${weekCompleted} / ${goal}`;
+    document.getElementById('progressFill').style.width = pct + '%';
+
+    const dotsEl = document.getElementById('goalDots');
+    let dotsHTML = '';
+    for (let i = 1; i <= goal; i++) {
+        dotsHTML += `<div class="goal-dot ${i <= weekCompleted ? 'filled' : ''}">${i <= weekCompleted ? '✓' : i}</div>`;
+    }
+    dotsEl.innerHTML = dotsHTML;
+
+    document.getElementById('todayDate').textContent = new Date().toLocaleDateString('en-US', {
+        weekday: 'long', month: 'short', day: 'numeric'
+    });
+}
+
+// ===== Actions =====
+function toggleSummary(id) {
+    const box = document.getElementById('summary-' + id);
+    box.classList.toggle('open');
+    if (box.classList.contains('open')) document.getElementById('text-' + id).focus();
+}
+
+function toggleTranscript(id) {
+    const box = document.getElementById('transcript-' + id);
+    const arrow = document.getElementById('arrow-' + id);
+    box.classList.toggle('open');
+    if (arrow) arrow.classList.toggle('open');
+}
+
+function saveSummary(id) {
+    const store = getStore();
+    const video = store.videos.find(v => v.id === id);
+    if (!video) return;
+    const text = document.getElementById('text-' + id).value.trim();
+    video.summary = text;
+    if (text && !video.completed) {
+        video.completed = true;
+        video.dateCompleted = getToday();
+        showToast('✓ Video marked as completed!');
+    } else if (!text && video.completed) {
+        video.completed = false;
+        video.dateCompleted = null;
+    } else {
+        showToast('✓ Summary saved');
+    }
+    saveStore(store);
+    renderAll();
+}
+
+function deleteVideo(id) {
+    if (!confirm('Delete this video from your queue?')) return;
+    const store = getStore();
+    store.videos = store.videos.filter(v => v.id !== id);
+    saveStore(store);
+    showToast('Video removed');
+    renderAll();
+}
+
+function promptDuration(id) {
+    const minutes = prompt('Enter video duration in minutes:');
+    if (!minutes) return;
+    const secs = parseInt(minutes) * 60;
+    if (isNaN(secs) || secs <= 0) return;
+    const store = getStore();
+    const video = store.videos.find(v => v.id === id);
+    if (video) { video.duration = secs; saveStore(store); renderAll(); showToast('Duration updated'); }
+}
+
+function toggleAllVideos() {
+    const list = document.getElementById('allVideosList');
+    const btn = document.getElementById('toggleAllBtn');
+    if (list.style.display === 'none') { list.style.display = 'block'; btn.textContent = 'Hide'; }
+    else { list.style.display = 'none'; btn.textContent = 'Show All'; }
+}
+
+// ===== Settings =====
+function openSettings() {
+    const store = getStore();
+    document.getElementById('settingsGoal').value = store.weeklyGoal;
+    document.getElementById('settingsReadTime').value = store.settings.avgReadTime;
+    document.getElementById('settingsModal').classList.add('open');
+}
+
+function closeSettings() { document.getElementById('settingsModal').classList.remove('open'); }
+
+function saveSettings() {
+    const store = getStore();
+    store.weeklyGoal = Math.max(1, Math.min(50, parseInt(document.getElementById('settingsGoal').value) || 7));
+    store.settings.avgReadTime = Math.max(1, Math.min(30, parseInt(document.getElementById('settingsReadTime').value) || 5));
+    saveStore(store);
+    closeSettings();
+    renderAll();
+    showToast('Settings saved');
+}
+
+function exportData() {
+    const store = getStore();
+    const blob = new Blob([JSON.stringify(store, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `focus-data-${getToday()}.json`; a.click();
+    URL.revokeObjectURL(url);
+    showToast('Data exported');
+}
+
+function importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (data.videos && Array.isArray(data.videos)) { saveStore(data); renderAll(); showToast('Data imported'); }
+            else showToast('Invalid data format');
+        } catch (err) { showToast('Error reading file'); }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+}
+
+// ===== Utilities =====
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+document.getElementById('settingsModal').addEventListener('click', function(e) {
+    if (e.target === this) closeSettings();
+});
+
+// ===== Init =====
+renderAll();
+</script>
+
+</body>
+</html>
