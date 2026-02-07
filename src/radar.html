@@ -832,6 +832,20 @@ body::before {
   </div>
   <div class="platform-grid" id="platforms-container"></div>
 
+  <!-- REAL EXAMPLES -->
+  <div class="section-header">
+    <h2>📖 Real Examples</h2>
+    <span class="tag">Lessons from the Field</span>
+  </div>
+  <div class="blindspot-grid" id="examples-container"></div>
+
+  <!-- RESEARCH METHODOLOGY -->
+  <div class="section-header">
+    <h2>🔬 Nightly Research Methodology</h2>
+    <span class="tag">How Nova Scans</span>
+  </div>
+  <div id="methodology-container" style="margin-bottom:32px"></div>
+
   <!-- LAST UPDATED -->
   <div class="last-updated" id="last-updated"></div>
 </div>
@@ -888,6 +902,8 @@ function renderAll() {
   renderSignals();
   renderBlindSpots();
   renderPlatforms();
+  renderExamples();
+  renderMethodology();
   renderLastUpdated();
 }
 
@@ -1092,6 +1108,56 @@ function renderPlatforms() {
       </div>
     `;
   }).join('');
+}
+
+// ── REAL EXAMPLES ──
+function renderExamples() {
+  const container = document.getElementById('examples-container');
+  const examples = radarData.realExamples || [];
+  container.innerHTML = examples.map(ex => `
+    <div class="blindspot-card">
+      <div class="blindspot-title">${ex.title}</div>
+      <div class="blindspot-text">${ex.description}</div>
+      <div style="margin-top:10px;padding:10px;background:rgba(59,130,246,0.1);border-radius:8px;border-left:3px solid var(--accent-blue)">
+        <strong style="color:var(--accent-cyan)">💡 Lesson:</strong> <span style="color:var(--text-secondary)">${ex.lesson}</span>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:var(--text-muted)">
+        🔄 Pattern: ${ex.pattern}
+      </div>
+      ${ex.source ? `<div style="margin-top:6px;font-size:11px"><a href="${ex.source}" target="_blank" style="color:var(--accent-blue)">${ex.source.length > 60 ? ex.source.substring(0,60)+'...' : ex.source}</a></div>` : ''}
+    </div>
+  `).join('');
+}
+
+// ── METHODOLOGY ──
+function renderMethodology() {
+  const container = document.getElementById('methodology-container');
+  const m = radarData.researchMethodology;
+  if (!m) { container.innerHTML = '<p style="color:var(--text-muted)">No methodology data.</p>'; return; }
+  
+  const phases = (m.phases || []).map(p => `
+    <div style="margin-bottom:16px">
+      <div style="color:var(--accent-cyan);font-weight:600;font-size:14px;margin-bottom:6px">${p.name}</div>
+      <ul style="list-style:none;padding:0">${p.steps.map(s => `<li style="color:var(--text-secondary);font-size:13px;padding:3px 0;padding-left:16px;position:relative"><span style="position:absolute;left:0;color:var(--accent-blue)">▸</span>${s}</li>`).join('')}</ul>
+    </div>
+  `).join('');
+  
+  const filters = (m.filters || []).map(f => `<li style="color:var(--text-secondary);font-size:13px;padding:3px 0;padding-left:16px;position:relative"><span style="position:absolute;left:0;color:var(--accent-amber)">⚡</span>${f}</li>`).join('');
+  
+  container.innerHTML = `
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="color:var(--accent-green);font-family:'JetBrains Mono',monospace;font-size:13px">⏰ ${m.schedule}</div>
+        <div style="color:var(--accent-purple);font-family:'JetBrains Mono',monospace;font-size:13px">🧠 ${m.thinkingLevel}</div>
+      </div>
+      ${phases}
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <div style="color:var(--accent-amber);font-weight:600;font-size:14px;margin-bottom:8px">Quality Filters</div>
+        <ul style="list-style:none;padding:0">${filters}</ul>
+      </div>
+      <div style="margin-top:12px;font-size:12px;color:var(--text-muted)">→ Feeds into: ${m.feedsInto}</div>
+    </div>
+  `;
 }
 
 // ── LAST UPDATED ──
