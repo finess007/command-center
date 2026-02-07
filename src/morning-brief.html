@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Morning Brief Config</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+      color: #e8e8e8;
+      min-height: 100vh;
+      padding: 18px;
+    }
+    a.back {
+      position: fixed; top: 16px; left: 16px; color: #888; text-decoration: none;
+      font-size: 0.9rem; z-index: 1000; background: rgba(0,0,0,0.5);
+      padding: 8px 12px; border-radius: 8px;
+    }
+    a.back:hover { color: #fff; }
+
+    .wrap { max-width: 1100px; margin: 0 auto; padding-top: 40px; }
+    header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    h1 { font-size: 1.6rem; }
+    .sub { color: #888; font-size: 0.9rem; margin-top: 4px; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .btn {
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14);
+      color: #e8e8e8; padding: 8px 14px; border-radius: 10px; cursor: pointer;
+      font-size: 0.85rem; transition: all 0.2s;
+    }
+    .btn:hover { background: rgba(255,255,255,0.14); }
+    .btn.primary { background: rgba(167,139,250,0.22); border-color: rgba(167,139,250,0.35); }
+    .btn.primary:hover { background: rgba(167,139,250,0.35); }
+    .btn.success { background: rgba(34,197,94,0.18); border-color: rgba(34,197,94,0.3); color: #4ade80; }
+    .btn.success:hover { background: rgba(34,197,94,0.3); }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; background: rgba(34,197,94,0.15);
+      border: 1px solid rgba(34,197,94,0.3); color: #4ade80; padding: 12px 20px;
+      border-radius: 10px; font-size: 0.9rem; z-index: 9999; opacity: 0;
+      transform: translateY(10px); transition: all 0.3s; pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 4px; margin-bottom: 24px; flex-wrap: wrap; }
+    .tab {
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      color: #888; padding: 10px 18px; border-radius: 10px; cursor: pointer;
+      font-size: 0.85rem; transition: all 0.2s;
+    }
+    .tab:hover { color: #ccc; background: rgba(255,255,255,0.08); }
+    .tab.active {
+      background: rgba(167,139,250,0.18); border-color: rgba(167,139,250,0.35);
+      color: #c4b5fd;
+    }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* Section Cards */
+    .section-card {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px; padding: 18px; margin-bottom: 12px;
+      transition: all 0.2s; position: relative;
+    }
+    .section-card:hover { border-color: rgba(255,255,255,0.16); }
+    .section-card.disabled { opacity: 0.5; }
+    .section-card.dragging { opacity: 0.4; border-color: rgba(167,139,250,0.5); }
+    .section-card.drag-over { border-color: rgba(167,139,250,0.6); background: rgba(167,139,250,0.06); }
+
+    .card-header {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+    .drag-handle {
+      cursor: grab; color: #555; font-size: 1.2rem; user-select: none;
+      padding: 4px; line-height: 1;
+    }
+    .drag-handle:active { cursor: grabbing; }
+    .card-order {
+      background: rgba(167,139,250,0.15); color: #a78bfa; font-size: 0.75rem;
+      font-weight: 700; width: 26px; height: 26px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .card-emoji { font-size: 1.3rem; flex-shrink: 0; }
+    .card-title { font-weight: 600; font-size: 0.95rem; flex: 1; min-width: 120px; }
+    .card-desc { color: #888; font-size: 0.8rem; margin-top: 2px; }
+    .card-meta {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-left: auto;
+    }
+    .char-badge {
+      background: rgba(56,189,248,0.12); color: #38bdf8; font-size: 0.75rem;
+      padding: 3px 8px; border-radius: 6px; white-space: nowrap;
+    }
+
+    /* Toggle */
+    .toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle .slider {
+      position: absolute; inset: 0; background: rgba(255,255,255,0.1);
+      border-radius: 24px; cursor: pointer; transition: 0.3s;
+    }
+    .toggle .slider::before {
+      content: ''; position: absolute; width: 18px; height: 18px; left: 3px; bottom: 3px;
+      background: #666; border-radius: 50%; transition: 0.3s;
+    }
+    .toggle input:checked + .slider { background: rgba(34,197,94,0.3); }
+    .toggle input:checked + .slider::before { transform: translateX(20px); background: #4ade80; }
+
+    /* Expand */
+    .expand-btn {
+      background: none; border: none; color: #888; cursor: pointer; font-size: 0.8rem;
+      padding: 4px 8px; border-radius: 6px; transition: 0.2s;
+    }
+    .expand-btn:hover { color: #ccc; background: rgba(255,255,255,0.06); }
+    .card-detail {
+      display: none; margin-top: 16px; padding-top: 16px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .card-detail.open { display: block; }
+
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 700px) { .detail-grid { grid-template-columns: 1fr; } }
+
+    .detail-group label {
+      display: block; color: #888; font-size: 0.75rem; text-transform: uppercase;
+      letter-spacing: 0.05em; margin-bottom: 6px;
+    }
+    .detail-group textarea, .detail-group input[type="text"] {
+      width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+      color: #e8e8e8; border-radius: 8px; padding: 10px; font-size: 0.85rem;
+      font-family: inherit; resize: vertical;
+    }
+    .detail-group textarea { min-height: 100px; }
+    .detail-group textarea:focus, .detail-group input:focus {
+      outline: none; border-color: rgba(167,139,250,0.4);
+    }
+
+    /* Slider */
+    .slider-wrap { display: flex; align-items: center; gap: 10px; }
+    .slider-wrap input[type="range"] {
+      flex: 1; -webkit-appearance: none; height: 6px; background: rgba(255,255,255,0.1);
+      border-radius: 3px; outline: none;
+    }
+    .slider-wrap input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+      background: #a78bfa; cursor: pointer;
+    }
+    .slider-val {
+      color: #a78bfa; font-size: 0.85rem; font-weight: 600; min-width: 50px; text-align: right;
+    }
+
+    /* Delivery Settings */
+    .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    @media (max-width: 700px) { .settings-grid { grid-template-columns: 1fr; } }
+    .setting-card {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px; padding: 20px;
+    }
+    .setting-card h3 {
+      font-size: 0.9rem; margin-bottom: 14px; color: #c4b5fd;
+    }
+    .setting-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .setting-row:last-child { border-bottom: none; }
+    .setting-label { color: #aaa; font-size: 0.85rem; }
+    .setting-value select, .setting-value input {
+      background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+      color: #e8e8e8; border-radius: 8px; padding: 6px 10px; font-size: 0.85rem;
+    }
+    .setting-value select:focus, .setting-value input:focus {
+      outline: none; border-color: rgba(167,139,250,0.4);
+    }
+    .setting-value input[type="number"] { width: 80px; text-align: center; }
+    .setting-value input[type="time"] { width: 110px; }
+
+    /* Radio group */
+    .radio-group { display: flex; gap: 8px; }
+    .radio-option {
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+      padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.82rem;
+      color: #aaa; transition: 0.2s;
+    }
+    .radio-option.active {
+      background: rgba(167,139,250,0.2); border-color: rgba(167,139,250,0.4); color: #c4b5fd;
+    }
+
+    /* Delivery Groups */
+    .groups-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+    .group-col {
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px; padding: 14px; min-height: 120px;
+    }
+    .group-col.drag-over { border-color: rgba(167,139,250,0.5); background: rgba(167,139,250,0.04); }
+    .group-header {
+      font-size: 0.8rem; color: #888; text-transform: uppercase; letter-spacing: 0.05em;
+      margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .group-header .char-total { color: #38bdf8; font-size: 0.75rem; }
+    .group-item {
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px; padding: 8px 12px; margin-bottom: 6px; cursor: grab;
+      font-size: 0.85rem; display: flex; align-items: center; gap: 8px; transition: 0.2s;
+    }
+    .group-item:active { cursor: grabbing; }
+    .group-item.dragging { opacity: 0.4; }
+    .group-item.drag-over { border-color: rgba(167,139,250,0.5); }
+    .group-item .gi-emoji { font-size: 1rem; }
+    .group-item .gi-name { flex: 1; }
+    .group-item .gi-chars { color: #555; font-size: 0.75rem; }
+    .add-group-btn {
+      margin-top: 16px; width: 100%; padding: 12px; background: rgba(255,255,255,0.03);
+      border: 1px dashed rgba(255,255,255,0.12); border-radius: 10px; color: #666;
+      cursor: pointer; font-size: 0.85rem; transition: 0.2s;
+    }
+    .add-group-btn:hover { color: #aaa; border-color: rgba(255,255,255,0.2); }
+
+    /* JSON View */
+    .json-view {
+      background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px; padding: 20px; position: relative;
+    }
+    .json-view pre {
+      color: #a78bfa; font-size: 0.8rem; line-height: 1.6; overflow-x: auto;
+      white-space: pre-wrap; word-break: break-all; max-height: 70vh;
+    }
+    .json-copy-btn {
+      position: absolute; top: 12px; right: 12px;
+    }
+
+    /* Summary bar */
+    .summary-bar {
+      display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px;
+      padding: 14px 18px; background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06); border-radius: 12px;
+    }
+    .summary-stat { text-align: center; }
+    .summary-stat .val { font-size: 1.3rem; font-weight: 700; color: #c4b5fd; }
+    .summary-stat .lbl { font-size: 0.7rem; color: #666; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; }
+
+    /* Move arrows */
+    .move-arrows { display: flex; flex-direction: column; gap: 2px; }
+    .arrow-btn {
+      background: none; border: none; color: #555; cursor: pointer; font-size: 0.7rem;
+      padding: 1px 4px; line-height: 1; transition: 0.2s;
+    }
+    .arrow-btn:hover { color: #a78bfa; }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      body { padding: 10px; }
+      .wrap { padding-top: 50px; }
+      .card-header { gap: 8px; }
+      .card-meta { margin-left: 0; margin-top: 8px; width: 100%; }
+      .summary-bar { gap: 10px; }
+      header { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+<a class="back" href="index.html">← Back</a>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>☀️ Morning Brief Config</h1>
+      <div class="sub">Configure sections, rules, ordering &amp; delivery for the daily 10:00 AM brief</div>
+    </div>
+    <div class="actions">
+      <button class="btn success" onclick="saveConfig()">💾 Save</button>
+      <button class="btn primary" onclick="switchTab('json')">{ } Export JSON</button>
+      <button class="btn" onclick="resetDefaults()">↻ Reset</button>
+    </div>
+  </header>
+
+  <div class="summary-bar" id="summaryBar"></div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="sections" onclick="switchTab('sections')">📋 Sections</div>
+    <div class="tab" data-tab="delivery" onclick="switchTab('delivery')">📨 Delivery</div>
+    <div class="tab" data-tab="groups" onclick="switchTab('groups')">📦 Groups</div>
+    <div class="tab" data-tab="json" onclick="switchTab('json')">{ } JSON</div>
+  </div>
+
+  <div class="panel active" id="panel-sections"></div>
+  <div class="panel" id="panel-delivery"></div>
+  <div class="panel" id="panel-groups"></div>
+  <div class="panel" id="panel-json"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── Default Config ───
+const DEFAULT_SECTIONS = [
+  {
+    id: 'overnight', emoji: '🌅', name: 'Overnight Build Report', enabled: true, charBudget: 400,
+    description: 'What happened while Ivo slept — cron jobs, builds, deploys, errors.',
+    rules: 'Check cron job logs from overnight. Report any errors, successful deploys, and build results. Keep it concise — only actionable items.',
+    sources: 'cron logs, Vercel deploy status, git log',
+    exampleOutput: '🌅 Overnight Build Report\n✅ Nightly image gen: 5/5 complete\n✅ GA report cron ran OK\n⚠️ yt-transcript-proxy restarted 1x (recovered)'
+  },
+  {
+    id: 'ai_daily', emoji: '🌐', name: 'AI Daily (@alexwg summary)', enabled: true, charBudget: 400,
+    description: 'Top AI news and developments from @alexwg and other sources.',
+    rules: 'Summarize the top 3-5 AI developments from the last 24h. Prioritize: model releases, major announcements, things relevant to our stack. Use web_search for latest.',
+    sources: 'web_search, bird CLI (@alexwg timeline)',
+    exampleOutput: '🌐 AI Daily\n• GPT-5 rumors: OpenAI teasing "next frontier" model\n• Claude Opus 4.6 memory improvements shipped\n• Meta open-sources new video gen model'
+  },
+  {
+    id: 'analytics', emoji: '📊', name: 'Alessa Analytics (GA)', enabled: true, charBudget: 350,
+    description: 'Google Analytics summary for Alessa BG + GR properties.',
+    rules: 'Run GA monitor script. Report: sessions (vs yesterday), top pages, conversion rate, revenue if available. Flag anomalies (>20% drops).',
+    sources: 'GA monitor script (scripts/ga-monitor.py)',
+    exampleOutput: '📊 Alessa Analytics\n🇧🇬 BG: 1,247 sessions (+8%), top: /бижута, conv: 2.1%\n🇬🇷 GR: 834 sessions (-3%), top: /κοσμήματα'
+  },
+  {
+    id: 'x_scout', emoji: '🐦', name: 'X/Twitter Scout', enabled: true, charBudget: 350,
+    description: 'Notable tweets, trends, and mentions from X/Twitter.',
+    rules: 'Check home timeline via bird CLI. Look for: trending AI topics, marketing insights, anything Ivo follows. Skip noise and drama.',
+    sources: 'bird CLI (bird home, bird search)',
+    exampleOutput: '🐦 X Scout\n• @levelsio: new AI project hitting $10k MRR\n• Meta Ads CPC dropping across verticals\n• Trending: #AIAgents, #BuildInPublic'
+  },
+  {
+    id: 'hn_scout', emoji: '🔶', name: 'Hacker News Scout', enabled: true, charBudget: 300,
+    description: 'Top stories and discussions from Hacker News.',
+    rules: 'Scan HN front page. Pick 3-5 stories relevant to: AI, SaaS, ecommerce, programming. Include points count and brief summary.',
+    sources: 'web_search (site:news.ycombinator.com), HN API',
+    exampleOutput: '🔶 Hacker News\n• "Why we switched from Next.js to Astro" (342 pts)\n• "AI agents are replacing junior devs" (521 pts)\n• Show HN: Open-source Shopify alternative (287 pts)'
+  },
+  {
+    id: 'youtube', emoji: '📺', name: 'YouTube Scout', enabled: true, charBudget: 300,
+    description: 'Notable new videos from subscribed channels and trending tech.',
+    rules: 'Check for new uploads from key channels: AI/tech, marketing, business. Prioritize videos with actionable content. Include video length.',
+    sources: 'web_search, YouTube API',
+    exampleOutput: '📺 YouTube Scout\n• Fireship: "AI just killed coding interviews" (8 min)\n• Ben Heath: "2025 Meta Ads strategy update" (22 min)\n• ThePrimeagen: "Why Rust is eating everything" (15 min)'
+  },
+  {
+    id: 'creative', emoji: '🎨', name: 'Alessa Creative Briefs', enabled: true, charBudget: 300,
+    description: 'Creative tasks, copy needs, and design briefs for Alessa.',
+    rules: 'Check copy progress dashboard. Report: descriptions remaining, any flagged items needing review, creative tasks in queue. Check copy-review dashboard for pending items.',
+    sources: 'copy-progress-data.json, copy-review.html data',
+    exampleOutput: '🎨 Creative Briefs\n• Copy progress: 650/952 (68%)\n• 12 flagged descriptions need review\n• Next batch: rings category (45 items)'
+  },
+  {
+    id: 'edge_feed', emoji: '💡', name: 'Edge Feed + Ideas', enabled: true, charBudget: 350,
+    description: 'Business opportunities, tool discoveries, and fresh ideas.',
+    rules: 'Scan opportunity radar sources. Look for: new tools, market shifts, monetization ideas, things that could benefit Alessa or side projects. Be selective — quality over quantity.',
+    sources: 'web_search, opportunity radar data',
+    exampleOutput: '💡 Edge Feed\n• New Shopify AI plugin: auto-generates product photos\n• Trend: "AI styling assistants" for fashion ecom\n• Tool: Cursor 0.50 released with agent mode v2'
+  },
+  {
+    id: 'todays_plan', emoji: '📋', name: "Today's Plan", enabled: true, charBudget: 350,
+    description: 'Structured plan for the day based on calendar, priorities, and goals.',
+    rules: 'Check calendar for today. Review NOW.md for current priorities. Create a realistic 3-5 item plan with time blocks. Include any deadlines.',
+    sources: 'Google Calendar, NOW.md, memory files',
+    exampleOutput: "📋 Today's Plan\n🕐 10:30 — Copy session (target: 20 descriptions)\n🕑 13:00 — Meta Ads campaign review\n🕓 16:00 — English practice session\n📞 17:30 — Call with supplier"
+  },
+  {
+    id: 'delegation', emoji: '📝', name: 'Delegation Check', enabled: true, charBudget: 250,
+    description: 'Status of delegated tasks and things waiting on others.',
+    rules: 'Review kanban/task board for delegated items. Check: what\'s overdue, what needs follow-up, any blockers. Keep it actionable.',
+    sources: 'nova-tasks.json, kanban data',
+    exampleOutput: '📝 Delegation Check\n• Graphic designer: product photos batch 3 — due today\n• Dev: BigQuery billing setup — waiting on Ivo\n• CS agent: review pending (12 items in queue)'
+  }
+];
+
+const DEFAULT_DELIVERY = {
+  method: 'split',
+  maxCharsPerMessage: 3500,
+  scheduleTime: '10:00',
+  splitStrategy: 'groups'
+};
+
+const DEFAULT_GROUPS = [
+  { id: 'g1', name: 'Group 1', label: 'Overnight + AI', sectionIds: ['overnight', 'ai_daily'] },
+  { id: 'g2', name: 'Group 2', label: 'Analytics + Social', sectionIds: ['analytics', 'x_scout'] },
+  { id: 'g3', name: 'Group 3', label: 'Discovery + Creative', sectionIds: ['hn_scout', 'youtube', 'creative'] },
+  { id: 'g4', name: 'Group 4', label: 'Planning + Tasks', sectionIds: ['edge_feed', 'todays_plan', 'delegation'] }
+];
+
+const STORAGE_KEY = 'morning-brief-config';
+
+// ─── State ───
+let config = loadConfig();
+
+function loadConfig() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const c = JSON.parse(raw);
+      // Merge any new sections from defaults that might not exist in saved config
+      if (c.sections) {
+        const savedIds = new Set(c.sections.map(s => s.id));
+        DEFAULT_SECTIONS.forEach(ds => {
+          if (!savedIds.has(ds.id)) c.sections.push({...ds});
+        });
+      }
+      return c;
+    }
+  } catch(e) { console.error('Config load error:', e); }
+  return { sections: DEFAULT_SECTIONS.map(s => ({...s})), delivery: {...DEFAULT_DELIVERY}, groups: DEFAULT_GROUPS.map(g => ({...g, sectionIds: [...g.sectionIds]})) };
+}
+
+function saveConfig() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+  renderJSON();
+  toast('Configuration saved ✓');
+}
+
+function resetDefaults() {
+  if (!confirm('Reset all settings to defaults?')) return;
+  config = { sections: DEFAULT_SECTIONS.map(s => ({...s})), delivery: {...DEFAULT_DELIVERY}, groups: DEFAULT_GROUPS.map(g => ({...g, sectionIds: [...g.sectionIds]})) };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+  renderAll();
+  toast('Reset to defaults ✓');
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─── Tabs ───
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + name));
+  if (name === 'json') renderJSON();
+  if (name === 'groups') renderGroups();
+}
+
+// ─── Summary Bar ───
+function renderSummary() {
+  const enabled = config.sections.filter(s => s.enabled).length;
+  const total = config.sections.length;
+  const totalChars = config.sections.filter(s => s.enabled).reduce((sum, s) => sum + s.charBudget, 0);
+  const groups = config.groups.length;
+  document.getElementById('summaryBar').innerHTML = `
+    <div class="summary-stat"><div class="val">${enabled}/${total}</div><div class="lbl">Sections On</div></div>
+    <div class="summary-stat"><div class="val">${totalChars.toLocaleString()}</div><div class="lbl">Total Chars</div></div>
+    <div class="summary-stat"><div class="val">${groups}</div><div class="lbl">Groups</div></div>
+    <div class="summary-stat"><div class="val">${config.delivery.scheduleTime}</div><div class="lbl">Schedule</div></div>
+    <div class="summary-stat"><div class="val">${config.delivery.method === 'split' ? 'Split' : 'Single'}</div><div class="lbl">Delivery</div></div>
+    <div class="summary-stat"><div class="val">${config.delivery.maxCharsPerMessage}</div><div class="lbl">Max/Msg</div></div>
+  `;
+}
+
+// ─── Sections Panel ───
+function renderSections() {
+  const el = document.getElementById('panel-sections');
+  el.innerHTML = config.sections.map((s, i) => `
+    <div class="section-card ${s.enabled ? '' : 'disabled'}" data-idx="${i}" draggable="true"
+         ondragstart="dragSection(event,${i})" ondragover="dragOverSection(event,${i})"
+         ondragleave="dragLeaveSection(event)" ondrop="dropSection(event,${i})">
+      <div class="card-header">
+        <span class="drag-handle" title="Drag to reorder">⠿</span>
+        <div class="move-arrows">
+          <button class="arrow-btn" onclick="moveSection(${i},-1)" title="Move up" ${i===0?'disabled':''}>▲</button>
+          <button class="arrow-btn" onclick="moveSection(${i},1)" title="Move down" ${i===config.sections.length-1?'disabled':''}>▼</button>
+        </div>
+        <span class="card-order">${i+1}</span>
+        <span class="card-emoji">${s.emoji}</span>
+        <div>
+          <div class="card-title">${s.name}</div>
+          <div class="card-desc">${s.description}</div>
+        </div>
+        <div class="card-meta">
+          <span class="char-badge">${s.charBudget} chars</span>
+          <label class="toggle">
+            <input type="checkbox" ${s.enabled ? 'checked' : ''} onchange="toggleSection(${i}, this.checked)">
+            <span class="slider"></span>
+          </label>
+          <button class="expand-btn" onclick="toggleDetail(${i}, this)">▸ Details</button>
+        </div>
+      </div>
+      <div class="card-detail" id="detail-${i}">
+        <div class="detail-grid">
+          <div class="detail-group" style="grid-column: 1/-1;">
+            <label>Rules / Instructions</label>
+            <textarea onchange="updateField(${i},'rules',this.value)" rows="4">${esc(s.rules)}</textarea>
+          </div>
+          <div class="detail-group">
+            <label>Data Sources</label>
+            <input type="text" value="${esc(s.sources)}" onchange="updateField(${i},'sources',this.value)">
+          </div>
+          <div class="detail-group">
+            <label>Character Budget</label>
+            <div class="slider-wrap">
+              <input type="range" min="100" max="1000" step="50" value="${s.charBudget}"
+                     oninput="updateCharBudget(${i}, this.value)">
+              <span class="slider-val" id="charval-${i}">${s.charBudget}</span>
+            </div>
+          </div>
+          <div class="detail-group" style="grid-column: 1/-1;">
+            <label>Example Output</label>
+            <textarea onchange="updateField(${i},'exampleOutput',this.value)" rows="4">${esc(s.exampleOutput)}</textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function esc(str) { return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function toggleSection(idx, val) {
+  config.sections[idx].enabled = val;
+  renderSections();
+  renderSummary();
+}
+
+function toggleDetail(idx, btn) {
+  const d = document.getElementById('detail-' + idx);
+  const open = d.classList.toggle('open');
+  btn.textContent = open ? '▾ Details' : '▸ Details';
+}
+
+function updateField(idx, field, val) { config.sections[idx][field] = val; }
+
+function updateCharBudget(idx, val) {
+  val = parseInt(val);
+  config.sections[idx].charBudget = val;
+  document.getElementById('charval-' + idx).textContent = val;
+  // Update the badge in the header too
+  const card = document.querySelectorAll('.section-card')[idx];
+  if (card) card.querySelector('.char-badge').textContent = val + ' chars';
+  renderSummary();
+}
+
+function moveSection(idx, dir) {
+  const target = idx + dir;
+  if (target < 0 || target >= config.sections.length) return;
+  [config.sections[idx], config.sections[target]] = [config.sections[target], config.sections[idx]];
+  renderSections();
+}
+
+// Drag & Drop for sections
+let dragSrcIdx = null;
+function dragSection(e, idx) {
+  dragSrcIdx = idx;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', idx);
+  setTimeout(() => e.target.closest('.section-card').classList.add('dragging'), 0);
+}
+function dragOverSection(e, idx) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.target.closest('.section-card')?.classList.add('drag-over');
+}
+function dragLeaveSection(e) {
+  e.target.closest('.section-card')?.classList.remove('drag-over');
+}
+function dropSection(e, idx) {
+  e.preventDefault();
+  document.querySelectorAll('.section-card').forEach(c => c.classList.remove('drag-over','dragging'));
+  if (dragSrcIdx === null || dragSrcIdx === idx) return;
+  const [moved] = config.sections.splice(dragSrcIdx, 1);
+  config.sections.splice(idx, 0, moved);
+  dragSrcIdx = null;
+  renderSections();
+}
+
+// ─── Delivery Panel ───
+function renderDelivery() {
+  const d = config.delivery;
+  document.getElementById('panel-delivery').innerHTML = `
+    <div class="settings-grid">
+      <div class="setting-card">
+        <h3>📨 Message Delivery</h3>
+        <div class="setting-row">
+          <span class="setting-label">Delivery Method</span>
+          <div class="radio-group">
+            <div class="radio-option ${d.method==='single'?'active':''}" onclick="setDelivery('method','single')">Single Message</div>
+            <div class="radio-option ${d.method==='split'?'active':''}" onclick="setDelivery('method','split')">Split Messages</div>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Max Chars / Message</span>
+          <div class="setting-value">
+            <input type="number" value="${d.maxCharsPerMessage}" min="1000" max="4096" step="100"
+                   onchange="setDelivery('maxCharsPerMessage', parseInt(this.value))">
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Telegram Limit</span>
+          <span style="color:#fbbf24; font-size:0.82rem;">4096 chars max</span>
+        </div>
+      </div>
+      <div class="setting-card">
+        <h3>⏰ Schedule</h3>
+        <div class="setting-row">
+          <span class="setting-label">Brief Time</span>
+          <div class="setting-value">
+            <input type="time" value="${d.scheduleTime}" onchange="setDelivery('scheduleTime', this.value)">
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Timezone</span>
+          <span style="color:#888; font-size:0.82rem;">Europe/Sofia</span>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Split Strategy</span>
+          <div class="radio-group">
+            <div class="radio-option ${d.splitStrategy==='groups'?'active':''}" onclick="setDelivery('splitStrategy','groups')">By Groups</div>
+            <div class="radio-option ${d.splitStrategy==='auto'?'active':''}" onclick="setDelivery('splitStrategy','auto')">Auto-fit</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="setting-card" style="margin-top: 18px;">
+      <h3>📏 Character Budget Overview</h3>
+      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top: 8px;">
+        ${config.sections.map(s => `
+          <div style="background:rgba(${s.enabled ? '167,139,250,0.1' : '255,255,255,0.03'}); border:1px solid rgba(${s.enabled ? '167,139,250,0.2' : '255,255,255,0.06'});
+               border-radius:8px; padding:8px 12px; font-size:0.8rem; ${s.enabled ? '' : 'opacity:0.4;'}">
+            <span>${s.emoji}</span>
+            <span style="color:#aaa;">${s.name.split(' ')[0]}</span>
+            <span style="color:#a78bfa; font-weight:600; margin-left:4px;">${s.charBudget}</span>
+          </div>
+        `).join('')}
+      </div>
+      <div style="margin-top:12px; color:#888; font-size:0.8rem;">
+        Total enabled: <strong style="color:#c4b5fd;">${config.sections.filter(s=>s.enabled).reduce((a,s)=>a+s.charBudget,0).toLocaleString()} chars</strong>
+        across <strong style="color:#c4b5fd;">${config.groups.length} messages</strong>
+        (avg ~${Math.round(config.sections.filter(s=>s.enabled).reduce((a,s)=>a+s.charBudget,0) / config.groups.length)} per message)
+      </div>
+    </div>
+  `;
+}
+
+function setDelivery(key, val) {
+  config.delivery[key] = val;
+  renderDelivery();
+  renderSummary();
+}
+
+// ─── Groups Panel ───
+let dragGroupItem = null;
+let dragGroupSrc = null;
+
+function renderGroups() {
+  const el = document.getElementById('panel-groups');
+  const sectionMap = {};
+  config.sections.forEach(s => sectionMap[s.id] = s);
+
+  // Find unassigned sections
+  const assigned = new Set();
+  config.groups.forEach(g => g.sectionIds.forEach(id => assigned.add(id)));
+  const unassigned = config.sections.filter(s => !assigned.has(s.id));
+
+  el.innerHTML = `
+    <div class="groups-container">
+      ${config.groups.map((g, gi) => {
+        const groupChars = g.sectionIds.reduce((sum, id) => sum + (sectionMap[id]?.charBudget || 0), 0);
+        return `
+        <div class="group-col" data-group="${gi}"
+             ondragover="groupDragOver(event)" ondragleave="groupDragLeave(event)"
+             ondrop="groupDrop(event, ${gi})">
+          <div class="group-header">
+            <span>${g.name}: ${g.label}</span>
+            <span class="char-total">${groupChars} chars</span>
+          </div>
+          ${g.sectionIds.map((sid, si) => {
+            const s = sectionMap[sid];
+            if (!s) return '';
+            return `<div class="group-item" draggable="true" data-sid="${sid}" data-gi="${gi}"
+                         ondragstart="groupItemDrag(event,'${sid}',${gi})"
+                         ondragover="groupItemOver(event)" ondragleave="groupItemLeave(event)">
+              <span class="gi-emoji">${s.emoji}</span>
+              <span class="gi-name">${s.name}</span>
+              <span class="gi-chars">${s.charBudget}</span>
+            </div>`;
+          }).join('')}
+          ${g.sectionIds.length === 0 ? '<div style="color:#444; font-size:0.8rem; text-align:center; padding:20px;">Drop sections here</div>' : ''}
+        </div>`;
+      }).join('')}
+      ${unassigned.length > 0 ? `
+        <div class="group-col" data-group="unassigned"
+             ondragover="groupDragOver(event)" ondragleave="groupDragLeave(event)"
+             ondrop="groupDrop(event, -1)">
+          <div class="group-header"><span>Unassigned</span></div>
+          ${unassigned.map(s => `
+            <div class="group-item" draggable="true" data-sid="${s.id}" data-gi="-1"
+                 ondragstart="groupItemDrag(event,'${s.id}',-1)">
+              <span class="gi-emoji">${s.emoji}</span>
+              <span class="gi-name">${s.name}</span>
+              <span class="gi-chars">${s.charBudget}</span>
+            </div>`).join('')}
+        </div>` : ''}
+    </div>
+    <button class="add-group-btn" onclick="addGroup()">+ Add Group</button>
+    <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+      ${config.groups.length > 1 ? `<button class="btn" onclick="removeLastGroup()">− Remove Last Group</button>` : ''}
+      <button class="btn" onclick="renameGroups()">✏️ Rename Groups</button>
+    </div>
+  `;
+}
+
+function groupItemDrag(e, sid, gi) {
+  dragGroupItem = sid;
+  dragGroupSrc = gi;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', sid);
+  setTimeout(() => e.target.classList.add('dragging'), 0);
+}
+function groupDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+function groupDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+function groupItemOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+function groupItemLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+
+function groupDrop(e, targetGi) {
+  e.preventDefault();
+  document.querySelectorAll('.group-col,.group-item').forEach(el => el.classList.remove('drag-over','dragging'));
+  if (!dragGroupItem) return;
+
+  // Remove from source
+  if (dragGroupSrc >= 0 && config.groups[dragGroupSrc]) {
+    config.groups[dragGroupSrc].sectionIds = config.groups[dragGroupSrc].sectionIds.filter(id => id !== dragGroupItem);
+  }
+
+  // Add to target
+  if (targetGi >= 0 && config.groups[targetGi]) {
+    if (!config.groups[targetGi].sectionIds.includes(dragGroupItem)) {
+      config.groups[targetGi].sectionIds.push(dragGroupItem);
+    }
+  }
+
+  dragGroupItem = null;
+  dragGroupSrc = null;
+  renderGroups();
+}
+
+function addGroup() {
+  const n = config.groups.length + 1;
+  config.groups.push({ id: 'g' + n, name: 'Group ' + n, label: 'Custom', sectionIds: [] });
+  renderGroups();
+}
+
+function removeLastGroup() {
+  if (config.groups.length <= 1) return;
+  const last = config.groups.pop();
+  // Move orphaned sections to last remaining group
+  if (last.sectionIds.length > 0 && config.groups.length > 0) {
+    config.groups[config.groups.length - 1].sectionIds.push(...last.sectionIds);
+  }
+  renderGroups();
+}
+
+function renameGroups() {
+  config.groups.forEach((g, i) => {
+    const label = prompt(`Label for ${g.name}:`, g.label);
+    if (label !== null) g.label = label;
+  });
+  renderGroups();
+}
+
+// ─── JSON Panel ───
+function renderJSON() {
+  const json = JSON.stringify(config, null, 2);
+  document.getElementById('panel-json').innerHTML = `
+    <div class="json-view">
+      <button class="btn primary json-copy-btn" onclick="copyJSON()">📋 Copy</button>
+      <pre>${esc(json)}</pre>
+    </div>
+  `;
+}
+
+function copyJSON() {
+  navigator.clipboard.writeText(JSON.stringify(config, null, 2))
+    .then(() => toast('JSON copied to clipboard ✓'))
+    .catch(() => {
+      // Fallback
+      const ta = document.createElement('textarea');
+      ta.value = JSON.stringify(config, null, 2);
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      toast('JSON copied ✓');
+    });
+}
+
+// ─── Render All ───
+function renderAll() {
+  renderSummary();
+  renderSections();
+  renderDelivery();
+  renderGroups();
+  renderJSON();
+}
+
+renderAll();
+</script>
+</body>
+</html>
