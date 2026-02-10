@@ -1286,6 +1286,13 @@ body::before {
   </div>
   <div class="blindspot-grid" id="examples-container"></div>
 
+  <!-- DRAPER BLUEPRINT -->
+  <div class="section-header">
+    <h2>🐉 The Draper Blueprint</h2>
+    <span class="tag">Role Model</span>
+  </div>
+  <div id="draper-container" style="margin-bottom:32px"></div>
+
   <!-- RESEARCH METHODOLOGY -->
   <div class="section-header">
     <h2>🔬 Nightly Research Methodology</h2>
@@ -1353,6 +1360,7 @@ function renderAll() {
   renderBlindSpots();
   renderPlatforms();
   renderExamples();
+  renderDraper();
   renderMethodology();
   renderLastUpdated();
 }
@@ -1750,6 +1758,66 @@ function renderExamples() {
       ${ex.source ? `<div style="margin-top:6px;font-size:11px"><a href="${ex.source}" target="_blank" style="color:var(--accent-blue)">${ex.source.length > 60 ? ex.source.substring(0,60)+'...' : ex.source}</a></div>` : ''}
     </div>
   `).join('');
+}
+
+// ── DRAPER BLUEPRINT ──
+function renderDraper() {
+  const container = document.getElementById('draper-container');
+  const d = radarData.draperModel;
+  if (!d) { container.innerHTML = ''; return; }
+
+  const tierHTML = (label, color, items) => {
+    if (!items || !items.length) return '';
+    return `<div style="margin-bottom:12px">
+      <div style="color:${color};font-weight:600;font-size:13px;margin-bottom:6px">${label}</div>
+      ${items.map(i => `<div style="display:flex;gap:8px;padding:4px 0;font-size:13px">
+        <span style="color:${color};min-width:120px;font-weight:500">${i.name}</span>
+        <span style="color:var(--text-secondary)">${i.role}</span>
+      </div>`).join('')}
+    </div>`;
+  };
+
+  const p = d.portfolioByTier || {};
+  const statsHTML = d.stats ? `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:16px 0">
+      <div style="background:rgba(247,147,26,0.1);border:1px solid rgba(247,147,26,0.25);border-radius:8px;padding:12px;text-align:center">
+        <div style="color:#f7931a;font-size:20px;font-weight:700">${d.stats.btcHoldings.split(' ')[0]}</div>
+        <div style="color:var(--text-muted);font-size:11px">BTC held (never sold)</div>
+      </div>
+      <div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);border-radius:8px;padding:12px;text-align:center">
+        <div style="color:#22c55e;font-size:20px;font-weight:700">${d.stats.costBasis}</div>
+        <div style="color:var(--text-muted);font-size:11px">Cost basis (2014 auction)</div>
+      </div>
+      <div style="background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.25);border-radius:8px;padding:12px;text-align:center">
+        <div style="color:#a78bfa;font-size:20px;font-weight:700">${d.stats.currentValue}</div>
+        <div style="color:var(--text-muted);font-size:11px">Current value</div>
+      </div>
+      <div style="background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.25);border-radius:8px;padding:12px;text-align:center">
+        <div style="color:#38bdf8;font-size:20px;font-weight:700">${d.stats.latestFund}</div>
+        <div style="color:var(--text-muted);font-size:11px">Latest fund</div>
+      </div>
+    </div>` : '';
+
+  container.innerHTML = `
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px">
+      <div style="font-size:15px;color:var(--text-primary);margin-bottom:12px;line-height:1.5">${d.thesis}</div>
+      ${statsHTML}
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <div style="color:var(--accent-amber);font-weight:600;font-size:14px;margin-bottom:12px">Portfolio by Tier</div>
+        ${tierHTML('🌊 BTC-Native', '#38bdf8', p.btcNative)}
+        ${tierHTML('⚡ BTC Infrastructure', '#f7931a', p.btcInfra)}
+        ${tierHTML('🌐 Ecosystem', '#a78bfa', p.ecosystem)}
+      </div>
+      <div style="margin-top:16px;padding:14px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:8px">
+        <div style="color:#22c55e;font-weight:600;font-size:13px;margin-bottom:4px">💡 Key Insight</div>
+        <div style="color:var(--text-secondary);font-size:13px">${d.keyInsight}</div>
+      </div>
+      <div style="margin-top:12px;padding:14px;background:rgba(247,147,26,0.08);border:1px solid rgba(247,147,26,0.2);border-radius:8px">
+        <div style="color:#f7931a;font-weight:600;font-size:13px;margin-bottom:4px">🎯 Ivo's Application</div>
+        <div style="color:var(--text-secondary);font-size:13px">${d.ivoApplication}</div>
+      </div>
+    </div>
+  `;
 }
 
 // ── METHODOLOGY ──
