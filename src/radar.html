@@ -673,6 +673,102 @@ body::before {
   .deepdive-title { font-size: 0.9rem; }
 }
 
+/* ── INVESTMENT FILTER ── */
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.filter-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.filter-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+}
+
+.filter-card.tier-1::before { background: linear-gradient(90deg, var(--accent-amber), var(--accent-red)); }
+.filter-card.tier-2::before { background: linear-gradient(90deg, var(--accent-green), var(--accent-cyan)); }
+.filter-card.tier-3::before { background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple)); }
+
+.filter-card-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+}
+
+.filter-card-name {
+  font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 6px;
+  color: var(--text-primary);
+}
+
+.filter-card-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.filter-card-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.filter-example {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  padding: 3px 8px;
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--accent-blue);
+  border-radius: 4px;
+}
+
+.filter-card-verdict {
+  font-size: 0.75rem;
+  color: var(--accent-cyan);
+  font-style: italic;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  margin-top: 4px;
+}
+
+.filter-killzone {
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 8px;
+  padding: 14px 20px;
+  font-size: 0.8rem;
+  color: var(--accent-red);
+  font-weight: 500;
+  text-align: center;
+}
+
+.filter-killzone::before {
+  content: '⛔ ';
+}
+
+.filter-subtitle {
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  color: var(--accent-cyan);
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
 /* ── BLIND SPOTS ── */
 .blindspot-grid {
   display: grid;
@@ -1001,6 +1097,15 @@ body::before {
   <!-- AXIOMS -->
   <div class="axioms" id="axioms-container"></div>
 
+  <!-- INVESTMENT FILTER -->
+  <div id="investment-filter-section" style="display:none;">
+    <div class="section-header">
+      <h2>🎯 The Filter</h2>
+      <span class="tag">Decision Framework</span>
+    </div>
+    <div id="investment-filter-container"></div>
+  </div>
+
   <!-- WEALTH PATHS -->
   <div class="section-header">
     <h2>🛤️ Wealth Paths</h2>
@@ -1133,6 +1238,7 @@ async function init() {
 function renderAll() {
   renderStats();
   renderAxioms();
+  renderInvestmentFilter();
   renderPaths();
   renderFilters();
   renderSignals();
@@ -1160,6 +1266,28 @@ function renderStats() {
 function renderAxioms() {
   const container = document.getElementById('axioms-container');
   container.innerHTML = radarData.axioms.map(a => `<div class="axiom">${a}</div>`).join('');
+}
+
+// ── INVESTMENT FILTER ──
+function renderInvestmentFilter() {
+  const f = radarData.investmentFilter;
+  if (!f) return;
+  document.getElementById('investment-filter-section').style.display = 'block';
+  const container = document.getElementById('investment-filter-container');
+  const cards = f.categories.map(c => `
+    <div class="filter-card tier-${c.tier}">
+      <div class="filter-card-icon">${c.icon}</div>
+      <div class="filter-card-name">${c.name}</div>
+      <div class="filter-card-desc">${c.description}</div>
+      <div class="filter-card-examples">${c.examples.map(e => `<span class="filter-example">${e}</span>`).join('')}</div>
+      <div class="filter-card-verdict">${c.verdict}</div>
+    </div>
+  `).join('');
+  container.innerHTML = `
+    <div class="filter-subtitle">${f.subtitle}</div>
+    <div class="filter-grid">${cards}</div>
+    <div class="filter-killzone">${f.killZone}</div>
+  `;
 }
 
 // ── PATHS ──
