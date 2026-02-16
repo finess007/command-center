@@ -444,7 +444,7 @@ body {
 <body>
 
 <div class="header">
-  <h1>📊 V11c Trade Review — <span id="trade-count">5,245</span> Trades</h1>
+  <h1>📊 V2 Trade Review — <span id="trade-count">0</span> Trades</h1>
   <div class="header-links">
     <a href="trade-review.html" class="home-link">V5.2 Legacy →</a>
     <a href="index.html" class="home-link">← Dashboard</a>
@@ -506,7 +506,7 @@ body {
 </div>
 
 <div class="stats-bar">
-  <div class="stat"><span class="stat-label">Trades:</span><span class="stat-value" id="stat-trades">5,245</span></div>
+  <div class="stat"><span class="stat-label">Trades:</span><span class="stat-value" id="stat-trades">0</span></div>
   <div class="stat"><span class="stat-label">Win Rate:</span><span class="stat-value" id="stat-wr">63%</span></div>
   <div class="stat"><span class="stat-label">Total R:</span><span class="stat-value" id="stat-total-r">+7,434.57</span></div>
   <div class="stat"><span class="stat-label">Compound $:</span><span class="stat-value" id="stat-compound">—</span></div>
@@ -525,7 +525,7 @@ body {
 <div class="main">
   <div class="trade-list-panel">
     <div class="trade-list-header">
-      <span id="filtered-count">5,245 trades</span>
+      <span id="filtered-count">0 trades</span>
       <div class="sort-btns">
         <button class="sort-btn active" data-sort="date">Date</button>
         <button class="sort-btn" data-sort="r-desc">R ↓</button>
@@ -1819,49 +1819,7 @@ document.getElementById('date-to').addEventListener('change', () => applyFilters
 document.getElementById('date-to').value = new Date().toISOString().slice(0, 10);
 
 // ============= LAZY LOADING =============
-const YEAR_FILES_RECENT = [2026, 2025, 2024, 2023];
-const YEAR_FILES_OLDER = [2022, 2021, 2020, 2019, 2018, 2017];
-let olderYearsLoaded = false;
-
-async function loadTradeYears(years) {
-  const results = await Promise.all(
-    years.map(y =>
-      fetch(`v11c-trades-${y}.json`)
-        .then(r => r.json())
-        .catch(e => { console.error(`Failed to load ${y}:`, e); return []; })
-    )
-  );
-  const trades = results.flat();
-  fixTimezones(trades);
-  return trades;
-}
-
-async function loadOlderYears() {
-  if (olderYearsLoaded) return;
-  const btn = document.getElementById('load-more-btn');
-  const status = document.getElementById('load-status');
-  btn.disabled = true;
-  btn.textContent = '⏳ Loading...';
-  status.textContent = 'Loading 2017–2022 (~1MB)...';
-
-  const olderTrades = await loadTradeYears(YEAR_FILES_OLDER);
-  TRADE_DATA = TRADE_DATA.concat(olderTrades);
-  olderYearsLoaded = true;
-
-  document.getElementById('load-more-bar').style.display = 'none';
-
-  const currentIdx = state.selectedIndex;
-  const currentTrade = currentIdx >= 0 ? state.filtered[currentIdx] : null;
-  applyFilters();
-  // Restore selection if possible
-  if (currentTrade) {
-    const newIdx = state.filtered.findIndex(t => t.et === currentTrade.et && t.pair === currentTrade.pair && t.tf === currentTrade.tf);
-    if (newIdx >= 0) {
-      state.selectedIndex = newIdx;
-      renderTradeList();
-    }
-  }
-}
+// V2: No year-file loading. All trades loaded at init.
 
 // ============= V2 TRADE LOADING =============
 const V2_FILES = ['v2-trades-BTCUSDT-15m'];  // Add more as we backtest
