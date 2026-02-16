@@ -1083,24 +1083,25 @@ async function selectTrade(idx) {
     ].sort((a, b) => a.time - b.time);
     state.markerSeries.setData(markerData);
     
-    const markers = [];
-    markers.push({
+    // Markers on candle series (arrows on the actual candles)
+    const candleMarkers = [];
+    candleMarkers.push({
       time: entryMarkerTime,
       position: trade.dir === 'L' ? 'belowBar' : 'aboveBar',
       color: '#00bcd4',
-      shape: 'circle',
-      text: 'ENTRY',
+      shape: trade.dir === 'L' ? 'arrowUp' : 'arrowDown',
+      text: '▶ ENTRY',
     });
-    markers.push({
+    candleMarkers.push({
       time: trade.xt,
       position: trade.r >= 0 ? (trade.dir === 'L' ? 'aboveBar' : 'belowBar') : (trade.dir === 'L' ? 'belowBar' : 'aboveBar'),
       color: trade.r >= 0 ? '#ffd700' : '#ff1744',
       shape: 'circle',
-      text: trade.exit_type === 'stop' ? 'STOP' : 'EXIT',
+      text: trade.exit_type === 'stop' ? '✕ STOP' : '✓ EXIT ' + (trade.r >= 0 ? '+' : '') + trade.r.toFixed(2) + 'R',
     });
-    markers.sort((a, b) => a.time - b.time);
-    state.markerSeries.setMarkers(markers);
-    state.candleSeries.setMarkers([]);
+    candleMarkers.sort((a, b) => a.time - b.time);
+    state.candleSeries.setMarkers(candleMarkers);
+    state.markerSeries.setMarkers([]);
     
     if (state.priceLines) {
       state.priceLines.forEach(pl => state.candleSeries.removePriceLine(pl));
