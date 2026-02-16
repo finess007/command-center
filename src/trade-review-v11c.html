@@ -385,6 +385,10 @@ body {
 #three-box-overlay { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 10; }
 .three-box-status { font-size: 0.75rem; color: #ff9800; font-weight: 600; white-space: nowrap; }
 
+/* Levels Tool */
+#levels-overlay { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 9; }
+.levels-status { font-size: 0.75rem; color: #b388ff; font-weight: 600; white-space: nowrap; }
+
 /* Date range inputs */
 .date-input {
   padding: 4px 8px;
@@ -544,6 +548,9 @@ body {
         <button class="three-box-btn" id="btn-three-box" onclick="toggleThreeBox()">📐 3-Box</button>
         <button class="three-box-btn" id="btn-clear-boxes" onclick="clearThreeBoxes()" style="display:none">🗑️ Clear</button>
         <span class="three-box-status" id="three-box-status"></span>
+        <span style="width:1px;height:20px;background:var(--border);margin:0 6px;display:inline-block"></span>
+        <button class="three-box-btn" id="btn-levels" onclick="toggleLevels()">🔍 Levels</button>
+        <span class="levels-status" id="levels-status"></span>
       </div>
     </div>
     <div id="chart-container">
@@ -580,6 +587,7 @@ const SYMBOL_MAP = { BTC: 'BTCUSDT', ETH: 'ETHUSDT', SOL: 'SOLUSDT' };
 const INTERVAL_MAP = { '1m': '1m', '15m': '15m', '1H': '1h' };
 const TF_MINUTES = { '1m': 1, '15m': 15, '1H': 60 };
 const CANDLE_PADDING = { '1m': 120, '15m': 80, '1H': 80 };
+const LEVELS_PADDING = { '1m': 400, '15m': 300, '1H': 200 };
 const BINANCE_API = 'https://api.binance.com/api/v3/klines';
 
 // Fix timezone: backtest dates were UTC but Python .timestamp() on Sofia machine
@@ -977,13 +985,14 @@ function initChart() {
       height: container.clientHeight,
     });
     scheduleThreeBoxRedraw();
+    scheduleLevelsRedraw();
   });
   ro.observe(container);
 
   // 3-Box tool: subscribe to chart clicks and scale changes
   state.chart.subscribeClick(handleThreeBoxClick);
-  state.chart.timeScale().subscribeVisibleLogicalRangeChange(scheduleThreeBoxRedraw);
-  state.chart.subscribeCrosshairMove(scheduleThreeBoxRedraw);
+  state.chart.timeScale().subscribeVisibleLogicalRangeChange(() => { scheduleThreeBoxRedraw(); scheduleLevelsRedraw(); });
+  state.chart.subscribeCrosshairMove(() => { scheduleThreeBoxRedraw(); scheduleLevelsRedraw(); });
 }
 
 async function fetchCandles(trade) {
@@ -1034,6 +1043,9 @@ async function selectTrade(idx) {
   state.selectedIndex = idx;
   const trade = state.filtered[idx];
   
+  // Persist to URL hash so refresh keeps the same trade
+  try { history.replaceState(null, '', '#' + trade.pair + '_' + trade.tf + '_' + trade.et); } catch(e) {}
+  
   const dir = trade.dir === 'L' ? '🟢 LONG' : '🔴 SHORT';
   const rStr = (trade.r >= 0 ? '+' : '') + trade.r.toFixed(2) + 'R';
   const rColor = trade.r >= 0 ? 'var(--green)' : 'var(--red)';
@@ -1083,24 +1095,12 @@ async function selectTrade(idx) {
     ].sort((a, b) => a.time - b.time);
     state.markerSeries.setData(markerData);
     
-    // Markers on candle series (arrows on the actual candles)
-    const candleMarkers = [];
-    candleMarkers.push({
-      time: entryMarkerTime,
-      position: trade.dir === 'L' ? 'belowBar' : 'aboveBar',
-      color: '#00bcd4',
-      shape: trade.dir === 'L' ? 'arrowUp' : 'arrowDown',
-      text: '▶ ENTRY',
-    });
-    candleMarkers.push({
-      time: trade.xt,
-      position: trade.r >= 0 ? (trade.dir === 'L' ? 'aboveBar' : 'belowBar') : (trade.dir === 'L' ? 'belowBar' : 'aboveBar'),
-      color: trade.r >= 0 ? '#ffd700' : '#ff1744',
-      shape: 'circle',
-      text: trade.exit_type === 'stop' ? '✕ STOP' : '✓ EXIT ' + (trade.r >= 0 ? '+' : '') + trade.r.toFixed(2) + 'R',
-    });
-    candleMarkers.sort((a, b) => a.time - b.time);
-    state.candleSeries.setMarkers(candleMarkers);
+    // Compute levels if active, then set all markers together
+    if (levels.active) {
+      computeLevels();
+    } else {
+      refreshCandleMarkers();
+    }
     state.markerSeries.setMarkers([]);
     
     if (state.priceLines) {
@@ -1414,6 +1414,407 @@ function scheduleThreeBoxRedraw() {
   requestAnimationFrame(() => { renderThreeBoxOverlay(); threeBoxRedrawPending = false; });
 }
 
+// ============= LEVELS TOOL =============
+const levels = { active: false, overlay: null, data: null };
+let levelsRedrawPending = false;
+
+// Swing point lookback per TF (matches backtest_v11c_surpass.py)
+const SWING_LOOKBACK = { '1m': 10, '15m': 5, '1H': 5 };
+// Min move % per pair per TF (min_pct * 3)
+const MIN_MOVE_PCT = {
+  BTC: { '1m': 1.5, '15m': 3.0, '1H': 4.5 },
+  ETH: { '1m': 2.4, '15m': 4.5, '1H': 6.0 },
+  SOL: { '1m': 3.0, '15m': 6.0, '1H': 9.0 },
+};
+
+function findSwingPoints(candles, lookback) {
+  const highs = [], lows = [];
+  for (let i = lookback; i < candles.length - lookback; i++) {
+    let isHigh = true, isLow = true;
+    for (let j = i - lookback; j <= i + lookback; j++) {
+      if (candles[j].high > candles[i].high) isHigh = false;
+      if (candles[j].low < candles[i].low) isLow = false;
+    }
+    if (isHigh) highs.push({ idx: i, time: candles[i].time, price: candles[i].high });
+    if (isLow) lows.push({ idx: i, time: candles[i].time, price: candles[i].low });
+  }
+  return { highs, lows };
+}
+
+function findTradeLevels(candles, trade, skipVolCheck) {
+  const lookback = SWING_LOOKBACK[trade.tf] || 5;
+  const { highs, lows } = findSwingPoints(candles, lookback);
+  const minPct = MIN_MOVE_PCT[trade.pair]?.[trade.tf] || 1.5;
+  const entryTime = trade.et;
+
+  if (trade.dir === 'S') {
+    // SHORT = UP move (3 higher highs)
+    // Find 3 ascending swing highs before entry
+    const beforeEntry = highs.filter(h => h.time <= entryTime);
+    for (let i = beforeEntry.length - 3; i >= 0; i--) {
+      const h1 = beforeEntry[i], h2 = beforeEntry[i+1], h3 = beforeEntry[i+2];
+      if (h2.price <= h1.price || h3.price <= h2.price) continue;
+      // Proportional spacing: each level must be at least 15% of the L1→L3 range
+      const levelRange = h3.price - h1.price;
+      const step1 = h2.price - h1.price;
+      const step2 = h3.price - h2.price;
+      if (levelRange > 0 && (step1 / levelRange < 0.25 || step2 / levelRange < 0.25)) continue;
+      // Find bottom before h1: the absolute LOWEST candle before h1
+      const searchCandles = candles.filter(c => c.time < h1.time);
+      if (!searchCandles.length) continue;
+      const bottomCandle = searchCandles.reduce((min, c) => c.low < min.low ? c : min);
+      const bottom = { time: bottomCandle.time, price: bottomCandle.low };
+      const totalMove = h3.price - bottom.price;
+      const movePct = (totalMove / bottom.price) * 100;
+      if (movePct < minPct) continue;
+      // Check volume spike in L2→L3 segment
+      const seg = candles.filter(c => c.time >= h2.time && c.time <= h3.time);
+      const fullSeg = candles.filter(c => c.time >= bottom.time && c.time <= h3.time);
+      if (seg.length && fullSeg.length) {
+        const maxVol = Math.max(...seg.map(c => c.volume));
+        const avgVol = fullSeg.reduce((s,c) => s + c.volume, 0) / fullSeg.length;
+        if (!skipVolCheck && maxVol < avgVol * 1.3) continue;
+      }
+      return {
+        type: 'UP',
+        bottom: bottom,
+        levels: [h1, h2, h3],
+        movePct: movePct.toFixed(2),
+      };
+    }
+  } else {
+    // LONG = DOWN move (3 lower lows)
+    const beforeEntry = lows.filter(l => l.time <= entryTime);
+    for (let i = beforeEntry.length - 3; i >= 0; i--) {
+      const l1 = beforeEntry[i], l2 = beforeEntry[i+1], l3 = beforeEntry[i+2];
+      if (l2.price >= l1.price || l3.price >= l2.price) continue;
+      // Proportional spacing: each level must be at least 15% of the L1→L3 range
+      const levelRange = l1.price - l3.price;
+      const step1 = l1.price - l2.price;
+      const step2 = l2.price - l3.price;
+      if (levelRange > 0 && (step1 / levelRange < 0.25 || step2 / levelRange < 0.25)) continue;
+      // Find top before l1: the absolute HIGHEST candle before l1
+      const searchCandlesTop = candles.filter(c => c.time < l1.time);
+      if (!searchCandlesTop.length) continue;
+      const topCandle = searchCandlesTop.reduce((max, c) => c.high > max.high ? c : max);
+      const top = { time: topCandle.time, price: topCandle.high };
+      const totalMove = top.price - l3.price;
+      const movePct = (totalMove / top.price) * 100;
+      if (movePct < minPct) continue;
+      // Volume check
+      const seg = candles.filter(c => c.time >= l2.time && c.time <= l3.time);
+      const fullSeg = candles.filter(c => c.time >= top.time && c.time <= l3.time);
+      if (seg.length && fullSeg.length) {
+        const maxVol = Math.max(...seg.map(c => c.volume));
+        const avgVol = fullSeg.reduce((s,c) => s + c.volume, 0) / fullSeg.length;
+        if (!skipVolCheck && maxVol < avgVol * 1.3) continue;
+      }
+      return {
+        type: 'DOWN',
+        top: top,
+        levels: [l1, l2, l3],
+        movePct: movePct.toFixed(2),
+      };
+    }
+  }
+  return null;
+}
+
+function createLevelsOverlay() {
+  if (levels.overlay) return;
+  const container = document.getElementById('chart-container');
+  const canvas = document.createElement('canvas');
+  canvas.id = 'levels-overlay';
+  container.appendChild(canvas);
+  levels.overlay = canvas;
+  sizeLevelsCanvas();
+}
+
+function sizeLevelsCanvas() {
+  if (!levels.overlay) return;
+  const container = document.getElementById('chart-container');
+  const dpr = window.devicePixelRatio || 1;
+  const w = container.clientWidth * dpr;
+  const h = container.clientHeight * dpr;
+  if (levels.overlay.width !== w || levels.overlay.height !== h) {
+    levels.overlay.width = w;
+    levels.overlay.height = h;
+    levels.overlay.style.width = container.clientWidth + 'px';
+    levels.overlay.style.height = container.clientHeight + 'px';
+  }
+}
+
+function toggleLevels() {
+  if (!state.candleSeries) return;
+  const btn = document.getElementById('btn-levels');
+  if (levels.active) {
+    // Turn off
+    levels.active = false;
+    levels.data = null;
+    btn.classList.remove('active');
+    document.getElementById('levels-status').textContent = '';
+    if (levels.overlay) {
+      const ctx = levels.overlay.getContext('2d');
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, levels.overlay.width, levels.overlay.height);
+    }
+    // Remove level markers from candle series
+    refreshCandleMarkers();
+    return;
+  }
+  // Turn on
+  levels.active = true;
+  btn.classList.add('active');
+  createLevelsOverlay();
+  computeLevels();
+}
+
+async function computeLevels() {
+  if (!levels.active || state.selectedIndex < 0) return;
+  const trade = state.filtered[state.selectedIndex];
+  
+  // Use pre-computed levels from trade data if available
+  if (trade.levels) {
+    const lv = trade.levels;
+    levels.data = {
+      type: lv.type,
+      levels: [
+        { time: lv.l1.time, price: lv.l1.price },
+        { time: lv.l2.time, price: lv.l2.price },
+        { time: lv.l3.time, price: lv.l3.price },
+      ],
+      movePct: lv.move_pct?.toFixed(2) || '?',
+    };
+    if (lv.type === 'UP') {
+      levels.data.bottom = { time: lv.origin.time, price: lv.origin.price };
+    } else {
+      levels.data.top = { time: lv.origin.time, price: lv.origin.price };
+    }
+    const dir = lv.type === 'UP' ? '📈 UP' : '📉 DOWN';
+    const originLabel = lv.type === 'UP' ? 'Bottom' : 'Top';
+    document.getElementById('levels-status').textContent =
+      `${dir} | Move: ${levels.data.movePct}% | ${originLabel}: ${lv.origin.price.toFixed(2)} → L1 → L2 → L3`;
+    refreshCandleMarkers();
+    renderLevelsOverlay();
+    return;
+  }
+  
+  // Fallback: compute from candle data
+  const cacheKey = `${trade.pair}_${trade.tf}_${trade.et}`;
+  let candles = state.candleCache[cacheKey];
+  if (!candles || !candles.length) {
+    document.getElementById('levels-status').textContent = 'No candle data';
+    return;
+  }
+  
+  let result = findTradeLevels(candles, trade);
+  
+  // If not found, fetch extended data
+  if (!result) {
+    document.getElementById('levels-status').textContent = '⏳ Loading more data...';
+    const extKey = `${trade.pair}_${trade.tf}_${trade.et}_ext`;
+    if (!state.candleCache[extKey]) {
+      const symbol = SYMBOL_MAP[trade.pair];
+      const interval = INTERVAL_MAP[trade.tf];
+      const pad = LEVELS_PADDING[trade.tf] || 300;
+      const tfMs = TF_MINUTES[trade.tf] * 60 * 1000;
+      const startTime = (trade.et * 1000) - (pad * tfMs);
+      const endTime = Math.max(trade.xt * 1000, trade.et * 1000) + (CANDLE_PADDING[trade.tf] * tfMs);
+      let allCandles = [];
+      let cursor = startTime;
+      while (cursor < endTime) {
+        const url = `${BINANCE_API}?symbol=${symbol}&interval=${interval}&startTime=${cursor}&endTime=${endTime}&limit=1000`;
+        try {
+          const resp = await fetch(url);
+          const data = await resp.json();
+          if (!data || !data.length) break;
+          allCandles = allCandles.concat(data);
+          cursor = data[data.length - 1][0] + 1;
+          if (data.length < 1000) break;
+        } catch (e) { break; }
+      }
+      state.candleCache[extKey] = allCandles.map(c => ({
+        time: Math.floor(c[0] / 1000),
+        open: parseFloat(c[1]),
+        high: parseFloat(c[2]),
+        low: parseFloat(c[3]),
+        close: parseFloat(c[4]),
+        volume: parseFloat(c[5]),
+      }));
+    }
+    candles = state.candleCache[extKey];
+    result = findTradeLevels(candles, trade);
+    if (!result) result = findTradeLevels(candles, trade, true);
+  }
+  
+  levels.data = result;
+  if (!result) {
+    document.getElementById('levels-status').textContent = '⚠️ Could not find 3 levels';
+    renderLevelsOverlay();
+    refreshCandleMarkers();
+    return;
+  }
+  const dir = result.type === 'UP' ? '📈 UP' : '📉 DOWN';
+  const origin = result.type === 'UP' ? result.bottom : result.top;
+  document.getElementById('levels-status').textContent =
+    `${dir} | Move: ${result.movePct}% | ${result.type === 'UP' ? 'Bottom' : 'Top'}: ${origin.price.toFixed(2)} → L1 → L2 → L3`;
+  
+  refreshCandleMarkers();
+  renderLevelsOverlay();
+}
+
+function refreshCandleMarkers() {
+  // Rebuild all candle markers (entry/exit + levels)
+  if (state.selectedIndex < 0) return;
+  const trade = state.filtered[state.selectedIndex];
+  const markers = [];
+
+  // Entry marker
+  markers.push({
+    time: trade.et,
+    position: trade.dir === 'L' ? 'belowBar' : 'aboveBar',
+    color: '#00bcd4',
+    shape: trade.dir === 'L' ? 'arrowUp' : 'arrowDown',
+    text: '▶ ENTRY',
+  });
+  // Exit marker
+  markers.push({
+    time: trade.xt,
+    position: trade.r >= 0 ? (trade.dir === 'L' ? 'aboveBar' : 'belowBar') : (trade.dir === 'L' ? 'belowBar' : 'aboveBar'),
+    color: trade.r >= 0 ? '#ffd700' : '#ff1744',
+    shape: 'circle',
+    text: trade.exit_type === 'stop' ? '✕ STOP' : '✓ EXIT ' + (trade.r >= 0 ? '+' : '') + trade.r.toFixed(2) + 'R',
+  });
+
+  // Level markers
+  if (levels.active && levels.data) {
+    const d = levels.data;
+    const origin = d.type === 'UP' ? d.bottom : d.top;
+    const originLabel = d.type === 'UP' ? '▼ BOTTOM' : '▲ TOP';
+    markers.push({
+      time: origin.time,
+      position: d.type === 'UP' ? 'belowBar' : 'aboveBar',
+      color: '#ff9800',
+      shape: 'circle',
+      text: originLabel,
+    });
+    d.levels.forEach((lv, i) => {
+      markers.push({
+        time: lv.time,
+        position: d.type === 'UP' ? 'aboveBar' : 'belowBar',
+        color: '#b388ff',
+        shape: 'circle',
+        text: `L${i+1}`,
+      });
+    });
+  }
+
+  markers.sort((a, b) => a.time - b.time);
+  state.candleSeries.setMarkers(markers);
+}
+
+function renderLevelsOverlay() {
+  if (!levels.overlay || !state.candleSeries) return;
+  sizeLevelsCanvas();
+  const canvas = levels.overlay;
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.width / dpr, h = canvas.height / dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (!levels.active || !levels.data) return;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  const d = levels.data;
+  let chartW = w - 55;
+  try { chartW = state.chart.timeScale().width(); } catch(e) {}
+
+  const priceToY = (p) => {
+    const y = state.candleSeries.priceToCoordinate(p);
+    if (y !== null && y !== undefined) return y;
+    return null;
+  };
+  const timeToX = (t) => {
+    const x = state.chart.timeScale().timeToCoordinate(t);
+    if (x !== null && x !== undefined) return x;
+    return null;
+  };
+
+  // Draw connecting lines between levels
+  const origin = d.type === 'UP' ? d.bottom : d.top;
+  const allPoints = [origin, ...d.levels];
+  
+  ctx.strokeStyle = 'rgba(179, 136, 255, 0.6)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath();
+  let started = false;
+  for (const pt of allPoints) {
+    const x = timeToX(pt.time);
+    const y = priceToY(pt.price);
+    if (x === null || y === null) continue;
+    if (!started) { ctx.moveTo(x, y); started = true; }
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Draw level price lines (dashed horizontal)
+  const levelColors = ['#ff9800', '#b388ff', '#b388ff', '#b388ff'];
+  const levelLabels = [d.type === 'UP' ? 'Bottom' : 'Top', 'L1', 'L2', 'L3'];
+  
+  allPoints.forEach((pt, i) => {
+    const y = priceToY(pt.price);
+    if (y === null || y < -20 || y > h + 20) return;
+    
+    // Dashed price line
+    ctx.strokeStyle = levelColors[i] + '66';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(chartW, y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Label pill on right side
+    const label = levelLabels[i];
+    ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, sans-serif';
+    const tw = ctx.measureText(label).width;
+    const px = chartW - tw - 18, py = y - 9, pw = tw + 12, ph = 18, r = 3;
+    ctx.fillStyle = levelColors[i] + 'cc';
+    ctx.beginPath();
+    ctx.moveTo(px + r, py); ctx.lineTo(px + pw - r, py);
+    ctx.quadraticCurveTo(px + pw, py, px + pw, py + r);
+    ctx.lineTo(px + pw, py + ph - r);
+    ctx.quadraticCurveTo(px + pw, py + ph, px + pw - r, py + ph);
+    ctx.lineTo(px + r, py + ph);
+    ctx.quadraticCurveTo(px, py + ph, px, py + ph - r);
+    ctx.lineTo(px, py + r);
+    ctx.quadraticCurveTo(px, py, px + r, py);
+    ctx.closePath(); ctx.fill();
+
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, px + pw/2, y);
+  });
+
+  // Draw "3 LEVELS" label at top
+  ctx.font = 'bold 13px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.fillStyle = 'rgba(179, 136, 255, 0.85)';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  const dirIcon = d.type === 'UP' ? '📈' : '📉';
+  ctx.fillText(`${dirIcon} 3 Levels (${d.movePct}% move)`, 40, 10);
+}
+
+function scheduleLevelsRedraw() {
+  if (levelsRedrawPending || !levels.data) return;
+  levelsRedrawPending = true;
+  requestAnimationFrame(() => { renderLevelsOverlay(); levelsRedrawPending = false; });
+}
+
 // ============= EQUITY MODE TOGGLE =============
 function setEquityMode(mode) {
   state.equityMode = mode;
@@ -1474,24 +1875,61 @@ async function loadOlderYears() {
   }
 }
 
+// ============= V2 SOURCE DETECTION =============
+const urlParams = new URLSearchParams(window.location.search);
+const V2_SOURCE = urlParams.get('source');  // e.g. ?source=v2-trades-BTCUSDT-15m
+const IS_V2 = !!V2_SOURCE;
+
+async function loadV2Trades(filename) {
+  try {
+    const r = await fetch(`${filename}.json`);
+    const trades = await r.json();
+    // V2 trades already have v2_meta with 3-box info
+    return trades;
+  } catch(e) {
+    console.error('Failed to load V2 trades:', e);
+    return [];
+  }
+}
+
 // ============= INIT =============
 window.addEventListener('DOMContentLoaded', async () => {
   const bar = document.getElementById('load-more-bar');
   const status = document.getElementById('load-status');
   const loadBtn = document.getElementById('load-more-btn');
 
-  // Load recent years first (2023-2026, ~210KB)
-  const recentTrades = await loadTradeYears(YEAR_FILES_RECENT);
-  TRADE_DATA = recentTrades;
+  if (IS_V2) {
+    // V2 mode: load single trade file
+    const trades = await loadV2Trades(V2_SOURCE);
+    TRADE_DATA = trades;
+    document.querySelector('.header h1').textContent = `📊 V2 Trade Review — ${trades.length} Trades`;
+    status.textContent = `V2 Backtest: ${trades.length} trades`;
+    loadBtn.style.display = 'none';
+    bar.style.display = 'none';
+  } else {
+    // Original V11c mode
+    const recentTrades = await loadTradeYears(YEAR_FILES_RECENT);
+    TRADE_DATA = recentTrades;
+    status.textContent = `Showing ${TRADE_DATA.length.toLocaleString()} trades (2023–2026)`;
+    loadBtn.style.display = 'inline-block';
+    loadBtn.textContent = `📥 Load 2017–2022 (~4,400 more trades)`;
+  }
 
   initChart();
   applyFilters();
 
-  status.textContent = `Showing ${TRADE_DATA.length.toLocaleString()} trades (2023–2026)`;
-  loadBtn.style.display = 'inline-block';
-  loadBtn.textContent = `📥 Load 2017–2022 (~4,400 more trades)`;
-
-  if (state.filtered.length > 0) selectTrade(0);
+  // Restore trade from URL hash if present
+  let startIdx = 0;
+  const hash = window.location.hash.slice(1);
+  if (hash && state.filtered.length > 0) {
+    const [hp, htf, het] = hash.split('_');
+    const et = parseInt(het);
+    if (et) {
+      const found = state.filtered.findIndex(t => t.pair === hp && t.tf === htf && t.et === et);
+      if (found >= 0) startIdx = found;
+    }
+  }
+  if (state.filtered.length > 0) selectTrade(startIdx);
 });
 </script>
 
