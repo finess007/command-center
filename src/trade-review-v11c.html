@@ -613,13 +613,27 @@ let state = {
 };
 
 // ============= FILTER & SORT =============
-function applyFilters() {
+async function applyFilters() {
   const f = state.filters;
   // Date range filter
   const fromEl = document.getElementById('date-from');
   const toEl = document.getElementById('date-to');
   const fromTs = fromEl && fromEl.value ? new Date(fromEl.value + 'T00:00:00Z').getTime() / 1000 : 0;
   const toTs = toEl && toEl.value ? new Date(toEl.value + 'T23:59:59Z').getTime() / 1000 : Infinity;
+
+  // Auto-load older years if date range needs them
+  if (!olderYearsLoaded && fromEl && fromEl.value) {
+    const fromYear = parseInt(fromEl.value.slice(0, 4));
+    if (fromYear <= 2022) {
+      const status = document.getElementById('load-status');
+      if (status) status.textContent = '⏳ Auto-loading older data...';
+      const olderTrades = await loadTradeYears(YEAR_FILES_OLDER);
+      TRADE_DATA = TRADE_DATA.concat(olderTrades);
+      olderYearsLoaded = true;
+      const bar = document.getElementById('load-more-bar');
+      if (bar) bar.style.display = 'none';
+    }
+  }
 
   state.filtered = TRADE_DATA.filter(t => {
     if (t.et < fromTs || t.et > toTs) return false;
