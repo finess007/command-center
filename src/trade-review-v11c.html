@@ -384,6 +384,57 @@ body {
 @keyframes tbPulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
 #three-box-overlay { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 10; }
 .three-box-status { font-size: 0.75rem; color: #ff9800; font-weight: 600; white-space: nowrap; }
+
+/* Date range inputs */
+.date-input {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.8rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.date-input:focus { border-color: var(--accent); }
+.date-input::-webkit-calendar-picker-indicator { filter: invert(0.7); cursor: pointer; }
+
+/* Equity header row */
+.equity-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0 4px 0;
+}
+.equity-header .equity-label {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.compound-toggle {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.compound-btn {
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.compound-btn:hover { border-color: var(--accent); color: var(--text); }
+.compound-btn.active {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+  font-weight: 600;
+}
 </style>
 </head>
 <body>
@@ -433,6 +484,15 @@ body {
     <button class="filter-btn active" data-filter="result" data-value="ALL">ALL</button>
     <button class="filter-btn" data-filter="result" data-value="win">Winners</button>
     <button class="filter-btn" data-filter="result" data-value="loss">Losers</button>
+  </div>
+  <div class="filter-sep"></div>
+  <div class="filter-group">
+    <label>From:</label>
+    <input type="date" class="date-input" id="date-from" value="2026-01-01">
+  </div>
+  <div class="filter-group">
+    <label>To:</label>
+    <input type="date" class="date-input" id="date-to">
   </div>
   <div class="filter-sep"></div>
   <button class="summary-toggle" id="summary-btn" onclick="toggleSummary()">📋 Summary</button>
@@ -489,6 +549,13 @@ body {
 </div>
 
 <div class="equity-row">
+  <div class="equity-header">
+    <span class="equity-label">📈 Equity Curve</span>
+    <div class="compound-toggle">
+      <button class="compound-btn active" id="btn-flat-r" onclick="setEquityMode('flat')">Flat R</button>
+      <button class="compound-btn" id="btn-compound" onclick="setEquityMode('compound')">Compound $</button>
+    </div>
+  </div>
   <div id="equity-container"></div>
 </div>
 
@@ -537,13 +604,21 @@ let state = {
   volumeSeries: null,
   candleCache: {},
   equityChart: null,
-  showSummary: false
+  showSummary: false,
+  equityMode: 'flat' // 'flat' or 'compound'
 };
 
 // ============= FILTER & SORT =============
 function applyFilters() {
   const f = state.filters;
+  // Date range filter
+  const fromEl = document.getElementById('date-from');
+  const toEl = document.getElementById('date-to');
+  const fromTs = fromEl && fromEl.value ? new Date(fromEl.value + 'T00:00:00Z').getTime() / 1000 : 0;
+  const toTs = toEl && toEl.value ? new Date(toEl.value + 'T23:59:59Z').getTime() / 1000 : Infinity;
+
   state.filtered = TRADE_DATA.filter(t => {
+    if (t.et < fromTs || t.et > toTs) return false;
     if (f.pair !== 'ALL' && t.pair !== f.pair) return false;
     if (f.tf !== 'ALL' && t.tf !== f.tf) return false;
     if (f.dir !== 'ALL' && t.dir !== f.dir) return false;
@@ -699,11 +774,20 @@ function renderEquityCurve() {
   const byDate = [...state.filtered].sort((a, b) => a.et - b.et);
   if (!byDate.length) return;
   
-  let cumR = 0;
-  const data = byDate.map(t => {
-    cumR += t.r;
-    return { time: t.et, value: parseFloat(cumR.toFixed(2)) };
-  });
+  let data;
+  if (state.equityMode === 'compound') {
+    let balance = 1000;
+    data = byDate.map(t => {
+      balance = balance * (1 + t.r * 0.02);
+      return { time: t.et, value: parseFloat(balance.toFixed(2)) };
+    });
+  } else {
+    let cumR = 0;
+    data = byDate.map(t => {
+      cumR += t.r;
+      return { time: t.et, value: parseFloat(cumR.toFixed(2)) };
+    });
+  }
   
   // Deduplicate by time (keep last value for same timestamp)
   const dedupMap = new Map();
@@ -720,12 +804,16 @@ function renderEquityCurve() {
     crosshair: { mode: LightweightCharts.CrosshairMode.Magnet },
   });
   
-  const series = state.equityChart.addAreaSeries({
+  const seriesOpts = {
     topColor: 'rgba(0, 188, 212, 0.4)',
     bottomColor: 'rgba(0, 188, 212, 0.0)',
     lineColor: '#00bcd4',
     lineWidth: 2,
-  });
+  };
+  if (state.equityMode === 'compound') {
+    seriesOpts.priceFormat = { type: 'custom', formatter: p => '$' + p.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) };
+  }
+  const series = state.equityChart.addAreaSeries(seriesOpts);
   series.setData(dedupData);
   state.equityChart.timeScale().fitContent();
   
@@ -1293,6 +1381,21 @@ function scheduleThreeBoxRedraw() {
   threeBoxRedrawPending = true;
   requestAnimationFrame(() => { renderThreeBoxOverlay(); threeBoxRedrawPending = false; });
 }
+
+// ============= EQUITY MODE TOGGLE =============
+function setEquityMode(mode) {
+  state.equityMode = mode;
+  document.getElementById('btn-flat-r').classList.toggle('active', mode === 'flat');
+  document.getElementById('btn-compound').classList.toggle('active', mode === 'compound');
+  renderEquityCurve();
+}
+
+// ============= DATE RANGE EVENTS =============
+document.getElementById('date-from').addEventListener('change', () => applyFilters());
+document.getElementById('date-to').addEventListener('change', () => applyFilters());
+
+// Set "To" date default to today
+document.getElementById('date-to').value = new Date().toISOString().slice(0, 10);
 
 // ============= LAZY LOADING =============
 const YEAR_FILES_RECENT = [2026, 2024, 2023];
