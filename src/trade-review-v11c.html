@@ -505,6 +505,7 @@ body {
   <div class="stat"><span class="stat-label">Trades:</span><span class="stat-value" id="stat-trades">5,245</span></div>
   <div class="stat"><span class="stat-label">Win Rate:</span><span class="stat-value" id="stat-wr">63%</span></div>
   <div class="stat"><span class="stat-label">Total R:</span><span class="stat-value" id="stat-total-r">+7,434.57</span></div>
+  <div class="stat"><span class="stat-label">Compound $:</span><span class="stat-value" id="stat-compound">—</span></div>
   <div class="stat"><span class="stat-label">Avg R:</span><span class="stat-value" id="stat-avg-r">1.42</span></div>
   <div class="stat"><span class="stat-label">Best:</span><span class="stat-value positive" id="stat-best">+45.15</span></div>
   <div class="stat"><span class="stat-label">Worst:</span><span class="stat-value negative" id="stat-worst">-1.00</span></div>
@@ -673,6 +674,11 @@ function calcStats(trades) {
     else curLoss = 0;
   }
   
+  // Compound $ (2% risk, $1000 start)
+  const byDateForCompound = [...trades].sort((a, b) => a.et - b.et);
+  let compoundBal = 1000;
+  for (const t of byDateForCompound) compoundBal = compoundBal * (1 + t.r * 0.02);
+
   return {
     count: trades.length,
     wr: Math.round(wins / trades.length * 100),
@@ -682,7 +688,8 @@ function calcStats(trades) {
     worst: worst.toFixed(2),
     maxConsecLoss: maxLoss,
     pf: pf === Infinity ? '∞' : pf.toFixed(2),
-    expectancy: expectancy.toFixed(2)
+    expectancy: expectancy.toFixed(2),
+    compoundDollar: compoundBal
   };
 }
 
@@ -852,6 +859,10 @@ function updateUI() {
   const exEl = document.getElementById('stat-expect');
   exEl.textContent = stats.expectancy;
   exEl.className = 'stat-value ' + (stats.expectancy >= 0 ? 'positive' : 'negative');
+  const compEl = document.getElementById('stat-compound');
+  const compVal = stats.compoundDollar;
+  compEl.textContent = '$' + compVal.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+  compEl.className = 'stat-value ' + (compVal >= 1000 ? 'positive' : 'negative');
   
   document.getElementById('filtered-count').textContent = stats.count.toLocaleString() + ' trades';
   
