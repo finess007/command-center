@@ -529,6 +529,7 @@ function fixTimezones(trades) {
 let state = {
   filters: { pair: 'ALL', tf: 'ALL', dir: 'ALL', exit: 'ALL', result: 'ALL' },
   sort: 'date',
+  dateAsc: true,
   filtered: [],
   selectedIndex: -1,
   chart: null,
@@ -557,7 +558,7 @@ function applyFilters() {
 function applySort() {
   const s = state.sort;
   state.filtered.sort((a, b) => {
-    if (s === 'date') return a.et - b.et;
+    if (s === 'date') return state.dateAsc ? a.et - b.et : b.et - a.et;
     if (s === 'r-desc') return b.r - a.r;
     if (s === 'r-asc') return a.r - b.r;
     return 0;
@@ -1041,7 +1042,14 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
 
 document.querySelectorAll('.sort-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    state.sort = btn.dataset.sort;
+    const newSort = btn.dataset.sort;
+    if (newSort === 'date' && state.sort === 'date') {
+      state.dateAsc = !state.dateAsc;
+      btn.textContent = state.dateAsc ? 'Date ↑' : 'Date ↓';
+    } else if (newSort === 'date') {
+      btn.textContent = state.dateAsc ? 'Date ↑' : 'Date ↓';
+    }
+    state.sort = newSort;
     document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     applySort();
