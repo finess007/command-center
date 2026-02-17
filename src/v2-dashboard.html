@@ -285,7 +285,16 @@ async function loadCandles() {
   if (cachedCandles) return cachedCandles;
   try {
     const resp = await fetch('v2-candles-BTCUSDT-15m.json');
-    cachedCandles = await resp.json();
+    const raw = await resp.json();
+    // Compact format: {t:[], o:[], h:[], l:[], c:[]}
+    if (raw.t) {
+      cachedCandles = raw.t.map((ts, i) => ({
+        time: ts, open: raw.o[i], high: raw.h[i], low: raw.l[i], close: raw.c[i]
+      }));
+    } else {
+      cachedCandles = raw; // fallback: array of objects
+    }
+    console.log(`Loaded ${cachedCandles.length} candles`);
     return cachedCandles;
   } catch(e) {
     console.warn('No candle data available for chart');
