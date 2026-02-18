@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>V2 Trade Review — Market Maker Method</title>
+<title>V11c Honest ATR 2.0× — 7,595 Trades (PF 1.20)</title>
 <script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
 :root {
@@ -444,9 +444,9 @@ body {
 <body>
 
 <div class="header">
-  <h1>📊 V2 Trade Review — <span id="trade-count">0</span> Trades</h1>
+  <h1>📊 V11c Honest — <span id="trade-count">3,362</span> Trades <span style="color:#10b981;font-size:0.7em;background:rgba(16,185,129,0.15);padding:2px 10px;border-radius:12px;margin-left:8px;">✓ NO LOOK-AHEAD · ATR 2.0× · PF 1.19</span></h1>
   <div class="header-links">
-    <a href="trade-review.html" class="home-link">V5.2 Legacy →</a>
+    <a href="trade-review-v2.html" class="home-link">V2 3-Box →</a>
     <a href="index.html" class="home-link">← Dashboard</a>
   </div>
 </div>
@@ -561,62 +561,68 @@ body {
 
 <div class="rules-panel" style="background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px 20px;margin:12px 0;">
   <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="this.parentElement.querySelector('.rules-body').classList.toggle('collapsed');this.querySelector('.chevron').textContent=this.parentElement.querySelector('.rules-body').classList.contains('collapsed')?'▶':'▼'">
-    <span style="font-weight:700;font-size:1.05em;color:var(--gold)">📋 Strategy Rules — V2 Market Maker Method</span>
+    <span style="font-weight:700;font-size:1.05em;color:var(--gold)">📋 Strategy Rules — V11c Honest (Surpass W/M)</span>
     <span class="chevron" style="color:var(--text-dim)">▼</span>
   </div>
   <div class="rules-body" style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:0.88em;line-height:1.6">
     <div>
-      <div style="color:var(--accent);font-weight:600;margin-bottom:4px">📦 3-Box Projection</div>
+      <div style="color:var(--accent);font-weight:600;margin-bottom:4px">📐 3-Level Detection (Swing Points)</div>
       <div style="color:var(--text-dim)">
-        • Swing lookback: <b style="color:var(--text)">5 bars</b> (causal, confirmed only)<br>
-        • Box range: <b style="color:var(--text)">0.3% – 5.0%</b> of price<br>
-        • Bear box → LONG at L3 &nbsp;|&nbsp; Bull box → SHORT at L3<br>
-        • Reversal zone: between L3 and L4<br>
-        • <b style="color:var(--red)">L4 blowthrough → box invalidated</b> (projection failed)<br>
-        • Price retreats past L2 → box invalidated (missed the trade)
+        • <b style="color:var(--text)">find_swing_points()</b> with lookback per TF<br>
+        • 1H: lookback <b style="color:var(--text)">5</b> | 15m: <b style="color:var(--text)">5</b> | 1m: <b style="color:var(--text)">10</b><br>
+        • 3 consecutive lower lows (DOWN→LONG) or higher highs (UP→SHORT)<br>
+        • Volume spike in L2→L3 segment ≥ <b style="color:var(--text)">1.3×</b> avg<br>
+        • Min move: BTC 1.5/3/4.5% | ETH 2.4/4.5/6% | SOL 3/6/9%<br>
+        • <span style="color:var(--green)">✓ Honest fix: action delayed by lookback candles</span>
       </div>
 
-      <div style="color:#f7931a;font-weight:600;margin:10px 0 4px">⚡ Vector Candle</div>
+      <div style="color:var(--green);font-weight:600;margin:10px 0 4px">📈 W Surpass (LONG)</div>
       <div style="color:var(--text-dim)">
-        • Body ≥ <b style="color:var(--text)">8×</b> local 20-bar avg body<br>
-        • Volume ≥ <b style="color:var(--text)">5×</b> local 20-bar avg volume<br>
-        • Must occur inside reversal zone
+        • After L3 (lowest of 3 lows), find swing low in segment<br>
+        • 2nd low must go <b style="color:var(--text)">BELOW</b> L3 = surpass (stop hunt)<br>
+        • Max surpass: <b style="color:var(--text)">2.0%</b> band<br>
+        • Min bounce between legs: <b style="color:var(--text)">0.15%</b><br>
+        • Entry: wick below + close above, OR bullish candle near 2nd low<br>
+        • <span style="color:var(--green)">✓ Honest fix: entry delayed by swing_lookback</span>
       </div>
 
-      <div style="color:var(--green);font-weight:600;margin:10px 0 4px">📈 W Pattern (LONG)</div>
+      <div style="color:var(--red);font-weight:600;margin:10px 0 4px">📉 M Surpass (SHORT)</div>
       <div style="color:var(--text-dim)">
-        • Leg 1: track <b style="color:var(--text)">lowest LOW</b> in zone = trough (wicks count)<br>
-        • Bounce: ≥ <b style="color:var(--text)">1.0%</b> up + min <b style="color:var(--text)">3 bars</b><br>
-        • <b style="color:var(--yellow)">1st surpass:</b> wick below trough → becomes <b>2nd trough</b> (don't enter)<br>
-        • <b style="color:var(--green)">2nd surpass:</b> wick below 2nd trough → if closes above = enter, else wait for 🟢 GREEN candle<br>
-        • Stop: highest surpass/rejection candle low − 0.1% buffer
+        • After L3 (highest of 3 highs), find swing high in segment<br>
+        • 2nd high must go <b style="color:var(--text)">ABOVE</b> L3 = surpass<br>
+        • Same band + bounce rules as W<br>
+        • Entry: wick above + close below, OR bearish candle near 2nd high
       </div>
     </div>
 
     <div>
-      <div style="color:var(--red);font-weight:600;margin-bottom:4px">📉 M Pattern (SHORT)</div>
+      <div style="color:#f7931a;font-weight:600;margin-bottom:4px">🧭 Daily Alignment</div>
       <div style="color:var(--text-dim)">
-        • Leg 1: track <b style="color:var(--text)">highest HIGH</b> in zone = peak (wicks count)<br>
-        • Pullback: ≥ <b style="color:var(--text)">1.0%</b> down + min <b style="color:var(--text)">3 bars</b><br>
-        • <b style="color:var(--yellow)">1st surpass:</b> wick above peak → becomes <b>2nd peak</b> (don't enter)<br>
-        • <b style="color:var(--red)">2nd surpass:</b> wick above 2nd peak → if closes below = enter, else wait for 🔴 RED candle<br>
-        • Stop: highest surpass/rejection candle high + 0.1% buffer
+        • SMA10 + SMA20 on daily chart<br>
+        • LONG: price > SMA20 OR SMA10 > SMA20<br>
+        • SHORT: price < SMA20 OR SMA10 < SMA20
       </div>
 
       <div style="color:#9945ff;font-weight:600;margin:10px 0 4px">🚪 Exit Rules</div>
       <div style="color:var(--text-dim)">
-        • Stop loss: <b style="color:var(--red)">−1R</b> (fixed)<br>
-        • Take profit: <b style="color:var(--green)">+1R</b> fixed target<br>
-        • Vector exit: body ≥ <b style="color:var(--text)">3×</b> + vol ≥ <b style="color:var(--text)">3×</b> avg (same + opposing dir)<br>
-        • No minimum hold time — exit on first valid signal<br>
-        • Timeout: <b style="color:var(--text)">200 bars</b> max hold
+        • Stop loss: <b style="color:var(--red)">−1R</b> (at surpass extreme × 0.999)<br>
+        • Vector exit: vol ≥ <b style="color:var(--text)">1.5×</b> + body ≥ <b style="color:var(--text)">1.2×</b> avg<br>
+        • Lookback for avg: <b style="color:var(--text)">20 bars</b> (1H/15m), <b style="color:var(--text)">30 bars</b> (1m)<br>
+        • Timeout: <b style="color:var(--text)">80 bars</b> (1H/15m), <b style="color:var(--text)">200 bars</b> (1m)
       </div>
 
-      <div style="color:var(--text-dim);font-weight:600;margin:10px 0 4px">⚙️ Position Management</div>
+      <div style="color:var(--green);font-weight:600;margin:10px 0 4px">✅ Honest Changes Applied</div>
       <div style="color:var(--text-dim)">
-        • Max 1 position at a time<br>
-        • No re-entry on same box after stop<br>
-        • No max stop distance cap (R-sizing handles risk)
+        • L1/L2/L3: surpass search starts from <b style="color:var(--text)">l3.index + lookback</b><br>
+        • W/M entry: requires <b style="color:var(--text)">eidx ≥ swing_idx + swing_lookback</b><br>
+        • <b style="color:var(--green)">Verified:</b> global vs incremental swing detection = identical results
+      </div>
+
+      <div style="color:var(--gold);font-weight:600;margin:10px 0 4px">📊 Performance (8 years, 3 pairs, 3 TFs)</div>
+      <div style="color:var(--text-dim)">
+        • <b style="color:var(--text)">7,595 trades</b> | 47.1% WR | <b style="color:var(--green)">PF 1.20</b><br>
+        • Best: SOL 1H <b style="color:var(--green)">PF 1.98</b> | Weakest: ETH 1H PF 1.11<br>
+        • Every pair + every TF profitable ✅
       </div>
     </div>
   </div>
@@ -694,9 +700,7 @@ async function applyFilters() {
   const fromTs = fromEl && fromEl.value ? new Date(fromEl.value + 'T00:00:00Z').getTime() / 1000 : 0;
   const toTs = toEl && toEl.value ? new Date(toEl.value + 'T23:59:59Z').getTime() / 1000 : Infinity;
 
-  // V2: no year-based loading needed
-
-  state.filtered = TRADE_DATA.filter(t => {
+    state.filtered = TRADE_DATA.filter(t => {
     if (t.et < fromTs || t.et > toTs) return false;
     if (f.pair !== 'ALL' && t.pair !== f.pair) return false;
     if (f.tf !== 'ALL' && t.tf !== f.tf) return false;
@@ -1115,16 +1119,6 @@ async function selectTrade(idx) {
     <span style="color:var(--text-dim)">Stop: ${trade.stop.toLocaleString()}</span>
     <span style="color:var(--text-dim)">Exit: ${trade.exit.toLocaleString()}</span>
     <span style="color:var(--text-dim)">Trade ${idx + 1}/${state.filtered.length.toLocaleString()}</span>
-    ${trade.v2_meta ? `<br>
-    <span style="color:var(--gold);font-size:0.85em">
-      📦 ${trade.reason === '3box_w_surpass' ? 'W Surpass (Long)' : trade.reason === '3box_m_surpass' ? 'M Surpass (Short)' : trade.reason || '?'}
-      | Box: ${trade.v2_meta.box_direction || '?'} 
-      | L3: ${trade.v2_meta.l3 ? trade.v2_meta.l3.toLocaleString(undefined, {maximumFractionDigits:2}) : '?'}
-      | Range: ${trade.v2_meta.box_range ? trade.v2_meta.box_range.toFixed(2) : '?'}
-      | ${trade.reason === '3box_w_surpass' 
-          ? 'Trough: ' + (trade.v2_meta.trough_price || 0).toLocaleString(undefined, {maximumFractionDigits:2}) + ' → Surpass low: ' + (trade.v2_meta.surpass_low || 0).toLocaleString(undefined, {maximumFractionDigits:2})
-          : 'Peak: ' + (trade.v2_meta.peak_price || 0).toLocaleString(undefined, {maximumFractionDigits:2}) + ' → Surpass high: ' + (trade.v2_meta.surpass_high || 0).toLocaleString(undefined, {maximumFractionDigits:2})}
-    </span>` : ''}
   `;
   
   renderTradeList();
@@ -1204,18 +1198,7 @@ async function selectTrade(idx) {
     const viewTo = trade.xt + viewPad;
     state.chart.timeScale().setVisibleRange({ from: viewFrom, to: viewTo });
 
-    // ── Auto-draw trade's 3-Box zone ──
-    if (trade.v2_meta && trade.v2_meta.origin && trade.v2_meta.l3) {
-      const m = trade.v2_meta;
-      const bearish = m.box_direction === 'bear';
-      const boundaries = [m.origin, m.l1, m.l2, m.l3];
-      if (m.l4) boundaries.push(m.l4);
-      else boundaries.push(bearish ? m.l3 - (m.l1 - m.origin) : m.l3 + (m.l1 - m.origin));
-      threeBox.boxData = { boundaries, bearish, range: m.box_range };
-      createThreeBoxOverlay();
-      document.getElementById('btn-clear-boxes').style.display = 'inline-block';
-      setTimeout(() => renderThreeBoxOverlay(), 50);
-    }
+    // V11c: no auto 3-box (no v2_meta). Use manual 3-Box tool or Levels tool.
     
   } catch (e) {
     console.error('Error loading trade:', e);
@@ -1906,49 +1889,16 @@ document.getElementById('date-to').addEventListener('change', () => applyFilters
 // Set "To" date default to today
 document.getElementById('date-to').value = new Date().toISOString().slice(0, 10);
 
-// ============= LAZY LOADING =============
-// V2: No year-file loading. All trades loaded at init.
-
-// ============= V2 TRADE LOADING =============
-const V2_FILES = ['v2-trades-BTCUSDT-15m'];  // Add more as we backtest
-
-function transformV2Trade(raw, fileHint) {
-  // If already in compact format, return as-is
-  if (raw.et !== undefined) return raw;
-  // Derive pair/tf from filename hint (e.g. "v2-trades-BTCUSDT-15m")
-  const parts = fileHint.replace('v2-trades-', '').split('-');
-  const pairMap = { BTCUSDT: 'BTC', ETHUSDT: 'ETH', SOLUSDT: 'SOL' };
-  const pair = pairMap[parts[0]] || parts[0];
-  const tf = parts[1] || '15m';
-  return {
-    et: Math.floor(raw.entry_time / 1000),
-    xt: Math.floor(raw.exit_time / 1000),
-    ep: raw.entry_price,
-    sp: raw.stop_price,
-    xp: raw.exit_price,
-    entry: raw.entry_price,
-    stop: raw.stop_price,
-    exit: raw.exit_price,
-    r: raw.r_multiple,
-    pair: pair,
-    tf: tf,
-    dir: raw.direction === 'long' ? 'L' : 'S',
-    exit_type: raw.exit_reason || raw.exit_type || 'unknown',
-    reason: raw.reason,
-    v2_meta: raw.metadata || raw.v2_meta || null,
-  };
-}
-
-async function loadAllV2Trades() {
-  const results = await Promise.all(
-    V2_FILES.map(f =>
-      fetch(`${f}.json`)
-        .then(r => r.json())
-        .then(data => data.map(t => transformV2Trade(t, f)))
-        .catch(e => { console.error(`Failed to load ${f}:`, e); return []; })
-    )
-  );
-  return results.flat();
+// ============= V11c HONEST TRADE LOADING =============
+async function loadV11cTrades() {
+  try {
+    const resp = await fetch('data/v11c-honest-trades.json');
+    const trades = await resp.json();
+    return trades;
+  } catch(e) {
+    console.error('Failed to load V11c trades:', e);
+    return [];
+  }
 }
 
 // ============= INIT =============
@@ -1957,12 +1907,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   const status = document.getElementById('load-status');
   const loadBtn = document.getElementById('load-more-btn');
 
-  // V2 mode: load all V2 trade files
-  const trades = await loadAllV2Trades();
+  const trades = await loadV11cTrades();
   TRADE_DATA = trades;
-  document.getElementById('trade-count').textContent = trades.length;
-  document.querySelector('.header h1').innerHTML = `📊 V2 Trade Review — <span id="trade-count">${trades.length}</span> Trades`;
-  status.textContent = `V2 Backtest: ${trades.length} trades (BTC 15m)`;
+  document.getElementById('trade-count').textContent = trades.length.toLocaleString();
+  status.textContent = `V11c Honest: ${trades.length.toLocaleString()} trades · BTC + ETH + SOL · 1m + 15m + 1H · 2017–2025`;
   loadBtn.style.display = 'none';
   if (bar) bar.style.display = 'none';
 

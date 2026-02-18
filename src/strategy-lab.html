@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PF 2.0 Strategy Lab</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0e17;--card:#111827;--card2:#141a2a;--border:#1e293b;--text:#e2e8f0;--muted:#64748b;--accent:#a78bfa;--green:#10b981;--red:#ef4444;--yellow:#f59e0b;--blue:#3b82f6;--purple:#8b5cf6}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;min-height:100vh}
+.container{max-width:1400px;margin:0 auto;padding:24px}
+
+/* Hero */
+.hero{text-align:center;padding:48px 24px 40px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(139,92,246,0.15),transparent 70%);z-index:0}
+.hero>*{position:relative;z-index:1}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.3);padding:6px 16px;border-radius:100px;font-size:0.8rem;color:var(--accent);margin-bottom:16px;letter-spacing:0.5px}
+.hero h1{font-size:2.8rem;font-weight:800;background:linear-gradient(135deg,#fff,var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;letter-spacing:-1px}
+.hero .tagline{color:var(--muted);font-size:1.05rem;margin-bottom:32px}
+
+/* PF Progress */
+.pf-track{max-width:700px;margin:0 auto;position:relative}
+.pf-labels{display:flex;justify-content:space-between;margin-bottom:8px;font-size:0.8rem;color:var(--muted)}
+.pf-bar-outer{height:36px;background:var(--card2);border-radius:18px;overflow:hidden;position:relative;border:1px solid var(--border)}
+.pf-bar-fill{height:100%;border-radius:18px;background:linear-gradient(90deg,var(--red),var(--yellow));transition:width 1s ease;position:relative}
+.pf-bar-fill::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent,transparent 10px,rgba(255,255,255,0.03) 10px,rgba(255,255,255,0.03) 20px)}
+.pf-bar-text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-weight:700;font-size:0.9rem;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,0.5)}
+.pf-markers{display:flex;justify-content:space-between;margin-top:8px}
+.pf-marker{text-align:center}
+.pf-marker .num{font-size:1.5rem;font-weight:800}
+.pf-marker .label{font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.pf-marker.start .num{color:var(--red)}
+.pf-marker.current .num{color:var(--yellow)}
+.pf-marker.target .num{color:var(--green)}
+
+/* Steve math */
+.steve-box{max-width:700px;margin:24px auto 0;background:var(--card2);border-radius:12px;padding:16px 20px;border:1px solid var(--border);display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.steve-box .icon{font-size:2rem}
+.steve-box .text{flex:1;min-width:200px}
+.steve-box .text strong{color:var(--accent)}
+.steve-box .text p{font-size:0.85rem;color:var(--muted);margin-top:4px}
+
+/* Section */
+.section{margin-top:48px}
+.section-head{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.section-head .icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+.section-head h2{font-size:1.1rem;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
+
+/* Roadmap */
+.roadmap{display:flex;gap:0;position:relative;overflow-x:auto;padding:20px 0}
+.roadmap::before{content:'';position:absolute;top:38px;left:40px;right:40px;height:3px;background:var(--border);z-index:0}
+.rm-step{flex:1;min-width:180px;text-align:center;position:relative;z-index:1}
+.rm-dot{width:24px;height:24px;border-radius:50%;margin:0 auto 12px;border:3px solid var(--border);background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;transition:all 0.3s}
+.rm-step.done .rm-dot{border-color:var(--green);background:rgba(16,185,129,0.2);color:var(--green)}
+.rm-step.partial .rm-dot{border-color:var(--yellow);background:rgba(245,158,11,0.2);color:var(--yellow)}
+.rm-step.fail .rm-dot{border-color:var(--red);background:rgba(239,68,68,0.2);color:var(--red)}
+.rm-step.pending .rm-dot{border-color:var(--muted);color:var(--muted)}
+.rm-title{font-size:0.85rem;font-weight:600;margin-bottom:4px}
+.rm-sub{font-size:0.75rem;color:var(--muted)}
+.rm-result{font-size:0.75rem;font-weight:600;margin-top:6px;padding:2px 8px;border-radius:6px;display:inline-block}
+.rm-result.up{background:rgba(16,185,129,0.15);color:var(--green)}
+.rm-result.down{background:rgba(239,68,68,0.15);color:var(--red)}
+.rm-result.flat{background:rgba(245,158,11,0.15);color:var(--yellow)}
+.rm-result.tbd{background:rgba(100,116,139,0.15);color:var(--muted)}
+
+/* Stat cards */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.stat-card{background:var(--card2);border-radius:12px;padding:16px;text-align:center;border:1px solid var(--border)}
+.stat-card .val{font-size:1.8rem;font-weight:800;line-height:1.2}
+.stat-card .label{font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-top:4px}
+.stat-card .delta{font-size:0.75rem;margin-top:4px;font-weight:600}
+
+/* Charts */
+.chart-container{background:var(--card2);border-radius:12px;padding:20px;border:1px solid var(--border)}
+.bar-chart{display:flex;align-items:flex-end;gap:12px;height:220px;padding:0 10px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:60px}
+.bar{width:100%;border-radius:8px 8px 0 0;min-height:4px;transition:height 0.8s ease;position:relative}
+.bar-val{font-size:0.75rem;font-weight:700;color:#fff}
+.bar-pf{font-size:0.65rem;color:var(--yellow)}
+.bar-label{font-size:0.7rem;color:var(--muted);margin-top:2px}
+
+/* Heatmap grid */
+.heatmap{display:grid;gap:2px;margin-top:12px}
+.heatmap-3x3{grid-template-columns:80px repeat(3,1fr)}
+.heatmap-cell{padding:12px 8px;text-align:center;border-radius:6px;font-size:0.85rem;font-weight:600}
+.heatmap-header{color:var(--muted);font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;padding:8px}
+.pf-15{background:rgba(16,185,129,0.3);color:#6ee7b7}
+.pf-13{background:rgba(16,185,129,0.2);color:#6ee7b7}
+.pf-12{background:rgba(245,158,11,0.2);color:#fcd34d}
+.pf-11{background:rgba(245,158,11,0.15);color:#fcd34d}
+.pf-10{background:rgba(239,68,68,0.15);color:#fca5a5}
+.pf-neg{background:rgba(239,68,68,0.25);color:#fca5a5}
+
+/* Test results */
+.tests-container{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.test-card{background:var(--card2);border-radius:12px;padding:16px;border:1px solid var(--border);border-left:4px solid var(--red)}
+.test-card .test-name{font-size:0.9rem;font-weight:600;margin-bottom:6px}
+.test-card .test-desc{font-size:0.78rem;color:var(--muted);margin-bottom:10px;line-height:1.4}
+.test-card .test-metric{display:flex;justify-content:space-between;padding:3px 0;font-size:0.8rem}
+.test-card .test-metric .k{color:var(--muted)}
+.test-card .test-metric .v{font-weight:600}
+.test-card .test-verdict{margin-top:8px;font-size:0.78rem;padding:8px;background:rgba(239,68,68,0.08);border-radius:6px;color:#fca5a5}
+
+/* Insights */
+.insights-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.insight{background:var(--card2);border-radius:12px;padding:20px;border:1px solid var(--border);border-left:4px solid var(--accent)}
+.insight .quote{font-size:0.95rem;font-style:italic;line-height:1.6;margin-bottom:10px;color:var(--text)}
+.insight .source{font-size:0.75rem;color:var(--accent)}
+
+/* Compound table */
+.compound-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.compound-card{background:var(--card2);border-radius:12px;padding:20px;text-align:center;border:1px solid var(--border)}
+.compound-card .scenario{font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px}
+.compound-card .amount{font-size:2rem;font-weight:800;color:var(--green)}
+.compound-card .sub{font-size:0.78rem;color:var(--muted);margin-top:4px}
+
+/* Two-col layout */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+
+/* Year heatmap */
+.year-row{display:flex;gap:4px;margin-bottom:4px;align-items:center}
+.year-label{width:50px;font-size:0.75rem;color:var(--muted);text-align:right;padding-right:8px}
+.year-cell{flex:1;height:32px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:600}
+
+/* Direction comparison */
+.dir-bar{display:flex;height:36px;border-radius:8px;overflow:hidden;margin-top:8px}
+.dir-long{background:linear-gradient(90deg,#22c55e,#16a34a);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;color:#fff}
+.dir-short{background:linear-gradient(90deg,#ef4444,#dc2626);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;color:#fff}
+
+/* Next steps */
+.next-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.next-card{background:var(--card2);border-radius:12px;padding:24px;border:1px solid var(--border);position:relative;overflow:hidden}
+.next-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.next-card.hot::before{background:linear-gradient(90deg,var(--yellow),var(--red))}
+.next-card.cold::before{background:linear-gradient(90deg,var(--blue),var(--purple))}
+.next-card .step-label{font-size:0.7rem;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.next-card h3{font-size:1.2rem;font-weight:700;margin-bottom:8px}
+.next-card p{font-size:0.85rem;color:var(--muted);line-height:1.5}
+.next-card .expected{margin-top:12px;padding:10px;background:rgba(139,92,246,0.1);border-radius:8px;font-size:0.8rem}
+.next-card .expected strong{color:var(--accent)}
+
+/* Footer */
+.footer{text-align:center;margin-top:64px;padding:24px 0;border-top:1px solid var(--border);color:var(--muted);font-size:0.8rem}
+.footer .nova{color:var(--accent)}
+
+/* Responsive */
+@media(max-width:768px){
+  .container{padding:16px}
+  .hero h1{font-size:2rem}
+  .roadmap{flex-direction:column;gap:16px}
+  .roadmap::before{display:none}
+  .two-col{grid-template-columns:1fr}
+  .heatmap-3x3{grid-template-columns:60px repeat(3,1fr)}
+  .bar-chart{height:160px}
+  .pf-track{padding:0 16px}
+  .steve-box{flex-direction:column;text-align:center}
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">🔬 V11c Market Maker Method · 8.5 Years · BTC/ETH/SOL</div>
+  <h1>Road to PF 2.0</h1>
+  <p class="tagline">Systematic strategy improvement — every test, every insight, every step forward</p>
+  
+  <div class="pf-track">
+    <div class="pf-labels">
+      <span>Baseline</span>
+      <span>Target</span>
+    </div>
+    <div class="pf-bar-outer">
+      <div class="pf-bar-fill" id="pf-fill"></div>
+      <div class="pf-bar-text" id="pf-text"></div>
+    </div>
+    <div class="pf-markers">
+      <div class="pf-marker start"><div class="num">1.20</div><div class="label">Start</div></div>
+      <div class="pf-marker current"><div class="num" id="pf-current">1.19</div><div class="label">Current Best</div></div>
+      <div class="pf-marker target"><div class="num">2.00</div><div class="label">Target</div></div>
+    </div>
+  </div>
+  
+  <div class="steve-box">
+    <div class="icon">🎯</div>
+    <div class="text">
+      <strong>Why PF 2.0?</strong> Steve Mauro's Market Maker Method: 3 wins/week × 5% = <strong>+15%/week</strong>.
+      Our system at 17 trades/week × 2% risk: PF 2.0 ≈ +0.44R/trade = account doubles every 5 weeks.
+      <p>PF 2.0 isn't arbitrary — it's the exact threshold that replicates the course's compounding promise.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ROADMAP -->
+<div class="section">
+  <div class="section-head">
+    <div class="icon" style="background:linear-gradient(135deg,var(--purple),var(--blue))">🗺️</div>
+    <h2>Improvement Roadmap</h2>
+  </div>
+  <div class="roadmap">
+    <div class="rm-step done">
+      <div class="rm-dot">✓</div>
+      <div class="rm-title">ATR Normalization</div>
+      <div class="rm-sub">Dynamic thresholds</div>
+      <div class="rm-result up">+105% Total R</div>
+    </div>
+    <div class="rm-step fail">
+      <div class="rm-dot">✕</div>
+      <div class="rm-title">Pivot Detection</div>
+      <div class="rm-sub">4 tests — all failed</div>
+      <div class="rm-result down">Dead End</div>
+    </div>
+    <div class="rm-step partial">
+      <div class="rm-dot">3</div>
+      <div class="rm-title">Stop Hunt Entry</div>
+      <div class="rm-sub">Self-confirming surpass</div>
+      <div class="rm-result flat">In Progress</div>
+    </div>
+    <div class="rm-step pending">
+      <div class="rm-dot">4</div>
+      <div class="rm-title">3-Box Projection</div>
+      <div class="rm-sub">Equal measured moves</div>
+      <div class="rm-result tbd">The Real Fix</div>
+    </div>
+  </div>
+</div>
+
+<!-- CURRENT STATE -->
+<div class="section">
+  <div class="section-head">
+    <div class="icon" style="background:linear-gradient(135deg,var(--green),#059669)">📊</div>
+    <h2>Current Best: ATR 2.0× (Honest, Zero Look-Ahead)</h2>
+  </div>
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="val" style="color:var(--yellow)">1.19</div>
+      <div class="label">Profit Factor</div>
+      <div class="delta" style="color:var(--red)">-0.01 from baseline</div>
+    </div>
+    <div class="stat-card">
+      <div class="val" style="color:var(--green)">+688R</div>
+      <div class="label">Total Return</div>
+      <div class="delta" style="color:var(--green)">+105% from baseline</div>
+    </div>
+    <div class="stat-card">
+      <div class="val">7,595</div>
+      <div class="label">Trades</div>
+      <div class="delta" style="color:var(--green)">+126% more setups</div>
+    </div>
+    <div class="stat-card">
+      <div class="val">50.0%</div>
+      <div class="label">Win Rate</div>
+      <div class="delta" style="color:var(--green)">+2.9% from baseline</div>
+    </div>
+    <div class="stat-card">
+      <div class="val">+0.09R</div>
+      <div class="label">R per Trade</div>
+      <div class="delta" style="color:var(--muted)">~same edge density</div>
+    </div>
+    <div class="stat-card">
+      <div class="val">2.45/d</div>
+      <div class="label">Trades per Day</div>
+      <div class="delta" style="color:var(--green)">+80% frequency</div>
+    </div>
+  </div>
+</div>
+
+<!-- ATR BAND COMPARISON -->
+<div class="section">
+  <div class="section-head">
+    <div class="icon" style="background:linear-gradient(135deg,var(--blue),#2563eb)">📈</div>
+    <h2>ATR Band Multiplier Comparison</h2>
+  </div>
+  <div class="chart-container">
+    <div class="bar-chart" id="atr-chart"></div>
+  </div>
+</div>
+
+<!-- PAIR × TF HEATMAP + DIRECTION -->
+<div class="section">
+  <div class="section-head">
+    <div class="icon" style="background:linear-gradient(135deg,var(--accent),#6d28d9)">🎨</div>
+    <h2>Edge Map — Where the Alpha Lives (ATR 2.0×)</h2>
+  </div>
+  <div class="two-col">
+    <div>
+      <h3 style="font-size:0.85rem;color:var(--muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px">Profit Factor by Pair × Timeframe</h3>
+      <div class="heatmap heatmap-3x3">
+        <div class="heatmap-header"></div>
+        <div class="heatmap-header">1H</div>
+        <div class="heatmap-header">15m</div>
+        <div class="heatmap-header">1m</div>
+        
+        <div class="heatmap-header" style="text-align:right">BTC</div>
+        <div class="heatmap-cell pf-11">1.15</div>
+        <div class="heatmap-cell pf-12">1.17</div>
+        <div class="heatmap-cell pf-11">1.14</div>
+        
+        <div class="heatmap-header" style="text-align:right">ETH</div>
+        <div class="heatmap-cell pf-15">1.58</div>
+        <div class="heatmap-cell pf-11">1.14</div>
+        <div class="heatmap-cell pf-12">1.20</div>
+        
+        <div class="heatmap-header" style="text-align:right">SOL</div>
+        <div class="heatmap-cell pf-15">1.98</div>
+        <div class="heatmap-cell pf-11">1.15</div>
+        <div class="heatmap-cell pf-11">1.13</div>
+      </div>
+      <p style="font-size:0.75rem;color:var(--muted);margin-top:8px">💡 SOL 1H = PF 1.98 (best cell). 1H consistently strongest across all pairs.</p>
+    </div>
+    <div>
+      <h3 style="font-size:0.85rem;color:var(--muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px">Direction Split (R)</h3>
+      <div class="chart-container" style="padding:16px">
+        <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:8px">
+          <span>🟢 Long: +322R (48.9% WR)</span>
+          <span>🔴 Short: +366R (51.0% WR)</span>
+        </div>
+        <div class="dir-bar">
+          <div class="dir-long" style="width:46.8%">322R</div>
+          <div class="dir-short" style="width:53.2%">366R</div>
+        </div>
+        <p style="font-size:0.75rem;color:var(--muted);margin-top:10px">Slight short bias (+0.09R/trade vs +0.09R). Both sides profitable — no directional dependency.</p>
+        
+        <h3 style="font-size:0.85rem;color:var(--muted);margin:16px 0 8px;text-transform:uppercase;letter-spacing:0.5px">Exit Type Split</h3>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <div style="flex:1;min-width:80px;text-align:center;background:var(--bg);padding:10px;border-radius:8px">
+            <div style="font-size:1.2rem;font-weight:700;color:var(--red)">3,651</div>
+            <div style="font-size:0.7rem;color:var(--muted)">Stop Loss</div>
+          </div>
+          <div style="flex:1;min-width:80px;text-align:center;background:var(--bg);padding:10px;border-radius:8px">
+            <div style="font-size:1.2rem;font-weight:700;color:var(--green)">3,569</div>
+            <div style="font-size:0.7rem;color:var(--muted)">Vector Exit</div>
+          </div>
+          <div style="flex:1;min-width:80px;text-align:center;background:var(--bg);padding:10px;border-radius:8px">
+            <div style="font-size:1.2rem;font-weight:700;color:var(--muted)">375</div>
+            <div style="font-size:0.7rem;color:var(--muted)">Timeout</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- YEAR-BY-YEAR EDGE -->
+<div class="section">
+  <div class="section-head">
+    <div class="icon" style="background:linear-gradient(135deg,var(--yellow),#d97706)">📅</div>
+    <h2>Year-by-Year Edge Strength (Baseline)</h2>
+  </div>
+  <div class="chart-container">
+    <div id="year-chart"></div>
+    <p style="font-size:0.75rem;color:var(--muted);margin-top:12px">⚠️ Edge decays in ranging/choppy markets (2020, 2022, 2024-2025). Strongest in trending years (2017, 2019, 2021, 2023). 2025 is basically breakeven (PF 1.02).</p>
+  </div>
+</div>
+
+<!-- DEAD ENDS -->
+<div class="section">
+  <div class="section-head">
+    <div class="icon" style="background:linear-gradient(135deg,var(--red),#dc2626)">💀</div>
+    <h2>Dead Ends — What Didn't Work</h2>
+  </div>
+  <p style="font-size:0.85rem;color:var(--muted);margin-bottom:16px">All 4 pivot detection improvements failed. Improving swing detection within the current framework is a dead end — the framework itself needs replacing.</p>
+  <div class="tests-container">
+    <div class="test-card">
+      <div class="test-name">Test A: Volume-Weighted Pivots</div>
+      <div class="test-desc">Only keep swings where volume ≥ 1.5× average</div>
+      <div class="test-metric"><span class="k">Trades</span><span class="v">2,579 (-66%)</span></div>
+      <div class="test-metric"><span class="k">PF</span><span class="v" style="color:var(--red)">1.13 (−0.06)</span></div>
+      <div class="test-metric"><span class="k">Total R</span><span class="v" style="color:var(--red)">+171 (−75%)</span></div>
+      <div class="test-verdict">Killed too many trades AND PF dropped. Volume filter is too blunt.</div>
+    </div>
+    <div class="test-card">
+      <div class="test-name">Test B: ATR Min Swing Size</div>
+      <div class="test-desc">Filter swings by minimum distance in ATR multiples</div>
+      <div class="test-metric"><span class="k">Best Config</span><span class="v">1.0× ATR</span></div>
+      <div class="test-metric"><span class="k">PF</span><span class="v" style="color:var(--red)">1.17 (−0.02)</span></div>
+      <div class="test-metric"><span class="k">Pattern</span><span class="v">More filter = worse</span></div>
+      <div class="test-verdict">All configs slightly worse. Stricter = fewer trades with no PF improvement.</div>
+    </div>
+    <div class="test-card">
+      <div class="test-name">Test C: HTF Confirmation</div>
+      <div class="test-desc">Only take setups where L3 aligns with higher-TF swing</div>
+      <div class="test-metric"><span class="k">Trades</span><span class="v">6,770 (−11%)</span></div>
+      <div class="test-metric"><span class="k">PF</span><span class="v" style="color:var(--red)">1.18 (−0.01)</span></div>
+      <div class="test-metric"><span class="k">Total R</span><span class="v" style="color:var(--red)">+602 (−12%)</span></div>
+      <div class="test-verdict">Filter too loose on 1m/15m — almost everything passes. Net negative.</div>
+    </div>
+    <div class="test-card">
+      <div class="test-name">Test D: Wider Fractal Pivots</div>
+      <div class="test-desc">Increase lookback to catch only major swings</div>
+      <div class="test-metric"><span class="k">lb15/30</span><span class="v">58 trades in 8 yrs</span></div>
+      <div class="test-metric"><span class="k">lb20+</span><span class="v" style="color:var(--red)">0 trades</span></div>
+      <div class="test-metric"><span class="k">PF (lb15)</span><span class="v">1.34 (n=58)</span></div>
+      <div class="test-verdict">Destroys trade count entirely. Wider lookback = zero viable setups.</div>
+    </div>
+  </div>
+</div>
+
+<!-- STOP HUNT PRELIMINARY -->
+<div class="section">
+  <div class="section-head">
+    <div class="icon" style="background:linear-gradient(135deg,var(--yellow),var(--red))">⚡</div>
+    <h2>Stop Hunt Entry — Early Signal (Feb 16 Test)</h2>
+  </div>
+  <div class="two-col">
+    <div class="chart-container">
+      <h3 style="font-size:0.85rem;color:var(--muted);margin-bottom:12px">Preliminary Results</h3>
+      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="stat-card">
+          <div class="val" style="font-size:1.3rem">553</div>
+          <div class="label">Trades</div>
+        </div>
+        <div class="stat-card">
+          <div class="val" style="font-size:1.3rem;color:var(--yellow)">1.10</div>
+          <div class="label">PF Overall</div>
+        </div>
+        <div class="stat-card">
+          <div class="val" style="font-size:1.3rem">27.5%</div>
+          <div class="label">Win Rate</div>
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <div class="test-metric"><span class="k">Avg Win</span><span class="v" style="color:var(--green)">+2.89R</span></div>
+        <div class="test-metric"><span class="k">Avg Loss</span><span class="v" style="color:var(--red)">−1.00R</span></div>
+        <div class="test-metric"><span class="k">R/Trade</span><span class="v">+0.07</span></div>
+      </div>
+    </div>
+    <div class="chart-container">
+      <h3 style="font-size:0.85rem;color:var(--muted);margin-bottom:12px">By Pair & Timeframe</h3>
+      <div class="heatmap heatmap-3x3" style="margin-top:0">
+        <div class="heatmap-header"></div>
+        <div class="heatmap-header">1H</div>
+        <div class="heatmap-header">15m</div>
+        <div class="heatmap-header">1m</div>
+        
+        <div class="heatmap-header" style="text-align:right">BTC</div>
+        <div class="heatmap-cell pf-11" style="font-size:0.75rem">—</div>
+        <div class="heatmap-cell pf-13" style="font-size:0.75rem">—</div>
+        <div class="heatmap-cell pf-11" style="font-size:0.75rem">—</div>
+        
+        <div class="heatmap-header" style="text-align:right">ETH</div>
+        <div class="heatmap-cell pf-10" style="font-size:0.75rem">—</div>
+        <div class="heatmap-cell pf-11" style="font-size:0.75rem">—</div>
+        <div class="heatmap-cell pf-10" style="font-size:0.75rem">—</div>
+        
+        <div class="heatmap-header" style="text-align:right">SOL</div>
+        <div class="heatmap-cell pf-neg" style="font-size:0.75rem">—</div>
+        <div class="heatmap-cell pf-10" style="font-size:0.75rem">—</div>
+        <div class="heatmap-cell pf-neg" style="font-size:0.75rem">—</div>
+      </div>
+      <div style="margin-top:10px">
+        <div class="test-metric"><span class="k">🟢 BTC</span><span class="v" style="color:var(--green)">PF 1.58 (+58R)</span></div>
+        <div class="test-metric"><span class="k">🟡 15m</span><span class="v" style="color:var(--green)">PF 1.71 (+73R)</span></div>
+        <div class="test-metric"><span class="k">🔴 SOL</span><span class="v" style="color:var(--red)">PF 0.78 (−28R)</span></div>
+      </div>
+      <p style="font-size:0.72rem;color:var(--muted);margin-top:8px">⚠️ This was a preliminary test. State machine version (self-confirming surpass) not yet tested.</p>
+    </div>
+  </div>
+</div>
+
+<!-- KEY INSIGHTS -->
+<div class="section">
+  <div class="section-head">
+    <div class="icon" style="background:linear-gradient(135deg,var(--accent),#7c3aed)">💡</div>
+    <h2>Key Insights</h2>
+  </div>
+  <div class="insights-grid">
+    <div class="insight">
+      <div class="quote">"The 2nd leg surpass is self-confirming — candle wicks past the extreme, closes back inside = ENTER. No lookback needed."</div>
+      <div class="source">— Ivo, Feb 18 · Stop Hunt Entry</div>
+    </div>
+    <div class="insight">
+      <div class="quote">"Can't you find them through visual reasoning? The levels should be EQUAL measured moves, not discovered swings."</div>
+      <div class="source">— Ivo, Feb 18 · 3-Box Projection</div>
+    </div>
+    <div class="insight">
+      <div class="quote">"Improving swing detection is a dead end. The whole framework is wrong — we need to PROJECT boxes, not DISCOVER swings."</div>
+      <div class="source">— Test Results, Feb 18 · After 4 failed pivot tests</div>
+    </div>
+    <div class="insight">
+      <div class="quote">"Market makers execute in EQUAL steps — L1, L2, L3. The L3 boundary is the reversal zone. 100% hit rate in manual examples."</div>
+      <div class="source">— Ivo, Feb 17 · Market Maker Method Core</div>
+    </div>
+    <div class="insight">
+      <div class="quote">"Edge stronger in trending years (2017, 2019, 2021, 2023). Nearly flat in choppy markets. 2025 alone: PF 1.02."</div>
+      <div class="source">— Backtest Analysis · Year-by-Year</div>
+    </div>
+    <div class="insight">
+      <div class="quote">"ATR normalization = same edge density but 2× the opportunities. Good foundation. But NOT the PF unlock."</div>
+      <div class="source">— ATR Test Conclusion, Feb 18</div>
+    </div>
+  </div>
+</div>
+
+<!-- WHAT PF 2.0 MEANS -->
+<div class="section">
+  <div class="section-head">
+    <div class="icon" style="background:linear-gradient(135deg,var(--green),#059669)">💰</div>
+    <h2>What PF 2.0 Means in Dollars (2% Risk, 17 Trades/Week)</h2>
+  </div>
+  <div class="compound-grid">
+    <div class="compound-card">
+      <div class="scenario">$100 Start</div>
+      <div class="amount">$3,276</div>
+      <div class="sub">After 6 months · 32× return</div>
+    </div>
+    <div class="compound-card">
+      <div class="scenario">$1,000 Start</div>
+      <div class="amount">$32,768</div>
+      <div class="sub">After 6 months · 32× return</div>
+    </div>
+    <div class="compound-card">
+      <div class="scenario">$10,000 Start</div>
+      <div class="amount">$327,680</div>
+      <div class="sub">After 6 months · 32× return</div>
+    </div>
+    <div class="compound-card">
+      <div class="scenario">Weekly Growth</div>
+      <div class="amount">~15%</div>
+      <div class="sub">+0.44R × 17 trades × 2% risk</div>
+    </div>
+  </div>
+  <p style="font-size:0.75rem;color:var(--muted);text-align:center;margin-top:12px">Based on +0.44R/trade average at PF 2.0, compounding 2% of equity per trade. Assumes consistent execution and no position sizing limits.</p>
+</div>
+
+<!-- NEXT STEPS -->
+<div class="section">
+  <div class="section-head">
+    <div class="icon" style="background:linear-gradient(135deg,var(--yellow),var(--green))">🚀</div>
+    <h2>Path Forward</h2>
+  </div>
+  <div class="next-cards">
+    <div class="next-card hot">
+      <div class="step-label">Improvement #3 — In Progress</div>
+      <h3>⚡ Stop Hunt State Machine</h3>
+      <p>Remove unnecessary lookback delay on surpass entries. The 2nd leg surpass is self-confirming — when a candle wicks past the M/W extreme and closes back inside, that IS the signal. No swing confirmation needed.</p>
+      <div class="expected">
+        <strong>Expected impact:</strong> Faster entries (e.g. BTC 1H entered 1,500 points late). Tighter stops = better R:R. Won't change PF dramatically but improves execution quality.
+      </div>
+    </div>
+    <div class="next-card cold">
+      <div class="step-label">Improvement #4 — The Real Fix</div>
+      <h3>📦 3-Box Equal Measured Moves</h3>
+      <p>Replace the entire swing-point detection framework with Ivo's actual Market Maker Method: measure the first impulse (Level 1), then PROJECT 3 equal boxes. L3 boundary = reversal zone. This is how institutional accumulation/distribution actually works.</p>
+      <div class="expected">
+        <strong>Expected impact:</strong> This is the fundamental fix. Current swing detection finds random pivots — 3-Box finds where market makers are actually operating. 100% hit rate in Ivo's manual chart examples. If it backtests well, this alone could push PF toward 2.0.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FULL COMPARISON TABLE -->
+<div class="section">
+  <div class="section-head">
+    <div class="icon" style="background:linear-gradient(135deg,#64748b,#475569)">📋</div>
+    <h2>Complete Test Results</h2>
+  </div>
+  <div style="overflow-x:auto">
+    <table>
+      <thead>
+        <tr><th>Test</th><th>Trades</th><th>WR</th><th>PF</th><th>Total R</th><th>R/Trade</th><th>Verdict</th></tr>
+      </thead>
+      <tbody id="full-table"></tbody>
+    </table>
+  </div>
+</div>
+
+<footer class="footer">
+  <p>Last updated: Feb 18, 2026 · Data: 8.5 years (2017-2026) · BTC/ETH/SOL · 1m/15m/1H</p>
+  <p style="margin-top:4px">Built by <span class="nova">✨ Nova</span> · <a href="index.html" style="color:var(--accent);text-decoration:none">← Command Center</a></p>
+</footer>
+
+</div>
+
+<script>
+// PF Progress Bar
+const pfStart = 1.20, pfCurrent = 1.19, pfTarget = 2.00;
+const pct = Math.max(0, ((pfCurrent - pfStart) / (pfTarget - pfStart)) * 100);
+// Since we're slightly below start, show minimal fill  
+const fillPct = Math.max(1, pct);
+document.getElementById('pf-fill').style.width = fillPct + '%';
+document.getElementById('pf-text').textContent = pct <= 0 ? 'Not yet improved' : Math.round(pct) + '% to target';
+
+// ATR Band Chart
+const atrData = [
+  {label:'Baseline\n(Fixed 2%)', totalR:336, pf:1.20, color:'linear-gradient(180deg,#ef4444,#991b1b)'},
+  {label:'ATR 1.0×', totalR:386, pf:1.19, color:'linear-gradient(180deg,#3b82f6,#1d4ed8)'},
+  {label:'ATR 1.5×', totalR:530, pf:1.18, color:'linear-gradient(180deg,#3b82f6,#1d4ed8)'},
+  {label:'ATR 2.0×', totalR:688, pf:1.19, color:'linear-gradient(180deg,#10b981,#059669)', highlight:true},
+  {label:'ATR 2.5×', totalR:732, pf:1.17, color:'linear-gradient(180deg,#3b82f6,#1d4ed8)'},
+  {label:'ATR 3.0×', totalR:843, pf:1.17, color:'linear-gradient(180deg,#3b82f6,#1d4ed8)'}
+];
+const maxR = Math.max(...atrData.map(d=>d.totalR));
+const chartEl = document.getElementById('atr-chart');
+atrData.forEach(d => {
+  const col = document.createElement('div');
+  col.className = 'bar-col';
+  const h = (d.totalR / maxR) * 190;
+  col.innerHTML = `
+    <div class="bar-val">+${d.totalR}R</div>
+    <div class="bar-pf">PF ${d.pf}</div>
+    <div class="bar" style="height:${h}px;background:${d.color};${d.highlight?'box-shadow:0 0 20px rgba(16,185,129,0.3)':''}"></div>
+    <div class="bar-label">${d.label.replace('\n','<br>')}</div>
+  `;
+  chartEl.appendChild(col);
+});
+
+// Year-by-Year Chart
+const yearData = [
+  {year:'2017', pf:1.47},
+  {year:'2018', pf:1.28},
+  {year:'2019', pf:1.42},
+  {year:'2020', pf:1.03},
+  {year:'2021', pf:1.25},
+  {year:'2022', pf:1.05},
+  {year:'2023', pf:1.31},
+  {year:'2024', pf:1.10},
+  {year:'2025', pf:1.02}
+];
+const yearEl = document.getElementById('year-chart');
+yearData.forEach(y => {
+  const row = document.createElement('div');
+  row.className = 'year-row';
+  const pf = y.pf;
+  const width = Math.max(5, ((pf - 0.95) / (1.55 - 0.95)) * 100);
+  let bgColor;
+  if (pf >= 1.30) bgColor = 'rgba(16,185,129,0.4)';
+  else if (pf >= 1.20) bgColor = 'rgba(16,185,129,0.25)';
+  else if (pf >= 1.10) bgColor = 'rgba(245,158,11,0.25)';
+  else bgColor = 'rgba(239,68,68,0.25)';
+  let textColor;
+  if (pf >= 1.30) textColor = '#6ee7b7';
+  else if (pf >= 1.20) textColor = '#6ee7b7';
+  else if (pf >= 1.10) textColor = '#fcd34d';
+  else textColor = '#fca5a5';
+  row.innerHTML = `
+    <div class="year-label">${y.year}</div>
+    <div class="year-cell" style="width:${width}%;background:${bgColor};color:${textColor}">PF ${pf.toFixed(2)}</div>
+  `;
+  yearEl.appendChild(row);
+});
+
+// Full Results Table
+const tests = [
+  {name:'Baseline (Fixed 2%)', trades:'3,362', wr:'47.1%', pf:'1.20', totalR:'+336', rpt:'+0.10', verdict:'Original honest V11c'},
+  {name:'<strong>ATR 2.0× (Best)</strong>', trades:'7,595', wr:'50.0%', pf:'1.19', totalR:'<strong>+688</strong>', rpt:'+0.09', verdict:'✅ 2× total R, same edge'},
+  {name:'ATR 1.0×', trades:'4,223', wr:'50.3%', pf:'1.19', totalR:'+386', rpt:'+0.09', verdict:'Highest PF of ATR band'},
+  {name:'ATR 1.5×', trades:'6,011', wr:'49.8%', pf:'1.18', totalR:'+530', rpt:'+0.09', verdict:'—'},
+  {name:'ATR 2.5×', trades:'9,047', wr:'49.8%', pf:'1.17', totalR:'+732', rpt:'+0.08', verdict:'PF starting to drop'},
+  {name:'ATR 3.0×', trades:'10,138', wr:'49.7%', pf:'1.17', totalR:'+843', rpt:'+0.08', verdict:'Most R but lowest PF'},
+  {name:'Pivot A: Volume', trades:'2,579', wr:'49.6%', pf:'1.13', totalR:'+171', rpt:'+0.07', verdict:'❌ Killed trades + PF'},
+  {name:'Pivot B: ATR Swing', trades:'7,571', wr:'50.1%', pf:'1.17', totalR:'+627', rpt:'+0.08', verdict:'❌ All configs worse'},
+  {name:'Pivot C: HTF Confirm', trades:'6,770', wr:'50.5%', pf:'1.18', totalR:'+602', rpt:'+0.09', verdict:'❌ Filter too loose'},
+  {name:'Pivot D: Wider Fractal', trades:'58', wr:'53.4%', pf:'1.34', totalR:'+8', rpt:'+0.14', verdict:'❌ Zero viable trades'},
+  {name:'Stop Hunt (prelim)', trades:'553', wr:'27.5%', pf:'1.10', totalR:'+39', rpt:'+0.07', verdict:'⏳ Early test, mixed'}
+];
+const tbody = document.getElementById('full-table');
+tests.forEach(t => {
+  const tr = document.createElement('tr');
+  const pfVal = parseFloat(t.pf);
+  const pfColor = pfVal >= 1.20 ? 'var(--green)' : pfVal >= 1.15 ? 'var(--yellow)' : 'var(--red)';
+  tr.innerHTML = `<td>${t.name}</td><td>${t.trades}</td><td>${t.wr}</td><td style="color:${pfColor};font-weight:700">${t.pf}</td><td>${t.totalR}</td><td>${t.rpt}</td><td style="font-size:0.8em;color:var(--muted)">${t.verdict}</td>`;
+  tbody.appendChild(tr);
+});
+</script>
+</body>
+</html>

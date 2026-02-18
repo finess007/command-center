@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>V11c Improvement Tracker</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0e17;color:#e0e0e0;font-family:'Segoe UI',system-ui,sans-serif;padding:20px;max-width:1400px;margin:0 auto}
+h1{font-size:1.8em;margin-bottom:4px;color:#fff}
+.subtitle{color:#888;font-size:0.95em;margin-bottom:24px}
+.goal-bar{background:#141a2a;border-radius:12px;padding:16px 20px;margin-bottom:24px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.goal-bar .label{color:#888;font-size:0.85em}
+.goal-bar .value{font-size:1.6em;font-weight:700}
+.goal-bar .start{color:#ff6b6b}
+.goal-bar .current{color:#ffd93d}
+.goal-bar .target{color:#6bff8e}
+.progress-track{flex:1;min-width:200px;height:28px;background:#1a2235;border-radius:14px;position:relative;overflow:hidden}
+.progress-fill{height:100%;border-radius:14px;background:linear-gradient(90deg,#ff6b6b,#ffd93d,#6bff8e);transition:width 0.5s}
+.progress-text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-weight:700;font-size:0.85em;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.8)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:24px}
+.card{background:#141a2a;border-radius:12px;padding:20px;border-left:4px solid #333}
+.card.done{border-left-color:#6bff8e}
+.card.running{border-left-color:#ffd93d}
+.card.pending{border-left-color:#555}
+.card .step-num{font-size:0.75em;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.card h3{font-size:1.1em;margin-bottom:8px;color:#fff}
+.card .status{display:inline-block;padding:2px 10px;border-radius:10px;font-size:0.75em;font-weight:600;margin-bottom:10px}
+.card .status.done{background:#1a3a2a;color:#6bff8e}
+.card .status.running{background:#3a3a1a;color:#ffd93d}
+.card .status.pending{background:#1a1a2a;color:#888}
+.card .metric{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #1a2235}
+.card .metric:last-child{border:none}
+.card .metric .k{color:#888;font-size:0.85em}
+.card .metric .v{font-weight:600;font-size:0.9em}
+.card .metric .v.up{color:#6bff8e}
+.card .metric .v.down{color:#ff6b6b}
+.card .metric .v.neutral{color:#ffd93d}
+.card .verdict{margin-top:10px;padding:10px;background:#0a0e17;border-radius:8px;font-size:0.85em;line-height:1.5}
+table{width:100%;border-collapse:collapse;margin-bottom:24px}
+th{background:#141a2a;padding:10px 12px;text-align:left;font-size:0.8em;color:#888;text-transform:uppercase;letter-spacing:0.5px}
+td{padding:10px 12px;border-bottom:1px solid #1a2235;font-size:0.9em}
+tr:hover td{background:#141a2a}
+.highlight{color:#ffd93d;font-weight:600}
+.section-title{font-size:1.2em;color:#fff;margin:28px 0 12px;padding-bottom:8px;border-bottom:1px solid #1a2235}
+.band-chart{display:flex;align-items:flex-end;gap:8px;height:200px;padding:20px;background:#141a2a;border-radius:12px;margin-bottom:24px}
+.band-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.band-bar{width:100%;border-radius:6px 6px 0 0;min-height:4px;transition:height 0.5s}
+.band-label{font-size:0.75em;color:#888}
+.band-value{font-size:0.8em;font-weight:600;color:#fff}
+.band-pf{font-size:0.7em;color:#ffd93d}
+.tf-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}
+.tf-card{background:#141a2a;border-radius:10px;padding:16px;text-align:center}
+.tf-card .tf-name{font-size:1.1em;font-weight:700;color:#fff;margin-bottom:6px}
+.tf-card .tf-pf{font-size:1.8em;font-weight:700;margin-bottom:4px}
+.tf-card .tf-trades{font-size:0.8em;color:#888}
+.pf-good{color:#6bff8e}
+.pf-ok{color:#ffd93d}
+.pf-weak{color:#ff6b6b}
+.comparison{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.comp-box{background:#141a2a;border-radius:12px;padding:20px}
+.comp-box h4{color:#888;font-size:0.8em;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.comp-box .big-num{font-size:2.2em;font-weight:700;margin-bottom:4px}
+.comp-box .detail{font-size:0.85em;color:#888}
+.delta-badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:0.8em;font-weight:600;margin-left:8px}
+.delta-up{background:#1a3a2a;color:#6bff8e}
+.delta-down{background:#3a1a1a;color:#ff6b6b}
+.delta-flat{background:#2a2a1a;color:#ffd93d}
+@media(max-width:700px){
+  .cards{grid-template-columns:1fr}
+  .tf-grid{grid-template-columns:1fr}
+  .comparison{grid-template-columns:1fr}
+  .goal-bar{flex-direction:column;text-align:center}
+}
+</style>
+</head>
+<body>
+
+<h1>🔧 V11c Improvement Tracker</h1>
+<p class="subtitle">Goal: Push Profit Factor from 1.20 → 2.0+ through systematic improvements</p>
+
+<!-- GOAL PROGRESS BAR -->
+<div class="goal-bar">
+  <div><div class="label">START</div><div class="value start" id="pf-start">1.20</div></div>
+  <div class="progress-track">
+    <div class="progress-fill" id="pf-fill"></div>
+    <div class="progress-text" id="pf-progress-text"></div>
+  </div>
+  <div><div class="label">CURRENT BEST</div><div class="value current" id="pf-current">1.19</div></div>
+  <div><div class="label">TARGET</div><div class="value target">2.00</div></div>
+</div>
+
+<!-- IMPROVEMENT CARDS -->
+<div class="section-title">Improvement Stack</div>
+<div class="cards" id="cards"></div>
+
+<!-- ATR BAND COMPARISON CHART -->
+<div class="section-title">ATR Band Multiplier Comparison — Total R</div>
+<div class="band-chart" id="band-chart"></div>
+
+<!-- BASELINE vs BEST ATR -->
+<div class="section-title">Baseline (Fixed 2%) vs Best ATR (2.0×)</div>
+<div class="comparison">
+  <div class="comp-box">
+    <h4>Total Return (R)</h4>
+    <div class="big-num" style="color:#ff6b6b">+336R</div>
+    <div class="detail">Fixed 2.0% · 3,362 trades</div>
+  </div>
+  <div class="comp-box">
+    <h4>Total Return (R)</h4>
+    <div class="big-num" style="color:#6bff8e">+688R <span class="delta-badge delta-up">+105%</span></div>
+    <div class="detail">ATR 2.0× · 7,595 trades</div>
+  </div>
+</div>
+
+<!-- TF BREAKDOWN -->
+<div class="section-title">By Timeframe (ATR 2.0×)</div>
+<div class="tf-grid">
+  <div class="tf-card">
+    <div class="tf-name">1H</div>
+    <div class="tf-pf pf-good">1.44</div>
+    <div class="tf-trades">587 trades · +132R</div>
+  </div>
+  <div class="tf-card">
+    <div class="tf-name">15m</div>
+    <div class="tf-pf pf-ok">1.26</div>
+    <div class="tf-trades">2,350 trades · +317R</div>
+  </div>
+  <div class="tf-card">
+    <div class="tf-name">1m</div>
+    <div class="tf-pf pf-weak">1.11</div>
+    <div class="tf-trades">4,658 trades · +238R</div>
+  </div>
+</div>
+
+<!-- FULL RESULTS TABLE -->
+<div class="section-title">All Test Results</div>
+<table>
+<thead>
+<tr><th>Test</th><th>Trades</th><th>WR</th><th>PF</th><th>Total R</th><th>R/Trade</th><th>Avg Win</th><th>Notes</th></tr>
+</thead>
+<tbody id="results-table">
+</tbody>
+</table>
+
+<script>
+// === DATA ===
+const baseline = {pf:1.20, trades:3362, wr:47.1, totalR:336.35, rPerTrade:0.10, avgWin:1.29};
+
+const improvements = [
+  {
+    num: 1, name: "ATR Normalization", status: "done",
+    description: "Replace fixed % thresholds with ATR-based dynamic thresholds",
+    results: {pf:1.19, trades:7595, wr:50.0, totalR:688, rPerTrade:0.09, avgWin:1.15},
+    verdict: "✅ Total R doubled (+105%). WR +3%. PF unchanged. ATR finds more valid setups — same edge, more coverage.",
+    date: "2026-02-18"
+  },
+  {
+    num: 2, name: "New Pivot Detection", status: "done",
+    description: "4 approaches tested: Volume-Weighted, ATR Min Swing, HTF Confirmation, Wider Fractals",
+    results: {pf:1.17, trades:7571, wr:50.1, totalR:627, rPerTrade:0.08, avgWin:1.13},
+    verdict: "❌ ALL 4 TESTS FAILED. Best was Test B (ATR 1.0×): PF 1.17, worse than baseline. Volume filter killed trades (PF 1.13). Wider fractals killed trade count entirely. Conclusion: improving swing detection is a dead end.",
+    date: "2026-02-18"
+  },
+  {
+    num: 3, name: "Stop Hunt State Machine", status: "running",
+    description: "Remove lookback delay for surpass entries — candle close IS the confirmation",
+    results: null,
+    verdict: "Key insight: 2nd leg surpass is self-confirming. Current code waits for swing_lookback which causes late entries (e.g. BTC 1H entered at 68,930 instead of ~70,500). Fix = enter immediately on surpass candle close.",
+    date: null
+  },
+  {
+    num: 4, name: "3-Box Projection", status: "pending",
+    description: "Replace swing-point detection with equal measured moves — Ivo's actual Market Maker Method",
+    results: null,
+    verdict: "The fundamental fix. Instead of finding swings and hoping they form levels, measure first impulse and PROJECT 3 equal boxes. This is how Ivo reads charts — the bot should do the same.",
+    date: null
+  }
+];
+
+const atrBands = [
+  {mult:"1.0×", trades:4223, wr:50.3, pf:1.19, totalR:386},
+  {mult:"1.5×", trades:6011, wr:49.8, pf:1.18, totalR:530},
+  {mult:"2.0×", trades:7595, wr:50.0, pf:1.19, totalR:688},
+  {mult:"2.5×", trades:9047, wr:49.8, pf:1.17, totalR:732},
+  {mult:"3.0×", trades:10138, wr:49.7, pf:1.17, totalR:843}
+];
+
+const allTests = [
+  {name:"Baseline (Fixed 2%)", trades:3362, wr:"47.1%", pf:1.20, totalR:"+336", rpt:"+0.10", avgW:"+1.29R", notes:"Original honest V11c"},
+  {name:"ATR 1.0×", trades:4223, wr:"50.3%", pf:1.19, totalR:"+386", rpt:"+0.09", avgW:"+1.15R", notes:"Tightest ATR band"},
+  {name:"ATR 1.5×", trades:6011, wr:"49.8%", pf:1.18, totalR:"+530", rpt:"+0.09", avgW:"+1.16R", notes:""},
+  {name:"ATR 2.0×", trades:7595, wr:"50.0%", pf:1.19, totalR:"+688", rpt:"+0.09", avgW:"+1.15R", notes:"⭐ Sweet spot — 2× total R"},
+  {name:"ATR 2.5×", trades:9047, wr:"49.8%", pf:1.17, totalR:"+732", rpt:"+0.08", avgW:"+1.15R", notes:""},
+  {name:"ATR 3.0×", trades:10138, wr:"49.7%", pf:1.17, totalR:"+843", rpt:"+0.08", avgW:"+1.15R", notes:"Most trades, highest total R"},
+  {name:"Pivot A: Volume", trades:2579, wr:"49.6%", pf:1.13, totalR:"+171", rpt:"+0.07", avgW:"—", notes:"❌ Killed trades + PF worse"},
+  {name:"Pivot B: ATR Swing 1.0×", trades:7571, wr:"50.1%", pf:1.17, totalR:"+627", rpt:"+0.08", avgW:"—", notes:"❌ Best of B, still worse"},
+  {name:"Pivot B: ATR Swing 2.0×", trades:6631, wr:"50.4%", pf:1.17, totalR:"+528", rpt:"+0.08", avgW:"—", notes:"❌ Fewer trades, same PF"},
+  {name:"Pivot B: ATR Swing 3.0×", trades:4808, wr:"51.1%", pf:1.14, totalR:"+321", rpt:"+0.07", avgW:"—", notes:"❌ PF dropped"},
+  {name:"Pivot C: HTF Confirm", trades:6770, wr:"50.5%", pf:1.18, totalR:"+602", rpt:"+0.09", avgW:"—", notes:"❌ Filter too loose, -86R"},
+  {name:"Pivot D: lb15/30", trades:58, wr:"53.4%", pf:1.34, totalR:"+8", rpt:"+0.14", avgW:"—", notes:"❌ Only 58 trades in 8 years"},
+  {name:"Pivot D: lb20+", trades:0, wr:"—", pf:0, totalR:"0", rpt:"—", avgW:"—", notes:"❌ Zero trades — dead"}
+];
+
+// === RENDER ===
+
+// Progress bar
+const currentBest = 1.19;
+const pct = Math.max(0, Math.min(100, ((currentBest - 1.20) / (2.00 - 1.20)) * 100));
+document.getElementById('pf-fill').style.width = Math.max(2, pct) + '%';
+document.getElementById('pf-progress-text').textContent = Math.round(pct) + '% to target';
+document.getElementById('pf-current').textContent = currentBest.toFixed(2);
+
+// Cards
+const cardsEl = document.getElementById('cards');
+improvements.forEach(imp => {
+  const c = document.createElement('div');
+  c.className = 'card ' + imp.status;
+  let metricsHtml = '';
+  if (imp.results) {
+    const r = imp.results;
+    const pfDelta = (r.pf - baseline.pf).toFixed(2);
+    const rDelta = ((r.totalR - baseline.totalR) / baseline.totalR * 100).toFixed(0);
+    metricsHtml = `
+      <div class="metric"><span class="k">Trades</span><span class="v">${r.trades.toLocaleString()}</span></div>
+      <div class="metric"><span class="k">Win Rate</span><span class="v">${r.wr}%</span></div>
+      <div class="metric"><span class="k">Profit Factor</span><span class="v ${parseFloat(pfDelta)>0?'up':parseFloat(pfDelta)<0?'down':'neutral'}">${r.pf} (${pfDelta>=0?'+':''}${pfDelta})</span></div>
+      <div class="metric"><span class="k">Total R</span><span class="v up">+${r.totalR} (+${rDelta}%)</span></div>
+      <div class="metric"><span class="k">R/Trade</span><span class="v">${r.rPerTrade}</span></div>
+    `;
+  }
+  c.innerHTML = `
+    <div class="step-num">Improvement #${imp.num}${imp.date?' · '+imp.date:''}</div>
+    <h3>${imp.name}</h3>
+    <span class="status ${imp.status}">${imp.status==='done'?'✅ Complete':imp.status==='running'?'🔄 Running':'⏳ Pending'}</span>
+    <p style="font-size:0.85em;color:#aaa;margin-bottom:10px">${imp.description}</p>
+    ${metricsHtml}
+    <div class="verdict">${imp.verdict}</div>
+  `;
+  cardsEl.appendChild(c);
+});
+
+// Band chart
+const chartEl = document.getElementById('band-chart');
+const maxR = Math.max(...atrBands.map(b=>b.totalR));
+// Add baseline bar
+const bCol = document.createElement('div');
+bCol.className = 'band-col';
+const bH = (baseline.totalR / maxR * 160);
+bCol.innerHTML = `
+  <div class="band-value">+${baseline.totalR}R</div>
+  <div class="band-pf">PF ${baseline.pf}</div>
+  <div class="band-bar" style="height:${bH}px;background:linear-gradient(180deg,#ff6b6b,#aa3333)"></div>
+  <div class="band-label">Fixed 2%</div>
+`;
+chartEl.appendChild(bCol);
+
+atrBands.forEach(b => {
+  const col = document.createElement('div');
+  col.className = 'band-col';
+  const h = (b.totalR / maxR * 160);
+  const color = b.mult==='2.0×' ? 'linear-gradient(180deg,#6bff8e,#2a8a4a)' : 'linear-gradient(180deg,#4a9eff,#2255aa)';
+  col.innerHTML = `
+    <div class="band-value">+${b.totalR}R</div>
+    <div class="band-pf">PF ${b.pf}</div>
+    <div class="band-bar" style="height:${h}px;background:${color}"></div>
+    <div class="band-label">ATR ${b.mult}</div>
+  `;
+  chartEl.appendChild(col);
+});
+
+// Results table
+const tbody = document.getElementById('results-table');
+allTests.forEach(t => {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${t.name}</td><td>${t.trades.toLocaleString()}</td><td>${t.wr}</td><td>${t.pf}</td><td>${t.totalR}</td><td>${t.rpt}</td><td>${t.avgW}</td><td style="font-size:0.8em;color:#888">${t.notes}</td>`;
+  tbody.appendChild(tr);
+});
+</script>
+</body>
+</html>
