@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>V11c Improvement Tracker</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0e17;color:#e0e0e0;font-family:'Segoe UI',system-ui,sans-serif;padding:20px;max-width:1400px;margin:0 auto}
+h1{font-size:1.8em;margin-bottom:4px;color:#fff}
+.subtitle{color:#888;font-size:0.95em;margin-bottom:24px}
+.goal-bar{background:#141a2a;border-radius:12px;padding:16px 20px;margin-bottom:24px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.goal-bar .label{color:#888;font-size:0.85em}
+.goal-bar .value{font-size:1.6em;font-weight:700}
+.goal-bar .start{color:#ff6b6b}
+.goal-bar .current{color:#ffd93d}
+.goal-bar .target{color:#6bff8e}
+.progress-track{flex:1;min-width:200px;height:28px;background:#1a2235;border-radius:14px;position:relative;overflow:hidden}
+.progress-fill{height:100%;border-radius:14px;background:linear-gradient(90deg,#ff6b6b,#ffd93d);transition:width 0.5s}
+.progress-text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-weight:700;font-size:0.85em;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.8)}
+.progress-marker{position:absolute;top:-6px;width:2px;height:40px;background:#fff;opacity:0.5}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;margin-bottom:24px}
+.card{background:#141a2a;border-radius:12px;padding:20px;border-left:4px solid #333}
+.card.done{border-left-color:#6bff8e}
+.card.failed{border-left-color:#ff6b6b}
+.card.best{border-left-color:#ffd93d;box-shadow:0 0 20px rgba(255,217,61,0.1)}
+.card.running{border-left-color:#4a9eff}
+.card.pending{border-left-color:#555}
+.card .step-num{font-size:0.75em;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.card h3{font-size:1.1em;margin-bottom:8px;color:#fff}
+.card .status{display:inline-block;padding:2px 10px;border-radius:10px;font-size:0.75em;font-weight:600;margin-bottom:10px}
+.card .status.done{background:#1a3a2a;color:#6bff8e}
+.card .status.failed{background:#3a1a1a;color:#ff6b6b}
+.card .status.best{background:#3a3a1a;color:#ffd93d}
+.card .status.running{background:#1a2a3a;color:#4a9eff}
+.card .status.pending{background:#1a1a2a;color:#888}
+.card .metric{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #1a2235}
+.card .metric:last-child{border:none}
+.card .metric .k{color:#888;font-size:0.85em}
+.card .metric .v{font-weight:600;font-size:0.9em}
+.card .metric .v.up{color:#6bff8e}
+.card .metric .v.down{color:#ff6b6b}
+.card .metric .v.neutral{color:#ffd93d}
+.card .verdict{margin-top:10px;padding:10px;background:#0a0e17;border-radius:8px;font-size:0.85em;line-height:1.5}
+.card .insight-tag{display:inline-block;padding:3px 8px;border-radius:6px;font-size:0.7em;font-weight:700;background:#3a2a1a;color:#ffa94d;margin-bottom:8px;margin-left:6px}
+table{width:100%;border-collapse:collapse;margin-bottom:24px;font-size:0.88em}
+th{background:#141a2a;padding:10px 12px;text-align:left;font-size:0.8em;color:#888;text-transform:uppercase;letter-spacing:0.5px;position:sticky;top:0}
+td{padding:10px 12px;border-bottom:1px solid #1a2235;font-size:0.9em}
+tr:hover td{background:#141a2a}
+tr.highlight-row td{background:#1a2a1a}
+tr.dead-row td{opacity:0.5}
+.highlight{color:#ffd93d;font-weight:600}
+.section-title{font-size:1.2em;color:#fff;margin:32px 0 12px;padding-bottom:8px;border-bottom:1px solid #1a2235}
+.band-chart{display:flex;align-items:flex-end;gap:8px;height:220px;padding:20px;background:#141a2a;border-radius:12px;margin-bottom:24px}
+.band-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.band-bar{width:100%;border-radius:6px 6px 0 0;min-height:4px;transition:height 0.5s}
+.band-label{font-size:0.72em;color:#888;text-align:center}
+.band-value{font-size:0.78em;font-weight:600;color:#fff}
+.band-pf{font-size:0.7em;color:#ffd93d}
+.band-extra{font-size:0.65em;color:#888}
+.comparison{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
+.comp-box{background:#141a2a;border-radius:12px;padding:20px}
+.comp-box h4{color:#888;font-size:0.8em;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.comp-box .big-num{font-size:2em;font-weight:700;margin-bottom:4px}
+.comp-box .detail{font-size:0.85em;color:#888}
+.delta-badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:0.7em;font-weight:600;margin-left:8px}
+.delta-up{background:#1a3a2a;color:#6bff8e}
+.delta-down{background:#3a1a1a;color:#ff6b6b}
+.insights-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:24px}
+.insight-card{background:#141a2a;border-radius:12px;padding:20px;border-top:3px solid #ffa94d}
+.insight-card h4{color:#ffa94d;font-size:0.95em;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.insight-card p{font-size:0.88em;line-height:1.6;color:#ccc}
+.insight-card .evidence{margin-top:8px;font-size:0.8em;color:#888;font-style:italic}
+.tab-container{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.tab-btn{background:#141a2a;border:1px solid #1a2235;color:#888;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:0.85em;transition:all 0.2s}
+.tab-btn:hover{color:#fff;border-color:#333}
+.tab-btn.active{background:#1a2a3a;color:#4a9eff;border-color:#4a9eff}
+.table-section{display:none}
+.table-section.active{display:block}
+.tf-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}
+.tf-card{background:#141a2a;border-radius:10px;padding:16px;text-align:center}
+.tf-card .tf-name{font-size:1.1em;font-weight:700;color:#fff;margin-bottom:6px}
+.tf-card .tf-pf{font-size:1.8em;font-weight:700;margin-bottom:4px}
+.tf-card .tf-trades{font-size:0.8em;color:#888}
+.pf-good{color:#6bff8e}
+.pf-ok{color:#ffd93d}
+.pf-weak{color:#ff6b6b}
+.v2v3-compare{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.v2v3-box{background:#141a2a;border-radius:12px;padding:20px;position:relative}
+.v2v3-box h4{color:#888;font-size:0.8em;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px}
+.v2v3-box .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1a2235;font-size:0.9em}
+.v2v3-box .row:last-child{border:none}
+.v2v3-box .row .lbl{color:#888}
+.v2v3-box .row .val{font-weight:600}
+.v2v3-box.winner{border:1px solid #ffd93d30}
+.v2v3-box.winner::after{content:'⭐ BEST';position:absolute;top:12px;right:16px;font-size:0.7em;color:#ffd93d;font-weight:700;background:#3a3a1a;padding:2px 8px;border-radius:6px}
+.updated{text-align:center;color:#555;font-size:0.8em;padding:20px 0;margin-top:20px;border-top:1px solid #1a2235}
+@media(max-width:700px){
+  .cards{grid-template-columns:1fr}
+  .comparison{grid-template-columns:1fr}
+  .insights-grid{grid-template-columns:1fr}
+  .goal-bar{flex-direction:column;text-align:center}
+  .v2v3-compare{grid-template-columns:1fr}
+  .tf-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<h1>🔧 V11c Improvement Tracker</h1>
+<p class="subtitle">Systematic journey: Profit Factor 1.20 → 2.0+ · BTC/ETH/SOL · 1m/15m/1H · 8.5 years</p>
+
+<!-- ═══════════════════════════ PF PROGRESS BAR ═══════════════════════════ -->
+<div class="goal-bar">
+  <div><div class="label">START</div><div class="value start">1.20</div></div>
+  <div class="progress-track">
+    <div class="progress-fill" id="pf-fill"></div>
+    <div class="progress-text" id="pf-text"></div>
+  </div>
+  <div><div class="label">CURRENT BEST</div><div class="value current" id="pf-current">1.23</div></div>
+  <div><div class="label">TARGET</div><div class="value target">2.00</div></div>
+</div>
+
+<!-- ═══════════════════════════ CHAMPION STATS ═══════════════════════════ -->
+<div style="background:linear-gradient(135deg,#141a2a 0%,#1a2a1a 100%);border-radius:16px;padding:24px;margin-bottom:24px;border:1px solid #6bff8e30;position:relative;overflow:hidden">
+  <div style="position:absolute;top:12px;right:16px;font-size:0.7em;color:#6bff8e;font-weight:700;background:#1a3a2a;padding:4px 12px;border-radius:8px">🏆 CHAMPION</div>
+  <div style="font-size:0.8em;color:#888;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px">New Champion · Level Spacing ≥0.75× ATR · ATR 1.5× · BAS=5 · BTC Only</div>
+  <div style="font-size:0.85em;color:#666;margin-bottom:16px">Stop Hunt W/M · Any Surpass · Min level gap filter · 8.5 years (2017–2026)</div>
+
+  <!-- Hero stats row -->
+  <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px">
+    <div style="text-align:center">
+      <div style="font-size:0.7em;color:#888;margin-bottom:2px">Profit Factor</div>
+      <div style="font-size:2em;font-weight:700;color:#6bff8e">1.31</div>
+    </div>
+    <div style="text-align:center">
+      <div style="font-size:0.7em;color:#888;margin-bottom:2px">Trades</div>
+      <div style="font-size:2em;font-weight:700;color:#fff">2,607</div>
+    </div>
+    <div style="text-align:center">
+      <div style="font-size:0.7em;color:#888;margin-bottom:2px">Win Rate</div>
+      <div style="font-size:2em;font-weight:700;color:#ffd93d">43.3%</div>
+    </div>
+    <div style="text-align:center">
+      <div style="font-size:0.7em;color:#888;margin-bottom:2px">Total R</div>
+      <div style="font-size:2em;font-weight:700;color:#6bff8e">+450.6</div>
+    </div>
+    <div style="text-align:center">
+      <div style="font-size:0.7em;color:#888;margin-bottom:2px">R/Trade</div>
+      <div style="font-size:2em;font-weight:700;color:#6bff8e">+0.17</div>
+    </div>
+    <div style="text-align:center">
+      <div style="font-size:0.7em;color:#888;margin-bottom:2px">Trades/Month</div>
+      <div style="font-size:2em;font-weight:700;color:#fff">25.6</div>
+    </div>
+  </div>
+
+  <!-- Breakdown grids -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <!-- Per Timeframe -->
+    <div style="background:#0a0e1799;border-radius:10px;padding:14px">
+      <div style="font-size:0.75em;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Per Timeframe</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        <div style="text-align:center;background:#141a2a;border-radius:8px;padding:10px">
+          <div style="font-size:0.7em;color:#4a9eff;margin-bottom:2px">1H</div>
+          <div style="font-size:1.3em;font-weight:700;color:#6bff8e">1.37</div>
+          <div style="font-size:0.7em;color:#888">71t · 38.0%</div>
+        </div>
+        <div style="text-align:center;background:#141a2a;border-radius:8px;padding:10px">
+          <div style="font-size:0.7em;color:#4a9eff;margin-bottom:2px">15m</div>
+          <div style="font-size:1.3em;font-weight:700;color:#6bff8e">1.34</div>
+          <div style="font-size:0.7em;color:#888">289t · 37.7%</div>
+        </div>
+        <div style="text-align:center;background:#141a2a;border-radius:8px;padding:10px">
+          <div style="font-size:0.7em;color:#4a9eff;margin-bottom:2px">1m</div>
+          <div style="font-size:1.3em;font-weight:700;color:#6bff8e">1.30</div>
+          <div style="font-size:0.7em;color:#888">2,247t · 44.1%</div>
+        </div>
+      </div>
+    </div>
+    <!-- Long vs Short + Win/Loss -->
+    <div style="background:#0a0e1799;border-radius:10px;padding:14px">
+      <div style="font-size:0.75em;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Direction & Risk</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="background:#141a2a;border-radius:8px;padding:10px">
+          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:0.85em"><span style="color:#888">Long PF</span><span style="color:#6bff8e;font-weight:600">1.31</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:0.85em"><span style="color:#888">Short PF</span><span style="color:#6bff8e;font-weight:600">1.30</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:0.85em"><span style="color:#888">Long WR</span><span style="color:#fff">42.4%</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:0.85em"><span style="color:#888">Short WR</span><span style="color:#fff">44.3%</span></div>
+        </div>
+        <div style="background:#141a2a;border-radius:8px;padding:10px">
+          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:0.85em"><span style="color:#888">Avg Win</span><span style="color:#6bff8e;font-weight:600">+1.71R</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:0.85em"><span style="color:#888">Avg Loss</span><span style="color:#ff6b6b;font-weight:600">-1.00R</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:0.85em"><span style="color:#888">Best</span><span style="color:#6bff8e">+19.66R</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:0.85em"><span style="color:#888">Worst</span><span style="color:#ff6b6b">-1.00R</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ BEST PF STATS ═══════════════════════════ -->
+<div style="background:linear-gradient(135deg,#141a2a 0%,#2a2a1a 100%);border-radius:16px;padding:24px;margin-bottom:24px;border:1px solid #ffd93d30;position:relative;overflow:hidden">
+  <div style="position:absolute;top:12px;right:16px;font-size:0.7em;color:#ffd93d;font-weight:700;background:#3a3a1a;padding:4px 12px;border-radius:8px">⚔️ CHALLENGER</div>
+  <div style="font-size:0.8em;color:#888;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px">Challenger · Spacing ≥0.75× + 3-Box ≤30% · ATR 1.5× · BAS=5 · BTC Only</div>
+  <div style="font-size:0.85em;color:#666;margin-bottom:16px">Level spacing + equal measured move filter · 8.5 years (2017–2026)</div>
+
+  <!-- Hero stats row -->
+  <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px">
+    <div style="text-align:center">
+      <div style="font-size:0.7em;color:#888;margin-bottom:2px">Profit Factor</div>
+      <div style="font-size:2em;font-weight:700;color:#ffd93d">1.45</div>
+    </div>
+    <div style="text-align:center">
+      <div style="font-size:0.7em;color:#888;margin-bottom:2px">Trades</div>
+      <div style="font-size:2em;font-weight:700;color:#fff">330</div>
+    </div>
+    <div style="text-align:center">
+      <div style="font-size:0.7em;color:#888;margin-bottom:2px">Win Rate</div>
+      <div style="font-size:2em;font-weight:700;color:#ffd93d">46.1%</div>
+    </div>
+    <div style="text-align:center">
+      <div style="font-size:0.7em;color:#888;margin-bottom:2px">Total R</div>
+      <div style="font-size:2em;font-weight:700;color:#6bff8e">+79.9</div>
+    </div>
+    <div style="text-align:center">
+      <div style="font-size:0.7em;color:#888;margin-bottom:2px">R/Trade</div>
+      <div style="font-size:2em;font-weight:700;color:#6bff8e">+0.24</div>
+    </div>
+    <div style="text-align:center">
+      <div style="font-size:0.7em;color:#888;margin-bottom:2px">Trades/Month</div>
+      <div style="font-size:2em;font-weight:700;color:#fff">3.2</div>
+    </div>
+  </div>
+
+  <!-- Breakdown grids -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <!-- Per Timeframe -->
+    <div style="background:#0a0e1799;border-radius:10px;padding:14px">
+      <div style="font-size:0.75em;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Per Timeframe</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        <div style="text-align:center;background:#141a2a;border-radius:8px;padding:10px">
+          <div style="font-size:0.7em;color:#ffd93d;margin-bottom:2px">1H</div>
+          <div style="font-size:1.3em;font-weight:700;color:#6bff8e">2.44</div>
+          <div style="font-size:0.7em;color:#888">8t · 50.0%</div>
+        </div>
+        <div style="text-align:center;background:#141a2a;border-radius:8px;padding:10px">
+          <div style="font-size:0.7em;color:#ffd93d;margin-bottom:2px">15m</div>
+          <div style="font-size:1.3em;font-weight:700;color:#6bff8e">1.72</div>
+          <div style="font-size:0.7em;color:#888">44t · 40.9%</div>
+        </div>
+        <div style="text-align:center;background:#141a2a;border-radius:8px;padding:10px">
+          <div style="font-size:0.7em;color:#ffd93d;margin-bottom:2px">1m</div>
+          <div style="font-size:1.3em;font-weight:700;color:#6bff8e">1.37</div>
+          <div style="font-size:0.7em;color:#888">278t · 46.8%</div>
+        </div>
+      </div>
+    </div>
+    <!-- Long vs Short + Win/Loss -->
+    <div style="background:#0a0e1799;border-radius:10px;padding:14px">
+      <div style="font-size:0.75em;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Direction & Risk</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="background:#141a2a;border-radius:8px;padding:10px">
+          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:0.85em"><span style="color:#888">Long PF</span><span style="color:#ffd93d;font-weight:600">1.15</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:0.85em"><span style="color:#888">Short PF</span><span style="color:#6bff8e;font-weight:600">1.95</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:0.85em"><span style="color:#888">Max Consec Loss</span><span style="color:#fff">8</span></div>
+        </div>
+        <div style="background:#141a2a;border-radius:8px;padding:10px">
+          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:0.85em"><span style="color:#888">Avg Win</span><span style="color:#6bff8e;font-weight:600">+1.70R</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:0.85em"><span style="color:#888">Avg Loss</span><span style="color:#ff6b6b;font-weight:600">-1.00R</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:0.85em"><span style="color:#888">Best</span><span style="color:#6bff8e">+6.90R</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ BTC-ONLY SWITCH BANNER ═══════════════════════════ -->
+<div style="background:#1a1a2a;border-radius:12px;padding:16px 20px;margin-bottom:24px;border-left:4px solid #ffd93d">
+  <div style="font-weight:700;color:#ffd93d;margin-bottom:6px">⚠️ BTC-Only Switch — From Improvement #3 onwards</div>
+  <div style="font-size:0.9em;color:#bbb;line-height:1.6">
+    Starting with Stop Hunt tests, all tests run <strong>BTC-only</strong> for faster iteration.<br>
+    <span style="color:#ff6b6b">All-pair baseline: PF 1.20</span> (3,362 trades — BTC + ETH + SOL) →
+    <span style="color:#ffd93d">BTC-only baseline: PF 1.16</span> (1,554 trades — BTC alone is weaker)<br>
+    By pair: BTC PF 1.16 · ETH PF 1.17 · SOL PF 1.30<br>
+    <strong>So BTC PF 1.23 = +0.07 improvement over BTC's own baseline of 1.16.</strong>
+    The improvements brought BTC from <em>below</em> the combined average back <em>above</em> it.
+  </div>
+</div>
+
+<!-- ═══════════════════════════ IMPROVEMENT CARDS ═══════════════════════════ -->
+<div class="section-title">Improvement Stack</div>
+<div class="cards" id="cards"></div>
+
+<!-- ═══════════════════════════ KEY INSIGHTS ═══════════════════════════ -->
+<div class="section-title">🔑 Key Insights</div>
+<div class="insights-grid" id="insights"></div>
+
+<!-- ═══════════════════════════ V2 vs V3 COMPARISON ═══════════════════════════ -->
+<div class="section-title">Stop Hunt: V2 (Wick-Only) vs V3 (Any Surpass)</div>
+<div class="v2v3-compare">
+  <div class="v2v3-box">
+    <h4>V2 — Wick-Only (Best: ATR 1.0× rw=7)</h4>
+    <div class="row"><span class="lbl">Profit Factor</span><span class="val" style="color:#e0e0e0">1.20</span></div>
+    <div class="row"><span class="lbl">Trades</span><span class="val">3,379</span></div>
+    <div class="row"><span class="lbl">Total R</span><span class="val" style="color:#6bff8e">+380</span></div>
+    <div class="row"><span class="lbl">R/Trade</span><span class="val">+0.11</span></div>
+    <div class="row"><span class="lbl">Recovery Window</span><span class="val" style="color:#ffa94d">Required (rw=7)</span></div>
+    <div class="row"><span class="lbl">Long PF</span><span class="val" style="color:#ff6b6b">1.12</span></div>
+    <div class="row"><span class="lbl">Short PF</span><span class="val" style="color:#6bff8e">~1.28</span></div>
+  </div>
+  <div class="v2v3-box winner">
+    <h4>V3 — Any Surpass (Best: ATR 1.5× rw=0)</h4>
+    <div class="row"><span class="lbl">Profit Factor</span><span class="val" style="color:#ffd93d">1.22</span></div>
+    <div class="row"><span class="lbl">Trades</span><span class="val">5,129</span></div>
+    <div class="row"><span class="lbl">Total R</span><span class="val" style="color:#6bff8e">+644</span></div>
+    <div class="row"><span class="lbl">R/Trade</span><span class="val">+0.13</span></div>
+    <div class="row"><span class="lbl">Recovery Window</span><span class="val" style="color:#6bff8e">Not needed (rw=0)</span></div>
+    <div class="row"><span class="lbl">Long PF</span><span class="val" style="color:#ffd93d">1.18</span></div>
+    <div class="row"><span class="lbl">Short PF</span><span class="val" style="color:#6bff8e">1.27</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ CHAMPION PROGRESSION ═══════════════════════════ -->
+<div class="section-title">🏆 Champion Progression</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:24px">
+  <div style="background:#141a2a;border-radius:10px;padding:16px;border-left:3px solid #555">
+    <div style="font-size:0.7em;color:#888;text-transform:uppercase;letter-spacing:1px">BTC Baseline</div>
+    <div style="font-size:1.6em;font-weight:700;color:#ff6b6b">1.16</div>
+    <div style="font-size:0.8em;color:#888">1,554t · +192R</div>
+  </div>
+  <div style="background:#141a2a;border-radius:10px;padding:16px;border-left:3px solid #888">
+    <div style="font-size:0.7em;color:#888;text-transform:uppercase;letter-spacing:1px">#3A Wick-Only</div>
+    <div style="font-size:1.6em;font-weight:700;color:#e0e0e0">1.20</div>
+    <div style="font-size:0.8em;color:#888">3,379t · WR 43.4% · +380R · R/t +0.11</div>
+  </div>
+  <div style="background:#141a2a;border-radius:10px;padding:16px;border-left:3px solid #ffd93d">
+    <div style="font-size:0.7em;color:#888;text-transform:uppercase;letter-spacing:1px">#3B Any-Surpass</div>
+    <div style="font-size:1.6em;font-weight:700;color:#ffd93d">1.22</div>
+    <div style="font-size:0.8em;color:#888">5,129t · WR 43.0% · +644R · R/t +0.13</div>
+  </div>
+  <div style="background:#141a2a;border-radius:10px;padding:16px;border-left:3px solid #6bff8e">
+    <div style="font-size:0.7em;color:#888;text-transform:uppercase;letter-spacing:1px">#3C Bars After Surpass</div>
+    <div style="font-size:1.6em;font-weight:700;color:#6bff8e">1.23</div>
+    <div style="font-size:0.8em;color:#888">4,661t · WR 42.6% · +600R · R/t +0.13</div>
+  </div>
+  <div style="background:#141a2a;border-radius:10px;padding:16px;border-left:3px solid #888">
+    <div style="font-size:0.7em;color:#888;text-transform:uppercase;letter-spacing:1px">#7 3-Box Filter (20%)</div>
+    <div style="font-size:1.6em;font-weight:700;color:#e0e0e0">1.46</div>
+    <div style="font-size:0.8em;color:#888">288t · WR 46.2% · +71R · R/t +0.25</div>
+  </div>
+  <div style="background:#141a2a;border-radius:10px;padding:16px;border-left:3px solid #6bff8e;box-shadow:0 0 15px rgba(107,255,142,0.15)">
+    <div style="font-size:0.7em;color:#888;text-transform:uppercase;letter-spacing:1px">🏆 #8 Level Spacing ≥0.75×</div>
+    <div style="font-size:1.6em;font-weight:700;color:#6bff8e">1.31</div>
+    <div style="font-size:0.8em;color:#888">2,607t · WR 43.3% · +451R · R/t +0.17</div>
+  </div>
+  <div style="background:#141a2a;border-radius:10px;padding:16px;border-left:3px solid #ffd93d;box-shadow:0 0 15px rgba(255,217,61,0.15)">
+    <div style="font-size:0.7em;color:#888;text-transform:uppercase;letter-spacing:1px">⚔️ #8b Spacing + 3-Box 30%</div>
+    <div style="font-size:1.6em;font-weight:700;color:#ffd93d">1.45</div>
+    <div style="font-size:0.8em;color:#888">330t · WR 46.1% · +80R · R/t +0.24</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ BARS AFTER SURPASS HEATMAP ═══════════════════════════ -->
+<div class="section-title">Test 3C: Bars After Surpass — Full Grid (PF)</div>
+<table style="margin-bottom:24px">
+<thead>
+<tr><th>ATR Band</th><th>bas=0</th><th>bas=1</th><th>bas=2</th><th>bas=3</th><th>bas=4</th><th>bas=5</th><th>bas=6</th><th>bas=7</th></tr>
+</thead>
+<tbody>
+<tr><td>1.0×</td><td style="color:#ff6b6b">1.11</td><td>1.16</td><td>1.16</td><td>1.16</td><td>1.18</td><td>1.18</td><td>1.18</td><td>1.18</td></tr>
+<tr><td>1.5×</td><td>1.17</td><td style="color:#6bff8e">1.22</td><td>1.21</td><td>1.21</td><td style="color:#6bff8e">1.22</td><td style="color:#6bff8e;font-weight:700">⭐ 1.23</td><td style="color:#6bff8e">1.22</td><td style="color:#6bff8e">1.22</td></tr>
+<tr><td>2.0×</td><td style="color:#ff6b6b">1.12</td><td>1.17</td><td>1.16</td><td>1.16</td><td>1.17</td><td>1.17</td><td>1.17</td><td>1.17</td></tr>
+<tr><td>2.5×</td><td>1.13</td><td>1.18</td><td>1.17</td><td>1.17</td><td>1.18</td><td>1.18</td><td>1.17</td><td>1.17</td></tr>
+<tr><td>3.0×</td><td>1.14</td><td>1.19</td><td>1.18</td><td>1.17</td><td>1.18</td><td>1.18</td><td>1.18</td><td>1.17</td></tr>
+</tbody>
+</table>
+
+<!-- ═══════════════════════════ ATR BAND CHART ═══════════════════════════ -->
+<div class="section-title">ATR Band Comparison — V3 (Any Surpass, rw=0, BTC-only)</div>
+<div class="band-chart" id="band-chart-v3"></div>
+
+<div class="section-title">ATR Band Comparison — V2 (Wick-Only, rw=7, BTC-only)</div>
+<div class="band-chart" id="band-chart-v2"></div>
+
+<div class="section-title">ATR Band Comparison — #1 ATR Normalization (All Pairs)</div>
+<div class="band-chart" id="band-chart-atr"></div>
+
+<!-- ═══════════════════════════ 3-BOX FILTER CHART ═══════════════════════════ -->
+<div class="section-title">Test #7: 3-Box Filter — Quality vs Quantity</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+  <div style="background:#141a2a;border-radius:12px;padding:20px">
+    <h4 style="color:#ffd93d;font-size:0.85em;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px">With ATR 1.5× Band</h4>
+    <div id="box3-chart-atr" style="display:flex;align-items:flex-end;gap:10px;height:180px"></div>
+  </div>
+  <div style="background:#141a2a;border-radius:12px;padding:20px">
+    <h4 style="color:#4a9eff;font-size:0.85em;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px">No ATR Band</h4>
+    <div id="box3-chart-noatr" style="display:flex;align-items:flex-end;gap:10px;height:180px"></div>
+  </div>
+</div>
+<div style="background:#1a2a1a;border-radius:12px;padding:16px 20px;margin-bottom:24px;border-left:4px solid #6bff8e">
+  <div style="font-weight:700;color:#6bff8e;margin-bottom:6px">💡 Insight: 3-Box validates the Market Maker Method</div>
+  <div style="font-size:0.9em;color:#bbb;line-height:1.6">
+    When L3 lands within 15–20% of the projected 3-Box boundary, PF jumps from 1.23 → 1.47 and R/trade nearly doubles.<br>
+    <strong>The tradeoff:</strong> Only 205–288 trades over 8 years (~2-3/month). The filter selects the highest-quality reversals — where the equal measured move prediction is accurate — but many valid trades fall outside the tolerance window.
+  </div>
+</div>
+
+<!-- ═══════════════════════════ FULL RESULTS TABLES ═══════════════════════════ -->
+<div class="section-title">Full Results — All Tests</div>
+<div class="tab-container" id="table-tabs"></div>
+<div id="table-sections"></div>
+
+<!-- ═══════════════════════════ UPDATED ═══════════════════════════ -->
+<div class="updated">Last updated: 2026-02-19 · Data: 8.5 years (2017–2026) · BTC/ETH/SOL · 1m/15m/1H</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════
+
+const PF_START = 1.20, PF_BEST = 1.45, PF_TARGET = 2.00;
+
+const improvements = [
+  {
+    num:"#1", name:"ATR Normalization", status:"done", date:"2026-02-18",
+    desc:"Replace fixed % thresholds with ATR(20)-based dynamic thresholds across all timeframes.",
+    metrics:{pf:1.19, trades:7595, wr:"50.0%", totalR:688, rpt:0.09, scope:"All pairs"},
+    verdict:"✅ Total R doubled (+105%). WR +3%. PF unchanged (1.19). ATR finds more valid setups — same edge density, double the opportunities. Good foundation but NOT the PF unlock."
+  },
+  {
+    num:"#2", name:"Pivot Detection (4 Variants)", status:"failed", date:"2026-02-18",
+    desc:"Tested volume-weighted, ATR min swing, HTF confirmation, wider fractal lookback. All 4 failed.",
+    metrics:null,
+    verdict:"❌ DEAD END. Volume filter killed trades AND PF. ATR min swing — no improvement. HTF confirmation — too loose on 1m/15m. Wider fractals — destroyed trade count (lb20+ = 0 trades). Swing detection is not the bottleneck."
+  },
+  {
+    num:"#3A", name:"Stop Hunt — Wick-Only", status:"done", date:"2026-02-18",
+    desc:"W/M state machine requiring wick surpass past leg 1 extreme (wick ≥ 0.1× ATR). Recovery window 0–7 bars.",
+    metrics:{pf:1.20, trades:3379, wr:"43.4%", totalR:380, rpt:0.11, scope:"BTC only"},
+    verdict:"✅ Matched baseline PF 1.20 with different logic. Recovery window crucial (rw=0 → PF 1.12, rw=7 → PF 1.20). Shorts stronger (~1.28) vs longs (~1.12). 1H best TF (PF 1.56). Tighter ATR bands = higher PF."
+  },
+  {
+    num:"#3B", name:"Stop Hunt — Any Surpass", status:"best", date:"2026-02-18",
+    desc:"Removed wick requirement entirely. Phase 2 accepts ANY surpass (wick or body close). Multi-bar reversal handled natively.",
+    metrics:{pf:1.22, trades:5129, wr:null, totalR:644, rpt:0.13, scope:"BTC only"},
+    verdict:"⭐ NEW ALL-TIME BEST PF 1.22. +69% more trades and +69% more R vs wick-only. Recovery window NOT needed (rw=0 wins). Longs improved (1.12→1.18). Key insight: removing wick requirement unlocked body surpasses = the blind spot in ALL previous tests.",
+    insight:"Wick requirement was blind spot"
+  },
+  {
+    num:"#3C", name:"Bars After Surpass (0-7)", status:"best", date:"2026-02-18",
+    desc:"Properly split Phase 2 into pre-surpass (wait for 2nd leg, 20 bars) and post-surpass (wait for close back, 0-7 bars). Previous tests had a hidden 20-bar window disguised as 'rw=0'.",
+    metrics:{pf:1.23, trades:4661, wr:42.6, totalR:600, rpt:0.13, scope:"BTC only"},
+    verdict:"⭐ NEW ALL-TIME BEST PF 1.23. bas=0 (true same-bar) is weak (PF 1.12). bas=1 is the biggest jump (+0.05 PF). Plateau at bas=4-5. Best: ATR 1.5× bas=5. At ATR 2.0×: bas=1 PF 1.17, bas=5 PF 1.17 (same PF, more trades)."
+  },
+  {
+    num:"#4", name:"Leg1 Fix (Swing=Leg1)", status:"failed", date:"2026-02-18",
+    desc:"Changed M/W detection to use leg1 as swing reference instead of requiring 3 peaks. Tested to catch patterns the algo was missing (e.g. Feb 15 BTC 1H trade). Two variants: all 3 fixes, and fixes #1+#3 only.",
+    metrics:{pf:1.08, trades:8733, wr:"—", totalR:"—", rpt:"—", scope:"BTC only"},
+    verdict:"❌ Catches the example trade but floods with weak patterns. v1 (all fixes): PF 1.08, 8,733t. v2 (partial): PF 1.09, 8,074t. Both far worse than champion 1.23."
+  },
+  {
+    num:"#5", name:"AI Council 5-Filter", status:"failed", date:"2026-02-18",
+    desc:"Consulted Opus + Grok 4.20 + Gemini Pro + ChatGPT. All 4 agreed on 5 filters: swing=leg1, min dip depth, surpass band min/max, close-back confirmation, context filter. Tested 15 configurations.",
+    metrics:{pf:1.13, trades:"varies", wr:"—", totalR:"—", rpt:"—", scope:"BTC only"},
+    verdict:"❌ ALL 15 configs scored PF 1.09–1.13 — ALL worse than champion (1.23). The filters remove noise but ALSO remove legitimate big winners. Council was unanimous but wrong about the path."
+  },
+  {
+    num:"#6", name:"Teacher Method (Steve Mauro)", status:"failed", date:"2026-02-18",
+    desc:"Level detection by time persistence (hold bars) instead of swing detection. 4 sub-tests: original, halved gap, daily reset (Ivo's idea — key unlock), surpass band grid.",
+    metrics:{pf:1.15, trades:3462, wr:"39.2%", totalR:313, rpt:0.09, scope:"BTC only"},
+    verdict:"❌ Without daily reset: ALL lose money (PF 0.66–0.82). Ivo's daily reset insight was the key unlock (PF 0.77→1.13). Band grid best: ATR 2.0× bas=7 → PF 1.15. Honest levels but lower quality than V11c swing detection. Path exhausted.",
+    insight:"Daily reset = key unlock"
+  },
+  {
+    num:"#7", name:"3-Box Filter", status:"best", date:"2026-02-18",
+    desc:"Use first level range to project 3-Box boundary (box3 = 3× level range). Filter: only enter when L3 lands within X% of projected box3. Tests: ATR 1.5× and no-ATR, tolerance 5–30%.",
+    metrics:{pf:1.46, trades:288, wr:"46.2%", totalR:71, rpt:0.25, scope:"BTC only"},
+    verdict:"⭐ FIRST TIME ABOVE PF 1.23! 20% tolerance → PF 1.46, 288t, ~2.8/month. R/trade nearly doubles (+0.13→+0.25). Later superseded by level spacing (#8) as standalone champion.",
+    insight:"3-Box validates Market Maker Method"
+  },
+  {
+    num:"#8", name:"Level Spacing Filter", status:"best", date:"2026-02-19",
+    desc:"Ivo's insight: horizontal price action creates fake levels that are just consolidation noise. Filter: each gap between L1→L2 and L2→L3 must be ≥ X× ATR. Tested 0.1× to 2.0× ATR. Also tested combined with 3-Box.",
+    metrics:{pf:1.31, trades:2607, wr:"43.3%", totalR:451, rpt:0.17, scope:"BTC only"},
+    verdict:"⭐ NEW CHAMPION! ≥0.75× ATR spacing → PF 1.31, 2,607 trades (26/month). Trades with <0.3× gap: PF 1.10 (dead weight). 15m PF jumps 1.09→1.34. Combined with 3-Box 30%: PF 1.45, 330t. Level spacing is the first filter that improves PF WITHOUT destroying trade count.",
+    insight:"Clustered levels = dead weight"
+  }
+];
+
+const insights = [
+  {
+    icon:"🕳️", title:"Wick Blind Spot",
+    text:"ALL previous tests (V11c honest, V11c stop hunt V1/V2, V12 streaming) required wick ≥ 0.1× ATR for surpass entry. This systematically filtered out body surpasses — candles that close past the extreme and reverse over 2–3 bars. Removing this requirement immediately unlocked PF 1.22.",
+    evidence:"V2 best: PF 1.20, 3,379t → V3 (no wick): PF 1.22, 5,129t (+52% trades, +69% R)"
+  },
+  {
+    icon:"🔄", title:"Recovery Window Not Needed",
+    text:"When wick was required, recovery window was critical (rw=0 → PF 1.12, rw=7 → PF 1.20). With wick requirement removed, rw=0 wins — body surpasses reverse cleanly without needing multi-bar recovery.",
+    evidence:"V3 rw=0: PF 1.22 · V3 rw=7: PF 1.22 (same PF, fewer trades needed)"
+  },
+  {
+    icon:"🎯", title:"Edge Concentrates at Tight Bands",
+    text:"Across all tests, tighter ATR bands (1.0–1.5×) consistently produce higher PF. Wider bands (2.5–3.0×) add more trades and total R but dilute edge. Best balance: ATR 1.5× (PF 1.22 with decent volume).",
+    evidence:"V3: ATR 1.0× PF 1.19 · ATR 1.5× PF 1.22 · ATR 2.0× PF 1.17 · ATR 3.0× PF 1.18"
+  },
+  {
+    icon:"🤖", title:"AI Council Was Wrong",
+    text:"All 4 AI models (Opus, Grok 4.20, Gemini, ChatGPT) unanimously recommended 5 filters. All 15 tested configs performed WORSE than the unfiltered champion. The filters remove noise but also remove the big winning trades that make the system profitable.",
+    evidence:"Council best: PF 1.13 · Champion: PF 1.23. Every filter config lost ground."
+  },
+  {
+    icon:"🔄", title:"Daily Reset Unlocks Teacher Method",
+    text:"Without daily reset, Teacher Method loses money (PF 0.66–0.82). Ivo's insight: market makers operate within sessions, yesterday's levels are stale. Adding daily reset jumped PF from 0.77 → 1.13. Still not enough, but the right idea.",
+    evidence:"Teacher no-reset: PF 0.77 · Daily reset: PF 1.13 (+47%)"
+  },
+  {
+    icon:"📐", title:"3-Box Validates Equal Measured Moves",
+    text:"When L3 lands within 15–20% of the projected 3-Box boundary, PF jumps to 1.47 and R/trade nearly doubles. This proves the Market Maker Method's core prediction — equal measured moves — has real predictive power. The question: how to increase trade frequency without losing this edge.",
+    evidence:"3-Box 15%: PF 1.47, 205t · 20%: PF 1.46, 288t · No filter: PF 1.23, 4,638t"
+  },
+  {
+    icon:"📉", title:"PF Ceiling at 1.20-1.23 Across All Approaches",
+    text:"Every approach (ATR normalization, stop hunt variants, council filters, Teacher Method) converges to PF ~1.20-1.23 at full trade volume. The 3-Box filter is the ONLY path to break through — by selecting higher-quality setups at the cost of frequency.",
+    evidence:"ATR: 1.19 · Stop Hunt: 1.22-1.23 · Council: 1.13 · Teacher: 1.15 · 3-Box: 1.47"
+  }
+];
+
+// V3 (Any Surpass) bands — rw=0
+const v3Bands = [
+  {band:"ATR 1.0×", trades:3725, pf:1.19, totalR:396},
+  {band:"ATR 1.5×", trades:5129, pf:1.22, totalR:644},
+  {band:"ATR 2.0×", trades:6126, pf:1.17, totalR:604},
+  {band:"ATR 2.5×", trades:6771, pf:1.18, totalR:677},
+  {band:"ATR 3.0×", trades:7248, pf:1.18, totalR:718}
+];
+
+// V2 (Wick-Only) bands — rw=7 (best for V2)
+const v2Bands = [
+  {band:"ATR 1.0×", trades:3379, pf:1.20, totalR:380},
+  {band:"ATR 1.5×", trades:4658, pf:1.20, totalR:534},
+  {band:"ATR 2.0×", trades:5579, pf:1.16, totalR:496},
+  {band:"ATR 2.5×", trades:6179, pf:1.15, totalR:546},
+  {band:"ATR 3.0×", trades:6621, pf:1.16, totalR:598}
+];
+
+// ATR Normalization bands (all pairs)
+const atrBands = [
+  {band:"Baseline 2%", trades:3362, pf:1.20, totalR:336},
+  {band:"ATR 1.0×", trades:4223, pf:1.19, totalR:386},
+  {band:"ATR 1.5×", trades:6011, pf:1.18, totalR:530},
+  {band:"ATR 2.0×", trades:7595, pf:1.19, totalR:688},
+  {band:"ATR 2.5×", trades:9047, pf:1.17, totalR:732},
+  {band:"ATR 3.0×", trades:10138, pf:1.17, totalR:843}
+];
+
+// Full results tables
+const tableSections = [
+  {
+    id:"baseline", label:"Baseline & ATR",
+    rows:[
+      {name:"Baseline (Fixed 2%)", trades:"3,362", wr:"47.1%", pf:"1.20", totalR:"+336", rpt:"+0.10", avgW:"+1.29R", notes:"Original honest V11c (all pairs)", hl:false},
+      {name:"ATR 1.0× (all pairs)", trades:"4,223", wr:"50.3%", pf:"1.19", totalR:"+386", rpt:"+0.09", avgW:"+1.15R", notes:"Tightest ATR band", hl:false},
+      {name:"ATR 1.5× (all pairs)", trades:"6,011", wr:"49.8%", pf:"1.18", totalR:"+530", rpt:"+0.09", avgW:"+1.16R", notes:"", hl:false},
+      {name:"ATR 2.0× (all pairs)", trades:"7,595", wr:"50.0%", pf:"1.19", totalR:"+688", rpt:"+0.09", avgW:"+1.15R", notes:"⭐ 2× total R vs baseline", hl:true},
+      {name:"ATR 2.5× (all pairs)", trades:"9,047", wr:"49.8%", pf:"1.17", totalR:"+732", rpt:"+0.08", avgW:"+1.15R", notes:"", hl:false},
+      {name:"ATR 3.0× (all pairs)", trades:"10,138", wr:"49.7%", pf:"1.17", totalR:"+843", rpt:"+0.08", avgW:"+1.15R", notes:"Most trades", hl:false}
+    ]
+  },
+  {
+    id:"pivot", label:"#2 Pivot Detection ❌",
+    rows:[
+      {name:"A: Volume-Weighted", trades:"2,579", wr:"49.6%", pf:"1.13", totalR:"+171", rpt:"—", avgW:"—", notes:"❌ Killed trades AND PF dropped", hl:false, dead:true},
+      {name:"B: ATR Min 1.0×", trades:"7,571", wr:"50.1%", pf:"1.17", totalR:"+627", rpt:"—", avgW:"—", notes:"❌ Slightly worse", hl:false, dead:true},
+      {name:"B: ATR Min 1.5×", trades:"7,229", wr:"50.1%", pf:"1.17", totalR:"+610", rpt:"—", avgW:"—", notes:"❌ Slightly worse", hl:false, dead:true},
+      {name:"B: ATR Min 2.0×", trades:"6,631", wr:"50.4%", pf:"1.17", totalR:"+528", rpt:"—", avgW:"—", notes:"❌ More filtering = worse", hl:false, dead:true},
+      {name:"B: ATR Min 3.0×", trades:"4,808", wr:"51.1%", pf:"1.14", totalR:"+321", rpt:"—", avgW:"—", notes:"❌ Heavy filtering, poor PF", hl:false, dead:true},
+      {name:"C: HTF Confirmation", trades:"6,770", wr:"50.5%", pf:"1.18", totalR:"+602", rpt:"—", avgW:"—", notes:"❌ Filter too loose on 1m/15m", hl:false, dead:true},
+      {name:"D: Fractal lb10/20", trades:"451", wr:"53.0%", pf:"1.20", totalR:"+39", rpt:"—", avgW:"—", notes:"❌ Too few trades", hl:false, dead:true},
+      {name:"D: Fractal lb15/30", trades:"58", wr:"53.4%", pf:"1.34", totalR:"+8", rpt:"—", avgW:"—", notes:"❌ 58 trades = meaningless", hl:false, dead:true},
+      {name:"D: Fractal lb20/40", trades:"0", wr:"—", pf:"—", totalR:"—", rpt:"—", avgW:"—", notes:"❌ Zero trades", hl:false, dead:true}
+    ]
+  },
+  {
+    id:"v2", label:"#3A Wick-Only",
+    rows:[
+      {name:"ATR 1.0× rw=0", trades:"2,047", wr:"—", pf:"1.12", totalR:"+151", rpt:"—", avgW:"—", notes:"BTC, same-bar entry", hl:false},
+      {name:"ATR 1.0× rw=3", trades:"3,030", wr:"—", pf:"1.17", totalR:"+302", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 1.0× rw=5", trades:"3,247", wr:"—", pf:"1.19", totalR:"+357", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 1.0× rw=7", trades:"3,379", wr:"43.4%", pf:"1.20", totalR:"+380", rpt:"+0.11", avgW:"+1.56R", notes:"⭐ Best PF (wick-only)", hl:true},
+      {name:"ATR 1.5× rw=0", trades:"2,853", wr:"—", pf:"1.15", totalR:"+264", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 1.5× rw=3", trades:"4,214", wr:"—", pf:"1.19", totalR:"+451", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 1.5× rw=5", trades:"4,498", wr:"—", pf:"1.20", totalR:"+511", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 1.5× rw=7", trades:"4,658", wr:"43.3%", pf:"1.20", totalR:"+534", rpt:"+0.11", avgW:"+1.57R", notes:"BTC, highest Total R at PF 1.20", hl:true},
+      {name:"ATR 2.0× rw=0", trades:"3,409", wr:"39.4%", pf:"1.12", totalR:"+241", rpt:"+0.07", avgW:"+1.71R", notes:"BTC, same-bar entry", hl:false},
+      {name:"ATR 2.0× rw=3", trades:"5,045", wr:"41.6%", pf:"1.14", totalR:"+418", rpt:"+0.08", avgW:"+1.60R", notes:"BTC", hl:false},
+      {name:"ATR 2.0× rw=5", trades:"5,377", wr:"42.3%", pf:"1.15", totalR:"+477", rpt:"+0.09", avgW:"+1.57R", notes:"BTC", hl:false},
+      {name:"ATR 2.0× rw=7", trades:"5,579", wr:"42.6%", pf:"1.16", totalR:"+496", rpt:"+0.09", avgW:"+1.55R", notes:"BTC", hl:false},
+      {name:"ATR 2.5× rw=0", trades:"3,791", wr:"—", pf:"1.13", totalR:"+289", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 2.5× rw=3", trades:"5,593", wr:"—", pf:"1.14", totalR:"+466", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 2.5× rw=5", trades:"5,958", wr:"—", pf:"1.15", totalR:"+524", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 2.5× rw=7", trades:"6,179", wr:"—", pf:"1.15", totalR:"+546", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 3.0× rw=0", trades:"4,057", wr:"—", pf:"1.14", totalR:"+330", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 3.0× rw=3", trades:"5,989", wr:"—", pf:"1.15", totalR:"+527", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 3.0× rw=5", trades:"6,383", wr:"—", pf:"1.16", totalR:"+586", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 3.0× rw=7", trades:"6,621", wr:"—", pf:"1.16", totalR:"+598", rpt:"—", avgW:"—", notes:"BTC, most Total R (wick-only)", hl:false}
+    ]
+  },
+  {
+    id:"v3", label:"#3B Any Surpass",
+    rows:[
+      {name:"ATR 1.0× rw=0", trades:"3,725", wr:"—", pf:"1.19", totalR:"+396", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 1.0× rw=3", trades:"3,783", wr:"—", pf:"1.19", totalR:"+392", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 1.0× rw=5", trades:"3,816", wr:"—", pf:"1.18", totalR:"+387", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 1.0× rw=7", trades:"3,848", wr:"—", pf:"1.18", totalR:"+387", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 1.5× rw=0", trades:"5,129", wr:"—", pf:"1.22", totalR:"+644", rpt:"+0.13", avgW:"—", notes:"⭐ BEST HONEST PF EVER", hl:true},
+      {name:"ATR 1.5× rw=3", trades:"5,213", wr:"—", pf:"1.22", totalR:"+643", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 1.5× rw=5", trades:"5,261", wr:"—", pf:"1.22", totalR:"+638", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 1.5× rw=7", trades:"5,303", wr:"—", pf:"1.22", totalR:"+640", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 2.0× rw=0", trades:"6,126", wr:"—", pf:"1.17", totalR:"+604", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 2.0× rw=3", trades:"6,236", wr:"—", pf:"1.17", totalR:"+612", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 2.0× rw=5", trades:"6,298", wr:"—", pf:"1.17", totalR:"+609", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 2.0× rw=7", trades:"6,346", wr:"—", pf:"1.17", totalR:"+612", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 2.5× rw=0", trades:"6,771", wr:"—", pf:"1.18", totalR:"+677", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 2.5× rw=3", trades:"6,894", wr:"—", pf:"1.18", totalR:"+690", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 2.5× rw=5", trades:"6,965", wr:"—", pf:"1.17", totalR:"+685", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 2.5× rw=7", trades:"7,019", wr:"—", pf:"1.17", totalR:"+688", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 3.0× rw=0", trades:"7,248", wr:"—", pf:"1.18", totalR:"+718", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 3.0× rw=3", trades:"7,381", wr:"—", pf:"1.18", totalR:"+735", rpt:"—", avgW:"—", notes:"BTC, most Total R (any-surpass)", hl:false},
+      {name:"ATR 3.0× rw=5", trades:"7,457", wr:"—", pf:"1.17", totalR:"+733", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 3.0× rw=7", trades:"7,514", wr:"—", pf:"1.17", totalR:"+737", rpt:"—", avgW:"—", notes:"BTC", hl:false}
+    ]
+  },
+  {
+    id:"leg1", label:"#4 Leg1 Fix ❌",
+    rows:[
+      {name:"Leg1 Fix v1 (all 3 fixes)", trades:"8,733", wr:"—", pf:"1.08", totalR:"—", rpt:"—", avgW:"—", notes:"❌ Floods with weak patterns", hl:false, dead:true},
+      {name:"Leg1 Fix v2 (fixes #1+#3)", trades:"8,074", wr:"—", pf:"1.09", totalR:"—", rpt:"—", avgW:"—", notes:"❌ Barely better", hl:false, dead:true}
+    ]
+  },
+  {
+    id:"council", label:"#5 AI Council ❌",
+    rows:[
+      {name:"Config 1 (baseline filters)", trades:"—", wr:"—", pf:"1.09", totalR:"—", rpt:"—", avgW:"—", notes:"❌ All 15 configs PF 1.09–1.13", hl:false, dead:true},
+      {name:"Config 2–5 (strict)", trades:"—", wr:"—", pf:"1.10", totalR:"—", rpt:"—", avgW:"—", notes:"❌ Filters remove big winners too", hl:false, dead:true},
+      {name:"Config 6–10 (medium)", trades:"—", wr:"—", pf:"1.11", totalR:"—", rpt:"—", avgW:"—", notes:"❌ Same pattern", hl:false, dead:true},
+      {name:"Config 11–15 (relaxed)", trades:"—", wr:"—", pf:"1.13", totalR:"—", rpt:"—", avgW:"—", notes:"❌ Best council config, still < 1.23", hl:false, dead:true}
+    ]
+  },
+  {
+    id:"teacher", label:"#6 Teacher Method",
+    rows:[
+      {name:"Test 1: hold=5, gap=0.5 ATR", trades:"26", wr:"—", pf:"0.77", totalR:"-4.2", rpt:"—", avgW:"—", notes:"❌ No daily reset, loses money", hl:false, dead:true},
+      {name:"Test 1: hold=10, gap=0.5 ATR", trades:"29", wr:"—", pf:"0.66", totalR:"-8.3", rpt:"—", avgW:"—", notes:"❌ Worst performer", hl:false, dead:true},
+      {name:"Test 1: hold=20, gap=0.5 ATR", trades:"33", wr:"—", pf:"0.73", totalR:"-6.7", rpt:"—", avgW:"—", notes:"❌", hl:false, dead:true},
+      {name:"Test 2: hold=20, gap=0.25 ATR", trades:"46", wr:"—", pf:"0.82", totalR:"-5.4", rpt:"—", avgW:"—", notes:"❌ Best without reset, still loses", hl:false, dead:true},
+      {name:"Test 3: hold=7, gap=0.25 ATR, DAILY RESET ✨", trades:"3,210", wr:"37.7%", pf:"1.13", totalR:"+251", rpt:"+0.08", avgW:"—", notes:"⭐ Ivo's daily reset = key unlock", hl:true},
+      {name:"Test 4: ATR 1.0× bas=3", trades:"2,260", wr:"—", pf:"1.09", totalR:"—", rpt:"—", avgW:"—", notes:"Band grid test", hl:false},
+      {name:"Test 4: ATR 1.0× bas=7", trades:"2,820", wr:"—", pf:"1.11", totalR:"—", rpt:"—", avgW:"—", notes:"", hl:false},
+      {name:"Test 4: ATR 1.5× bas=3", trades:"2,690", wr:"—", pf:"1.11", totalR:"—", rpt:"—", avgW:"—", notes:"", hl:false},
+      {name:"Test 4: ATR 1.5× bas=7", trades:"3,150", wr:"—", pf:"1.13", totalR:"—", rpt:"—", avgW:"—", notes:"", hl:false},
+      {name:"Test 4: ATR 2.0× bas=3", trades:"2,980", wr:"—", pf:"1.12", totalR:"—", rpt:"—", avgW:"—", notes:"", hl:false},
+      {name:"Test 4: ATR 2.0× bas=5", trades:"3,240", wr:"—", pf:"1.14", totalR:"—", rpt:"—", avgW:"—", notes:"", hl:false},
+      {name:"Test 4: ATR 2.0× bas=7", trades:"3,462", wr:"39.2%", pf:"1.15", totalR:"+313", rpt:"+0.09", avgW:"—", notes:"⭐ Best Teacher (still < champion)", hl:true}
+    ]
+  },
+  {
+    id:"box3filter", label:"#7 3-Box Filter ⭐",
+    rows:[
+      {name:"ATR 1.5× 3Box=5%", trades:"69", wr:"43.5%", pf:"1.03", totalR:"+1.3", rpt:"+0.02", avgW:"—", notes:"Too strict", hl:false},
+      {name:"ATR 1.5× 3Box=10%", trades:"142", wr:"43.0%", pf:"1.21", totalR:"+17.0", rpt:"+0.12", avgW:"—", notes:"Near champion PF", hl:false},
+      {name:"ATR 1.5× 3Box=15%", trades:"205", wr:"47.3%", pf:"1.47", totalR:"+50.7", rpt:"+0.25", avgW:"—", notes:"⭐ NEW ALL-TIME BEST PF", hl:true},
+      {name:"ATR 1.5× 3Box=20%", trades:"288", wr:"46.2%", pf:"1.46", totalR:"+70.9", rpt:"+0.25", avgW:"—", notes:"⭐ Best balance (more trades)", hl:true},
+      {name:"ATR 1.5× 3Box=30%", trades:"437", wr:"44.6%", pf:"1.37", totalR:"+88.1", rpt:"+0.20", avgW:"—", notes:"Good volume, strong PF", hl:false},
+      {name:"ATR 1.5× no filter", trades:"4,638", wr:"42.7%", pf:"1.23", totalR:"+603.0", rpt:"+0.13", avgW:"—", notes:"Champion baseline", hl:false},
+      {name:"No ATR, 3Box=5%", trades:"117", wr:"41.0%", pf:"0.98", totalR:"-1.5", rpt:"-0.01", avgW:"—", notes:"❌ Loses money", hl:false, dead:true},
+      {name:"No ATR, 3Box=10%", trades:"245", wr:"40.4%", pf:"1.02", totalR:"+3.3", rpt:"+0.01", avgW:"—", notes:"Breakeven", hl:false},
+      {name:"No ATR, 3Box=15%", trades:"364", wr:"42.9%", pf:"1.23", totalR:"+46.9", rpt:"+0.13", avgW:"—", notes:"Matches champion PF", hl:false},
+      {name:"No ATR, 3Box=20%", trades:"486", wr:"42.6%", pf:"1.23", totalR:"+65.0", rpt:"+0.13", avgW:"—", notes:"Same PF, more trades", hl:false},
+      {name:"No ATR, 3Box=30%", trades:"724", wr:"42.5%", pf:"1.22", totalR:"+89.4", rpt:"+0.12", avgW:"—", notes:"Near champion", hl:false},
+      {name:"No ATR, no filter", trades:"7,803", wr:"42.3%", pf:"1.16", totalR:"+713.0", rpt:"+0.09", avgW:"—", notes:"Raw unfiltered", hl:false}
+    ]
+  },
+  {
+    id:"spacing", label:"#8 Level Spacing ⭐",
+    rows:[
+      {name:"Spacing ≥0.1× ATR", trades:"4,302", wr:"42.4%", pf:"1.23", totalR:"+556", rpt:"+0.13", avgW:"+1.66R", notes:"Minimal filter", hl:false},
+      {name:"Spacing ≥0.3× ATR", trades:"3,724", wr:"42.6%", pf:"1.24", totalR:"+519", rpt:"+0.14", avgW:"—", notes:"", hl:false},
+      {name:"Spacing ≥0.5× ATR", trades:"3,199", wr:"43.1%", pf:"1.27", totalR:"+486", rpt:"+0.15", avgW:"—", notes:"Strong sweet spot", hl:true},
+      {name:"Spacing ≥0.75× ATR", trades:"2,607", wr:"43.3%", pf:"1.31", totalR:"+451", rpt:"+0.17", avgW:"+1.71R", notes:"🏆 NEW CHAMPION", hl:true},
+      {name:"Spacing ≥1.0× ATR", trades:"2,107", wr:"42.4%", pf:"1.28", totalR:"+336", rpt:"+0.16", avgW:"—", notes:"PF dips — loses good trades", hl:false},
+      {name:"Spacing ≥1.5× ATR", trades:"1,312", wr:"40.9%", pf:"1.24", totalR:"+185", rpt:"+0.14", avgW:"—", notes:"Too aggressive", hl:false},
+      {name:"Spacing ≥2.0× ATR", trades:"795", wr:"40.9%", pf:"1.34", totalR:"+158", rpt:"+0.20", avgW:"—", notes:"High PF but thin", hl:false},
+      {name:"No filter (baseline)", trades:"4,647", wr:"42.5%", pf:"1.21", totalR:"+570", rpt:"+0.12", avgW:"+1.64R", notes:"", hl:false},
+      {name:"— Bucket: 0.0-0.3× ATR", trades:"923", wr:"41.8%", pf:"1.10", totalR:"+51", rpt:"+0.05", avgW:"—", notes:"❌ Dead weight (PF 1.10)", hl:false, dead:true},
+      {name:"— Bucket: 0.3-0.5× ATR", trades:"525", wr:"40.0%", pf:"1.11", totalR:"+33", rpt:"+0.06", avgW:"—", notes:"❌ Weak", hl:false, dead:true},
+      {name:"— Bucket: 0.5-1.0× ATR", trades:"1,092", wr:"44.3%", pf:"1.25", totalR:"+149", rpt:"+0.14", avgW:"—", notes:"Real levels start here", hl:false},
+      {name:"— Bucket: ≥2.0× ATR", trades:"795", wr:"40.9%", pf:"1.34", totalR:"+158", rpt:"+0.20", avgW:"—", notes:"Best quality", hl:false},
+      {name:"≥0.5× + 3-Box ≤20%", trades:"237", wr:"46.0%", pf:"1.50", totalR:"+64", rpt:"+0.27", avgW:"—", notes:"Combined: high PF", hl:false},
+      {name:"≥0.75× + 3-Box ≤30%", trades:"330", wr:"46.1%", pf:"1.45", totalR:"+80", rpt:"+0.24", avgW:"—", notes:"⚔️ CHALLENGER", hl:true},
+      {name:"≥1.0× + 3-Box ≤20%", trades:"191", wr:"46.6%", pf:"1.58", totalR:"+59", rpt:"+0.31", avgW:"—", notes:"Highest PF ever (thin)", hl:false}
+    ]
+  },
+  {
+    id:"bars", label:"#3C Bars After Surpass",
+    rows:[
+      {name:"ATR 1.0× bas=0", trades:"1,836", wr:"—", pf:"1.11", totalR:"—", rpt:"—", avgW:"—", notes:"BTC, too strict", hl:false},
+      {name:"ATR 1.0× bas=1", trades:"2,611", wr:"—", pf:"1.16", totalR:"—", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 1.0× bas=4", trades:"3,259", wr:"—", pf:"1.18", totalR:"—", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 1.0× bas=7", trades:"3,517", wr:"—", pf:"1.18", totalR:"—", rpt:"—", avgW:"—", notes:"BTC, plateau", hl:false},
+      {name:"ATR 1.5× bas=0", trades:"2,567", wr:"—", pf:"1.17", totalR:"—", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 1.5× bas=1", trades:"3,642", wr:"—", pf:"1.22", totalR:"—", rpt:"—", avgW:"—", notes:"BTC, biggest jump", hl:false},
+      {name:"ATR 1.5× bas=4", trades:"4,527", wr:"—", pf:"1.22", totalR:"—", rpt:"—", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 1.5× bas=5", trades:"4,661", wr:"42.6%", pf:"1.23", totalR:"+600", rpt:"+0.13", avgW:"—", notes:"⭐ NEW CHAMPION", hl:true},
+      {name:"ATR 1.5× bas=7", trades:"4,850", wr:"—", pf:"1.22", totalR:"—", rpt:"—", avgW:"—", notes:"BTC, plateau", hl:false},
+      {name:"ATR 2.0× bas=0", trades:"3,080", wr:"38.7%", pf:"1.12", totalR:"+217", rpt:"+0.07", avgW:"—", notes:"BTC, true same-bar", hl:false},
+      {name:"ATR 2.0× bas=1", trades:"4,372", wr:"40.3%", pf:"1.17", totalR:"+438", rpt:"+0.10", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 2.0× bas=5", trades:"5,576", wr:"42.0%", pf:"1.17", totalR:"+562", rpt:"+0.10", avgW:"—", notes:"BTC", hl:false},
+      {name:"ATR 2.0× bas=7", trades:"5,808", wr:"42.3%", pf:"1.17", totalR:"+563", rpt:"+0.10", avgW:"—", notes:"BTC, plateau", hl:false},
+      {name:"ATR 3.0× bas=1", trades:"5,177", wr:"—", pf:"1.19", totalR:"—", rpt:"—", avgW:"—", notes:"BTC, best at 3.0×", hl:false},
+      {name:"ATR 3.0× bas=5", trades:"6,612", wr:"—", pf:"1.18", totalR:"—", rpt:"—", avgW:"—", notes:"BTC", hl:false}
+    ]
+  }
+];
+
+// ═══════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════
+
+// --- Progress bar ---
+const pct = ((PF_BEST - PF_START) / (PF_TARGET - PF_START)) * 100;
+document.getElementById('pf-fill').style.width = Math.max(2, pct) + '%';
+document.getElementById('pf-text').textContent = pct.toFixed(1) + '% to target';
+document.getElementById('pf-current').textContent = PF_BEST.toFixed(2);
+
+// --- Improvement cards ---
+const cardsEl = document.getElementById('cards');
+improvements.forEach(imp => {
+  const c = document.createElement('div');
+  const statusClass = imp.status === 'best' ? 'best' : imp.status;
+  c.className = 'card ' + statusClass;
+
+  const statusLabels = {done:'✅ Complete', failed:'❌ Failed', best:'⭐ Best Result', running:'🔄 Running', pending:'⏳ Pending'};
+  let metricsHtml = '';
+  if (imp.metrics) {
+    const m = imp.metrics;
+    metricsHtml = `
+      <div class="metric"><span class="k">Profit Factor</span><span class="v ${m.pf>=1.22?'neutral':m.pf>=1.20?'up':'down'}">${m.pf}</span></div>
+      <div class="metric"><span class="k">Trades</span><span class="v">${m.trades.toLocaleString()}</span></div>
+      ${m.wr ? `<div class="metric"><span class="k">Win Rate</span><span class="v">${m.wr}</span></div>` : ''}
+      <div class="metric"><span class="k">Total R</span><span class="v up">+${m.totalR}</span></div>
+      <div class="metric"><span class="k">R/Trade</span><span class="v">+${m.rpt}</span></div>
+      <div class="metric"><span class="k">Scope</span><span class="v" style="color:#888">${m.scope}</span></div>
+    `;
+  }
+
+  c.innerHTML = `
+    <div class="step-num">${imp.num}${imp.date ? ' · '+imp.date : ''}</div>
+    <h3>${imp.name}${imp.insight ? '<span class="insight-tag">💡 '+imp.insight+'</span>' : ''}</h3>
+    <span class="status ${imp.status}">${statusLabels[imp.status]}</span>
+    <p style="font-size:0.85em;color:#aaa;margin-bottom:10px">${imp.desc}</p>
+    ${metricsHtml}
+    <div class="verdict">${imp.verdict}</div>
+  `;
+  cardsEl.appendChild(c);
+});
+
+// --- Insights ---
+const insEl = document.getElementById('insights');
+insights.forEach(ins => {
+  const d = document.createElement('div');
+  d.className = 'insight-card';
+  d.innerHTML = `
+    <h4>${ins.icon} ${ins.title}</h4>
+    <p>${ins.text}</p>
+    <div class="evidence">📊 ${ins.evidence}</div>
+  `;
+  insEl.appendChild(d);
+});
+
+// --- Band charts ---
+function renderBandChart(containerId, data, highlightBand) {
+  const el = document.getElementById(containerId);
+  const maxR = Math.max(...data.map(b => b.totalR));
+  data.forEach(b => {
+    const col = document.createElement('div');
+    col.className = 'band-col';
+    const h = (b.totalR / maxR * 170);
+    const isHl = b.band === highlightBand;
+    const isBl = b.band.includes('Baseline');
+    let bg;
+    if (isHl) bg = 'linear-gradient(180deg,#ffd93d,#aa8800)';
+    else if (isBl) bg = 'linear-gradient(180deg,#ff6b6b,#aa3333)';
+    else bg = 'linear-gradient(180deg,#4a9eff,#2255aa)';
+    col.innerHTML = `
+      <div class="band-value">+${b.totalR}R</div>
+      <div class="band-pf">PF ${b.pf}</div>
+      <div class="band-extra">${b.trades.toLocaleString()}t</div>
+      <div class="band-bar" style="height:${h}px;background:${bg}"></div>
+      <div class="band-label">${b.band}</div>
+    `;
+    el.appendChild(col);
+  });
+}
+
+renderBandChart('band-chart-v3', v3Bands, 'ATR 1.5×');
+renderBandChart('band-chart-v2', v2Bands, 'ATR 1.0×');
+renderBandChart('band-chart-atr', atrBands, 'ATR 2.0×');
+
+// --- 3-Box Filter charts ---
+const box3Atr = [
+  {band:"5%", trades:69, pf:1.03, totalR:1.3},
+  {band:"10%", trades:142, pf:1.21, totalR:17.0},
+  {band:"15%", trades:205, pf:1.47, totalR:50.7},
+  {band:"20%", trades:288, pf:1.46, totalR:70.9},
+  {band:"30%", trades:437, pf:1.37, totalR:88.1},
+  {band:"None", trades:4638, pf:1.23, totalR:603.0}
+];
+const box3NoAtr = [
+  {band:"5%", trades:117, pf:0.98, totalR:-1.5},
+  {band:"10%", trades:245, pf:1.02, totalR:3.3},
+  {band:"15%", trades:364, pf:1.23, totalR:46.9},
+  {band:"20%", trades:486, pf:1.23, totalR:65.0},
+  {band:"30%", trades:724, pf:1.22, totalR:89.4},
+  {band:"None", trades:7803, pf:1.16, totalR:713.0}
+];
+
+function renderBox3Chart(containerId, data, color) {
+  const el = document.getElementById(containerId);
+  const maxPF = Math.max(...data.map(b => b.pf));
+  data.forEach(b => {
+    const col = document.createElement('div');
+    col.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;gap:4px';
+    const h = Math.max(4, (b.pf / maxPF) * 140);
+    const isPeak = b.pf >= 1.40;
+    const isLoss = b.pf < 1.0;
+    let bg;
+    if (isPeak) bg = 'linear-gradient(180deg,#ffd93d,#aa8800)';
+    else if (isLoss) bg = 'linear-gradient(180deg,#ff6b6b,#aa3333)';
+    else bg = `linear-gradient(180deg,${color},${color}88)`;
+    col.innerHTML = `
+      <div style="font-size:0.78em;font-weight:700;color:${isPeak?'#ffd93d':isLoss?'#ff6b6b':'#fff'}">PF ${b.pf}</div>
+      <div style="font-size:0.65em;color:#888">${b.trades}t</div>
+      <div style="width:100%;border-radius:6px 6px 0 0;height:${h}px;background:${bg}"></div>
+      <div style="font-size:0.72em;color:#888">${b.band}</div>
+    `;
+    el.appendChild(col);
+  });
+}
+
+renderBox3Chart('box3-chart-atr', box3Atr, '#ffd93d');
+renderBox3Chart('box3-chart-noatr', box3NoAtr, '#4a9eff');
+
+// --- Tables with tabs ---
+const tabsEl = document.getElementById('table-tabs');
+const sectionsEl = document.getElementById('table-sections');
+
+tableSections.forEach((sec, i) => {
+  // Tab button
+  const btn = document.createElement('button');
+  btn.className = 'tab-btn' + (i===0 ? ' active' : '');
+  btn.textContent = sec.label;
+  btn.onclick = () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.table-section').forEach(s => s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('sec-'+sec.id).classList.add('active');
+  };
+  tabsEl.appendChild(btn);
+
+  // Table
+  const div = document.createElement('div');
+  div.id = 'sec-'+sec.id;
+  div.className = 'table-section' + (i===0 ? ' active' : '');
+  let html = '<table><thead><tr><th>Test</th><th>Trades</th><th>WR</th><th>PF</th><th>Total R</th><th>R/Trade</th><th>Avg Win</th><th>Notes</th></tr></thead><tbody>';
+  sec.rows.forEach(r => {
+    const cls = r.hl ? ' class="highlight-row"' : (r.dead ? ' class="dead-row"' : '');
+    html += `<tr${cls}><td>${r.name}</td><td>${r.trades}</td><td>${r.wr}</td><td>${r.pf}</td><td>${r.totalR}</td><td>${r.rpt}</td><td>${r.avgW}</td><td style="font-size:0.8em;color:#888">${r.notes}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  div.innerHTML = html;
+  sectionsEl.appendChild(div);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ad Copy Scorer — Bencivenga Equation</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Georgia', serif; background: #0a0a0f; color: #e0ddd5; line-height: 1.6; }
+a { color: #c9a84c; text-decoration: none; }
+
+/* Header */
+.header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); padding: 32px 20px; text-align: center; border-bottom: 3px solid #c9a84c; }
+.header h1 { font-size: 2em; color: #c9a84c; font-weight: 700; letter-spacing: 1px; }
+.header .subtitle { color: #8a8678; font-size: 1em; margin-top: 6px; font-style: italic; }
+.back-link { position: absolute; left: 20px; top: 20px; color: #c9a84c; font-size: 0.9em; }
+
+/* Tabs */
+.tabs { background: #111118; padding: 12px 20px; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #2a2a35; }
+.tab-btn { background: #1a1a28; border: 1px solid #2a2a35; color: #8a8678; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-size: 0.85em; font-family: inherit; transition: all 0.2s; font-weight: 600; }
+.tab-btn:hover, .tab-btn.active { background: #c9a84c; color: #0a0a0f; border-color: #c9a84c; }
+
+/* Container */
+.container { max-width: 800px; margin: 0 auto; padding: 24px 16px; }
+
+/* Tab content */
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* Form elements */
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; color: #c9a84c; font-weight: 700; margin-bottom: 6px; font-size: 0.95em; }
+.form-group input, .form-group textarea, .form-group select {
+    width: 100%; padding: 10px 14px; background: #151520; border: 1px solid #2a2a35;
+    border-radius: 8px; color: #e0ddd5; font-size: 0.95em; font-family: inherit;
+}
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: #c9a84c; }
+.form-group textarea { resize: vertical; min-height: 100px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+
+/* Scoring Element */
+.score-element {
+    background: #13131d; border: 1px solid #2a2a35; border-radius: 12px;
+    padding: 20px; margin-bottom: 16px; transition: border-color 0.2s;
+}
+.score-element:hover { border-color: rgba(201,168,76,0.4); }
+.score-element h3 { color: #c9a84c; font-size: 1.15em; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+.score-element .element-desc { color: #8a8678; font-size: 0.85em; margin-bottom: 14px; font-style: italic; }
+.score-element .tip { background: #1a1a28; padding: 10px 14px; border-radius: 6px; font-size: 0.82em; color: #8a8678; margin-bottom: 14px; border-left: 3px solid rgba(201,168,76,0.3); }
+.score-element .tip strong { color: #b8b4a8; }
+
+.score-row {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap;
+}
+.score-label { min-width: 140px; font-size: 0.9em; color: #b8b4a8; }
+.score-label .max { color: #555; font-size: 0.8em; }
+.score-slider { flex: 1; min-width: 120px; -webkit-appearance: none; appearance: none; height: 6px; background: #2a2a35; border-radius: 3px; outline: none; }
+.score-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: #c9a84c; border-radius: 50%; cursor: pointer; }
+.score-slider::-moz-range-thumb { width: 20px; height: 20px; background: #c9a84c; border-radius: 50%; cursor: pointer; border: none; }
+.score-value { min-width: 36px; text-align: center; font-size: 1.3em; font-weight: 700; color: #c9a84c; }
+.score-subtotal { text-align: right; font-size: 0.95em; color: #e0ddd5; margin-top: 4px; padding-top: 8px; border-top: 1px solid #2a2a35; }
+.score-subtotal span { color: #c9a84c; font-weight: 700; font-size: 1.1em; }
+
+/* Notes within element */
+.element-notes { width: 100%; padding: 8px 12px; background: #0f0f18; border: 1px solid #2a2a35; border-radius: 6px; color: #b8b4a8; font-size: 0.85em; font-family: inherit; resize: vertical; min-height: 40px; margin-top: 8px; }
+.element-notes:focus { border-color: #c9a84c; outline: none; }
+.element-notes::placeholder { color: #444; }
+
+/* Bridge Check */
+.bridge-section { background: #13131d; border: 2px solid rgba(201,168,76,0.3); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+.bridge-section h3 { color: #c9a84c; font-size: 1.15em; margin-bottom: 6px; }
+.bridge-section .bridge-desc { color: #8a8678; font-size: 0.85em; margin-bottom: 14px; font-style: italic; }
+.bridge-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #1a1a28; cursor: pointer; }
+.bridge-item:last-child { border-bottom: none; }
+.bridge-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: #c9a84c; cursor: pointer; flex-shrink: 0; }
+.bridge-item label { color: #b8b4a8; font-size: 0.9em; cursor: pointer; }
+
+/* Total Score Display */
+.total-score-card {
+    background: linear-gradient(135deg, #1a1a2e, #16213e); border: 2px solid #c9a84c;
+    border-radius: 16px; padding: 28px; text-align: center; margin: 24px 0;
+    position: relative; overflow: hidden;
+}
+.total-score-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, #c9a84c, transparent); }
+.total-number { font-size: 4em; font-weight: 700; color: #c9a84c; line-height: 1; }
+.total-max { font-size: 1.5em; color: #555; }
+.total-grade { font-size: 1.8em; margin-top: 8px; font-weight: 700; }
+.grade-S { color: #ffd700; } .grade-A { color: #4caf50; } .grade-B { color: #2196f3; } .grade-C { color: #ff9800; } .grade-D { color: #f44336; }
+.total-label { color: #8a8678; font-size: 0.9em; margin-top: 8px; }
+
+/* Score Breakdown Bars */
+.breakdown { margin: 20px 0; }
+.breakdown-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.breakdown-label { min-width: 130px; font-size: 0.85em; color: #8a8678; text-align: right; }
+.breakdown-bar-bg { flex: 1; height: 22px; background: #1a1a28; border-radius: 11px; overflow: hidden; position: relative; }
+.breakdown-bar { height: 100%; border-radius: 11px; transition: width 0.5s ease; position: relative; }
+.breakdown-bar.problem { background: linear-gradient(90deg, #e74c3c, #c0392b); }
+.breakdown-bar.promise { background: linear-gradient(90deg, #3498db, #2980b9); }
+.breakdown-bar.proof { background: linear-gradient(90deg, #2ecc71, #27ae60); }
+.breakdown-bar.proposition { background: linear-gradient(90deg, #9b59b6, #8e44ad); }
+.breakdown-bar.crackerjack { background: linear-gradient(90deg, #f39c12, #e67e22); }
+.breakdown-score { min-width: 50px; font-size: 0.9em; font-weight: 700; color: #c9a84c; }
+
+/* Proof Elements Checklist */
+.proof-checklist { background: #13131d; border: 1px solid #2a2a35; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+.proof-checklist h3 { color: #c9a84c; font-size: 1.1em; margin-bottom: 12px; }
+.proof-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+@media (max-width: 600px) { .proof-grid { grid-template-columns: 1fr; } }
+.proof-check { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; cursor: pointer; transition: background 0.2s; }
+.proof-check:hover { background: rgba(201,168,76,0.05); }
+.proof-check input { width: 16px; height: 16px; accent-color: #c9a84c; cursor: pointer; flex-shrink: 0; }
+.proof-check label { font-size: 0.82em; color: #b8b4a8; cursor: pointer; }
+.proof-count { text-align: center; margin-top: 10px; font-size: 0.9em; color: #8a8678; }
+.proof-count span { color: #c9a84c; font-weight: 700; }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 22px; border-radius: 8px; border: none; cursor: pointer; font-family: inherit; font-size: 0.9em; font-weight: 600; transition: all 0.2s; }
+.btn-primary { background: #c9a84c; color: #0a0a0f; }
+.btn-primary:hover { background: #e6c566; }
+.btn-secondary { background: #1a1a28; color: #8a8678; border: 1px solid #2a2a35; }
+.btn-secondary:hover { border-color: #c9a84c; color: #c9a84c; }
+.btn-danger { background: rgba(244,67,54,0.15); color: #f44336; border: 1px solid rgba(244,67,54,0.3); }
+.btn-danger:hover { background: rgba(244,67,54,0.25); }
+.btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+
+/* History */
+.history-card {
+    background: #13131d; border: 1px solid #2a2a35; border-radius: 12px;
+    padding: 16px 20px; margin-bottom: 12px; transition: border-color 0.2s; cursor: pointer;
+}
+.history-card:hover { border-color: rgba(201,168,76,0.4); }
+.history-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.history-name { font-weight: 700; color: #e0ddd5; font-size: 1.05em; }
+.history-score { font-size: 1.6em; font-weight: 700; color: #c9a84c; }
+.history-meta { display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.82em; color: #666; }
+.history-meta span { display: flex; align-items: center; gap: 4px; }
+.history-grade { display: inline-block; padding: 2px 10px; border-radius: 100px; font-size: 0.75em; font-weight: 700; }
+.history-preview { font-size: 0.85em; color: #8a8678; margin-top: 8px; font-style: italic; max-height: 40px; overflow: hidden; }
+.history-bars { display: flex; gap: 3px; align-items: end; height: 24px; margin-top: 8px; }
+.history-bar { flex: 1; border-radius: 2px 2px 0 0; transition: height 0.3s; }
+.empty-state { text-align: center; padding: 60px 20px; color: #555; }
+.empty-state .emoji { font-size: 3em; margin-bottom: 12px; }
+
+/* Stats Row */
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+@media (max-width: 600px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
+.stat-card { background: #13131d; border: 1px solid #2a2a35; border-radius: 10px; padding: 14px; text-align: center; }
+.stat-value { font-size: 1.5em; font-weight: 700; color: #c9a84c; }
+.stat-label { font-size: 0.78em; color: #666; margin-top: 2px; }
+
+/* Delete button in history */
+.history-actions { display: flex; gap: 8px; align-items: center; }
+.delete-btn { background: none; border: none; color: #555; cursor: pointer; font-size: 1.1em; padding: 4px 8px; border-radius: 4px; transition: all 0.2s; }
+.delete-btn:hover { color: #f44336; background: rgba(244,67,54,0.1); }
+
+/* Responsive */
+@media (max-width: 640px) {
+    .header h1 { font-size: 1.5em; }
+    .total-number { font-size: 3em; }
+    .score-row { flex-direction: column; align-items: flex-start; gap: 6px; }
+    .score-slider { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<div class="header" style="position: relative;">
+    <a href="index.html" class="back-link">← Back</a>
+    <h1>🎯 Ad Copy Scorer</h1>
+    <div class="subtitle">Bencivenga Persuasion Equation — Max 120 Points</div>
+</div>
+
+<div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('score')">✍️ Score</button>
+    <button class="tab-btn" onclick="switchTab('history')">📊 History</button>
+    <button class="tab-btn" onclick="switchTab('guide')">📖 Guide</button>
+</div>
+
+<div class="container">
+
+<!-- ====== SCORE TAB ====== -->
+<div id="tab-score" class="tab-content active">
+
+    <!-- Ad Info -->
+    <div class="form-group">
+        <label>Ad Name</label>
+        <input type="text" id="adName" placeholder="e.g. GR Jeans — Hook D" />
+    </div>
+    <div class="form-row">
+        <div class="form-group">
+            <label>Market</label>
+            <select id="adMarket">
+                <option value="GR">🇬🇷 Greece</option>
+                <option value="BG">🇧🇬 Bulgaria</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Ad Type</label>
+            <select id="adType">
+                <option value="brand">Brand (cold)</option>
+                <option value="product">Product</option>
+                <option value="retarget">Retarget (warm/hot)</option>
+            </select>
+        </div>
+    </div>
+    <div class="form-group">
+        <label>Ad Copy</label>
+        <textarea id="adCopy" rows="5" placeholder="Paste your ad copy here..."></textarea>
+    </div>
+
+    <!-- ELEMENT 1: PROBLEM -->
+    <div class="score-element" id="el-problem">
+        <h3>🔥 1. Problem</h3>
+        <div class="element-desc">Does the ad tap into a real want, need, or desire? "No interest" = death.</div>
+        <div class="tip">
+            <strong>Think like a fish:</strong> People won't act unless they have a want or desire.
+            "Problems" include desires — not having what you want IS a problem.
+            The more urgent, the more they'll read.
+        </div>
+        <div class="score-row">
+            <span class="score-label">Urgent <span class="max">(adj, /10)</span></span>
+            <input type="range" class="score-slider" id="s-urgent" min="0" max="10" value="0" oninput="updateScores()" />
+            <span class="score-value" id="v-urgent">0</span>
+        </div>
+        <div class="score-row">
+            <span class="score-label">Problem <span class="max">(noun, /15)</span></span>
+            <input type="range" class="score-slider" id="s-problem" min="0" max="15" value="0" oninput="updateScores()" />
+            <span class="score-value" id="v-problem">0</span>
+        </div>
+        <div class="score-subtotal">Subtotal: <span id="sub-problem">0</span>/25</div>
+        <textarea class="element-notes" id="n-problem" placeholder="Notes: what problem/desire does it address?"></textarea>
+    </div>
+
+    <!-- ELEMENT 2: PROMISE -->
+    <div class="score-element" id="el-promise">
+        <h3>✨ 2. Promise</h3>
+        <div class="element-desc">Does it make a compelling, unique promise? "No perceived difference" = ignored.</div>
+        <div class="tip">
+            <strong>Must be UNIQUE:</strong> If your promise sounds like everyone else's, the prospect sees no reason to choose you.
+            What makes YOUR solution different? What can ONLY you deliver?
+        </div>
+        <div class="score-row">
+            <span class="score-label">Unique <span class="max">(adj, /10)</span></span>
+            <input type="range" class="score-slider" id="s-unique" min="0" max="10" value="0" oninput="updateScores()" />
+            <span class="score-value" id="v-unique">0</span>
+        </div>
+        <div class="score-row">
+            <span class="score-label">Promise <span class="max">(noun, /15)</span></span>
+            <input type="range" class="score-slider" id="s-promise" min="0" max="15" value="0" oninput="updateScores()" />
+            <span class="score-value" id="v-promise">0</span>
+        </div>
+        <div class="score-subtotal">Subtotal: <span id="sub-promise">0</span>/25</div>
+        <textarea class="element-notes" id="n-promise" placeholder="Notes: what's the unique promise?"></textarea>
+    </div>
+
+    <!-- ELEMENT 3: PROOF -->
+    <div class="score-element" id="el-proof">
+        <h3>🔬 3. Proof</h3>
+        <div class="element-desc">"Without belief, nobody buys." Proof is the #1 thing most ads lack.</div>
+        <div class="tip">
+            <strong>Bencivenga's rule:</strong> "Make compelling proof the alpha and omega of your advertising.
+            The strongest ads pile layer upon layer of proof." Don't wait until the end — lead with proof early.
+        </div>
+        <div class="score-row">
+            <span class="score-label">Unquestionable <span class="max">(adj, /10)</span></span>
+            <input type="range" class="score-slider" id="s-unquestionable" min="0" max="10" value="0" oninput="updateScores()" />
+            <span class="score-value" id="v-unquestionable">0</span>
+        </div>
+        <div class="score-row">
+            <span class="score-label">Proof <span class="max">(noun, /15)</span></span>
+            <input type="range" class="score-slider" id="s-proof" min="0" max="15" value="0" oninput="updateScores()" />
+            <span class="score-value" id="v-proof">0</span>
+        </div>
+        <div class="score-subtotal">Subtotal: <span id="sub-proof">0</span>/25</div>
+
+        <!-- Proof Elements Checklist -->
+        <div class="proof-checklist" style="margin-top: 14px; background: #0f0f18; border: 1px solid #1a1a28;">
+            <h3 style="font-size: 0.95em;">12 Proof Elements Used:</h3>
+            <div class="proof-grid" id="proofChecklist"></div>
+            <div class="proof-count"><span id="proofCount">0</span>/12 proof layers</div>
+        </div>
+
+        <textarea class="element-notes" id="n-proof" placeholder="Notes: what proof elements are present?"></textarea>
+    </div>
+
+    <!-- ELEMENT 4: PROPOSITION -->
+    <div class="score-element" id="el-proposition">
+        <h3>🤝 4. Proposition</h3>
+        <div class="element-desc">Is it easy to say yes? "Let me think it over" = lost sale.</div>
+        <div class="tip">
+            <strong>User-friendly:</strong> Remove all friction. Clear CTA, risk reversal (guarantee),
+            urgency/scarcity if genuine. Make saying "yes" the path of least resistance.
+        </div>
+        <div class="score-row">
+            <span class="score-label">User-friendly <span class="max">(adj, /10)</span></span>
+            <input type="range" class="score-slider" id="s-userfriendly" min="0" max="10" value="0" oninput="updateScores()" />
+            <span class="score-value" id="v-userfriendly">0</span>
+        </div>
+        <div class="score-row">
+            <span class="score-label">Proposition <span class="max">(noun, /15)</span></span>
+            <input type="range" class="score-slider" id="s-proposition" min="0" max="15" value="0" oninput="updateScores()" />
+            <span class="score-value" id="v-proposition">0</span>
+        </div>
+        <div class="score-subtotal">Subtotal: <span id="sub-proposition">0</span>/25</div>
+        <textarea class="element-notes" id="n-proposition" placeholder="Notes: CTA, guarantee, urgency?"></textarea>
+    </div>
+
+    <!-- CRACKERJACK SECRET -->
+    <div class="score-element" style="border-color: rgba(243,156,18,0.4);">
+        <h3>🎁 Bonus: CrackerJack Secret</h3>
+        <div class="element-desc">A valuable bonus that makes the ad itself worth keeping (free report, guide, map, etc.).</div>
+        <div class="tip">
+            <strong>Named after CrackerJack candy boxes</strong> that had a toy surprise inside.
+            Does your ad offer something extra that makes people want to save it, share it, or act now?
+        </div>
+        <div class="score-row">
+            <span class="score-label">CrackerJack <span class="max">(/20)</span></span>
+            <input type="range" class="score-slider" id="s-crackerjack" min="0" max="20" value="0" oninput="updateScores()" />
+            <span class="score-value" id="v-crackerjack">0</span>
+        </div>
+        <textarea class="element-notes" id="n-crackerjack" placeholder="Notes: what's the bonus/surprise?"></textarea>
+    </div>
+
+    <!-- BRIDGE PRINCIPLE CHECK -->
+    <div class="bridge-section">
+        <h3>🌊 Bridge Principle Check</h3>
+        <div class="bridge-desc">"The equation isn't 4 boxes — it's one river." One emotional thread that never breaks.</div>
+        <div class="bridge-item">
+            <input type="checkbox" id="b1" onchange="updateBridge()" />
+            <label for="b1">Each sentence earns the next — reader thinks "tell me more"</label>
+        </div>
+        <div class="bridge-item">
+            <input type="checkbox" id="b2" onchange="updateBridge()" />
+            <label for="b2">One unbroken emotional thread from hook to CTA</label>
+        </div>
+        <div class="bridge-item">
+            <input type="checkbox" id="b3" onchange="updateBridge()" />
+            <label for="b3">4 elements woven invisibly (not stacked as blocks)</label>
+        </div>
+        <div class="bridge-item">
+            <input type="checkbox" id="b4" onchange="updateBridge()" />
+            <label for="b4">Hook connects text to image (product/brand bridge)</label>
+        </div>
+        <div class="bridge-item">
+            <input type="checkbox" id="b5" onchange="updateBridge()" />
+            <label for="b5">No place where the reader would stop and move on</label>
+        </div>
+        <div id="bridgeStatus" style="text-align: center; margin-top: 12px; font-size: 0.9em; color: #666;">0/5 bridge checks passed</div>
+    </div>
+
+    <!-- TOTAL SCORE -->
+    <div class="total-score-card" id="totalScoreCard">
+        <div><span class="total-number" id="totalNumber">0</span><span class="total-max">/120</span></div>
+        <div class="total-grade" id="totalGrade">—</div>
+        <div class="total-label" id="totalLabel">Start scoring to see your grade</div>
+    </div>
+
+    <!-- Breakdown Bars -->
+    <div class="breakdown" id="breakdownBars">
+        <div class="breakdown-row">
+            <span class="breakdown-label">Problem</span>
+            <div class="breakdown-bar-bg"><div class="breakdown-bar problem" id="bar-problem" style="width:0%"></div></div>
+            <span class="breakdown-score" id="bs-problem">0/25</span>
+        </div>
+        <div class="breakdown-row">
+            <span class="breakdown-label">Promise</span>
+            <div class="breakdown-bar-bg"><div class="breakdown-bar promise" id="bar-promise" style="width:0%"></div></div>
+            <span class="breakdown-score" id="bs-promise">0/25</span>
+        </div>
+        <div class="breakdown-row">
+            <span class="breakdown-label">Proof</span>
+            <div class="breakdown-bar-bg"><div class="breakdown-bar proof" id="bar-proof" style="width:0%"></div></div>
+            <span class="breakdown-score" id="bs-proof">0/25</span>
+        </div>
+        <div class="breakdown-row">
+            <span class="breakdown-label">Proposition</span>
+            <div class="breakdown-bar-bg"><div class="breakdown-bar proposition" id="bar-proposition" style="width:0%"></div></div>
+            <span class="breakdown-score" id="bs-proposition">0/25</span>
+        </div>
+        <div class="breakdown-row">
+            <span class="breakdown-label">CrackerJack</span>
+            <div class="breakdown-bar-bg"><div class="breakdown-bar crackerjack" id="bar-crackerjack" style="width:0%"></div></div>
+            <span class="breakdown-score" id="bs-crackerjack">0/20</span>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="btn-group">
+        <button class="btn btn-primary" onclick="saveAd()">💾 Save Score</button>
+        <button class="btn btn-secondary" onclick="resetForm()">🗑️ Clear Form</button>
+    </div>
+    <div id="saveMsg" style="margin-top: 10px; color: #4caf50; font-size: 0.9em;"></div>
+</div>
+
+<!-- ====== HISTORY TAB ====== -->
+<div id="tab-history" class="tab-content">
+    <div class="stats-row" id="historyStats"></div>
+    <div id="historyList"></div>
+</div>
+
+<!-- ====== GUIDE TAB ====== -->
+<div id="tab-guide" class="tab-content">
+    <div class="score-element">
+        <h3>📐 The Persuasion Equation</h3>
+        <div style="background: #1a1a2e; border: 2px solid #c9a84c; border-radius: 10px; padding: 20px; text-align: center; margin: 16px 0; font-size: 1.1em;">
+            <strong style="color:#e74c3c">Urgent</strong> Problem (25)
+            <span style="color:#c9a84c; font-size:1.3em; margin: 0 8px">+</span>
+            <strong style="color:#3498db">Unique</strong> Promise (25)
+            <span style="color:#c9a84c; font-size:1.3em; margin: 0 8px">+</span>
+            <strong style="color:#2ecc71">Unquestionable</strong> Proof (25)
+            <span style="color:#c9a84c; font-size:1.3em; margin: 0 8px">+</span>
+            <strong style="color:#9b59b6">User-friendly</strong> Proposition (25)
+            <span style="color:#c9a84c; font-size:1.3em; margin: 0 8px">+</span>
+            <strong style="color:#f39c12">CrackerJack</strong> Secret (20)
+            <span style="color:#c9a84c; font-size:1.6em; margin: 0 10px">=</span>
+            <strong style="color:#c9a84c">120 Max</strong>
+        </div>
+        <p style="color:#8a8678; font-size: 0.9em; margin-top: 12px;">
+            <strong>Adjective = UPGRADE (10 pts).</strong> The adjective is what turns a basic element into a weapon.
+            Anyone can state a problem — making it <em>urgent</em> is the upgrade.<br><br>
+            <strong>Noun = BASE (15 pts).</strong> The element itself. Does the ad have a real problem, a real promise, real proof, a real proposition?
+        </p>
+    </div>
+
+    <div class="score-element">
+        <h3>🌊 The Bridge Principle</h3>
+        <p style="color:#b8b4a8; margin-bottom: 12px;">
+            <em>"The equation isn't 4 boxes. It's one river."</em>
+        </p>
+        <ul style="padding-left: 20px; color: #b8b4a8; font-size: 0.9em;">
+            <li style="margin-bottom: 8px;">Don't stack Bencivenga's 4 elements as separate blocks</li>
+            <li style="margin-bottom: 8px;">One emotional thread that never breaks — the hook creates a feeling; every sentence deepens or resolves THAT SAME feeling</li>
+            <li style="margin-bottom: 8px;">The 4 elements are still there but invisible, woven into one narrative</li>
+            <li style="margin-bottom: 8px;">Test at every line: "Would the reader naturally think 'tell me more'?" If not, the bridge is broken</li>
+        </ul>
+    </div>
+
+    <div class="score-element">
+        <h3>🔬 The 12 Proof Elements</h3>
+        <p style="color:#8a8678; font-size: 0.9em; margin-bottom: 14px;">
+            "The strongest ads pile layer upon layer of compelling proof." — Bencivenga
+        </p>
+        <div id="proofGuide"></div>
+    </div>
+
+    <div class="score-element">
+        <h3>🚪 5 Exits of Escape</h3>
+        <p style="color:#8a8678; font-size: 0.9em; margin-bottom: 12px;">
+            The prospect's 5 objections — and how each element closes the door:
+        </p>
+        <div style="display: grid; gap: 8px;">
+            <div style="background:#1a1a28; padding: 10px 14px; border-radius: 6px; display: flex; gap: 12px; align-items: center;">
+                <span style="color: #e74c3c; font-weight: 700; min-width: 120px;">No time</span>
+                <span style="color: #8a8678; font-size: 0.9em;">→ Curiosity + value in the ad itself</span>
+            </div>
+            <div style="background:#1a1a28; padding: 10px 14px; border-radius: 6px; display: flex; gap: 12px; align-items: center;">
+                <span style="color: #e74c3c; font-weight: 700; min-width: 120px;">No interest</span>
+                <span style="color: #8a8678; font-size: 0.9em;">→ Urgent Problem</span>
+            </div>
+            <div style="background:#1a1a28; padding: 10px 14px; border-radius: 6px; display: flex; gap: 12px; align-items: center;">
+                <span style="color: #e74c3c; font-weight: 700; min-width: 120px;">No difference</span>
+                <span style="color: #8a8678; font-size: 0.9em;">→ Unique Promise</span>
+            </div>
+            <div style="background:#1a1a28; padding: 10px 14px; border-radius: 6px; display: flex; gap: 12px; align-items: center;">
+                <span style="color: #e74c3c; font-weight: 700; min-width: 120px;">No belief</span>
+                <span style="color: #8a8678; font-size: 0.9em;">→ Unquestionable Proof</span>
+            </div>
+            <div style="background:#1a1a28; padding: 10px 14px; border-radius: 6px; display: flex; gap: 12px; align-items: center;">
+                <span style="color: #e74c3c; font-weight: 700; min-width: 120px;">No decision</span>
+                <span style="color: #8a8678; font-size: 0.9em;">→ User-friendly Proposition</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="score-element">
+        <h3>📊 Grading Scale</h3>
+        <div style="display: grid; gap: 8px; margin-top: 12px;">
+            <div style="background:#1a1a28; padding: 10px 14px; border-radius: 6px; display: flex; justify-content: space-between;">
+                <span class="grade-S" style="font-weight: 700;">S — Masterpiece</span>
+                <span style="color: #8a8678;">100–120</span>
+            </div>
+            <div style="background:#1a1a28; padding: 10px 14px; border-radius: 6px; display: flex; justify-content: space-between;">
+                <span class="grade-A" style="font-weight: 700;">A — Strong</span>
+                <span style="color: #8a8678;">80–99</span>
+            </div>
+            <div style="background:#1a1a28; padding: 10px 14px; border-radius: 6px; display: flex; justify-content: space-between;">
+                <span class="grade-B" style="font-weight: 700;">B — Decent</span>
+                <span style="color: #8a8678;">60–79</span>
+            </div>
+            <div style="background:#1a1a28; padding: 10px 14px; border-radius: 6px; display: flex; justify-content: space-between;">
+                <span class="grade-C" style="font-weight: 700;">C — Needs Work</span>
+                <span style="color: #8a8678;">40–59</span>
+            </div>
+            <div style="background:#1a1a28; padding: 10px 14px; border-radius: 6px; display: flex; justify-content: space-between;">
+                <span class="grade-D" style="font-weight: 700;">D — Weak</span>
+                <span style="color: #8a8678;">&lt;40</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div>
+
+<script>
+const STORAGE_KEY = 'ad-copy-scorer';
+const PROOF_ELEMENTS = [
+    { id: 'demonstration', name: '1. Demonstration', desc: 'Show it working. "Do you make these mistakes in English?"' },
+    { id: 'guarantee', name: '2. Creative Guarantee', desc: '"Pizza in 30 mins, guaranteed" built Domino\'s empire.' },
+    { id: 'reason', name: '3. Reason / Justification', desc: '"Better taste...because it has 10% real juice."' },
+    { id: 'specifics', name: '4. Specifics', desc: '"62 discoveries in 3 years" beats "many recent discoveries."' },
+    { id: 'expose', name: '5. Exposé', desc: 'Become the consumer\'s champion. Expose the competition.' },
+    { id: 'mechanism', name: '6. Explain the Mechanism', desc: 'Show HOW it works. "The secret of..." The 42-step process.' },
+    { id: 'sell-against', name: '7. Sell Against Type', desc: 'Argue against what your market expects. Shock + curiosity.' },
+    { id: 'acknowledge', name: '8. Acknowledge Disbelief', desc: '"Believe it or not..." Disarm skepticism head-on.' },
+    { id: 'source', name: '9. Believable Source', desc: 'Authority figure. Forbes, experts, industry recognition.' },
+    { id: 'testimonials', name: '10. Testimonials', desc: 'Real customer voices. Shouldn\'t sound like a copywriter wrote them.' },
+    { id: 'candor', name: '11. Candor', desc: '"Fix almost any part of almost any car." Honesty sells better than hype.' },
+    { id: 'trojan', name: '12. Trojan Horse', desc: 'Make the ad itself valuable — looks like content, not an ad.' }
+];
+
+// Init proof checklists
+function initProofChecklists() {
+    const checklist = document.getElementById('proofChecklist');
+    const guide = document.getElementById('proofGuide');
+    
+    checklist.innerHTML = PROOF_ELEMENTS.map(p => `
+        <div class="proof-check">
+            <input type="checkbox" id="pc-${p.id}" onchange="updateProofCount()" />
+            <label for="pc-${p.id}">${p.name}</label>
+        </div>
+    `).join('');
+    
+    if (guide) {
+        guide.innerHTML = PROOF_ELEMENTS.map(p => `
+            <div style="background:#1a1a28; border-left: 3px solid #c9a84c; padding: 12px 16px; border-radius: 0 8px 8px 0; margin-bottom: 8px;">
+                <div style="color: #e0ddd5; font-weight: 700; font-size: 0.95em;">${p.name}</div>
+                <div style="color: #8a8678; font-size: 0.85em; margin-top: 4px; font-style: italic;">${p.desc}</div>
+            </div>
+        `).join('');
+    }
+}
+
+function updateProofCount() {
+    const checked = PROOF_ELEMENTS.filter(p => document.getElementById(`pc-${p.id}`).checked).length;
+    document.getElementById('proofCount').textContent = checked;
+}
+
+function updateBridge() {
+    const checks = ['b1','b2','b3','b4','b5'];
+    const passed = checks.filter(id => document.getElementById(id).checked).length;
+    const el = document.getElementById('bridgeStatus');
+    el.textContent = `${passed}/5 bridge checks passed`;
+    if (passed === 5) { el.style.color = '#4caf50'; el.textContent += ' ✅ One river!'; }
+    else if (passed >= 3) { el.style.color = '#f39c12'; }
+    else { el.style.color = '#666'; }
+}
+
+function updateScores() {
+    const ids = ['urgent','problem','unique','promise','unquestionable','proof','userfriendly','proposition','crackerjack'];
+    ids.forEach(id => {
+        const val = parseInt(document.getElementById(`s-${id}`).value);
+        document.getElementById(`v-${id}`).textContent = val;
+    });
+    
+    const subProblem = g('urgent') + g('problem');
+    const subPromise = g('unique') + g('promise');
+    const subProof = g('unquestionable') + g('proof');
+    const subProp = g('userfriendly') + g('proposition');
+    const crackerjack = g('crackerjack');
+    const total = subProblem + subPromise + subProof + subProp + crackerjack;
+    
+    document.getElementById('sub-problem').textContent = subProblem;
+    document.getElementById('sub-promise').textContent = subPromise;
+    document.getElementById('sub-proof').textContent = subProof;
+    document.getElementById('sub-proposition').textContent = subProp;
+    
+    // Breakdown bars
+    setBar('problem', subProblem, 25);
+    setBar('promise', subPromise, 25);
+    setBar('proof', subProof, 25);
+    setBar('proposition', subProp, 25);
+    setBar('crackerjack', crackerjack, 20);
+    
+    // Total
+    document.getElementById('totalNumber').textContent = total;
+    const gradeEl = document.getElementById('totalGrade');
+    const labelEl = document.getElementById('totalLabel');
+    
+    if (total >= 100) { gradeEl.textContent = 'S'; gradeEl.className = 'total-grade grade-S'; labelEl.textContent = 'Masterpiece — ready to dominate'; }
+    else if (total >= 80) { gradeEl.textContent = 'A'; gradeEl.className = 'total-grade grade-A'; labelEl.textContent = 'Strong — ship it'; }
+    else if (total >= 60) { gradeEl.textContent = 'B'; gradeEl.className = 'total-grade grade-B'; labelEl.textContent = 'Decent — can be improved'; }
+    else if (total >= 40) { gradeEl.textContent = 'C'; gradeEl.className = 'total-grade grade-C'; labelEl.textContent = 'Needs work — strengthen the weak elements'; }
+    else if (total > 0) { gradeEl.textContent = 'D'; gradeEl.className = 'total-grade grade-D'; labelEl.textContent = 'Weak — revisit the fundamentals'; }
+    else { gradeEl.textContent = '—'; gradeEl.className = 'total-grade'; labelEl.textContent = 'Start scoring to see your grade'; }
+}
+
+function g(id) { return parseInt(document.getElementById(`s-${id}`).value); }
+function setBar(name, val, max) {
+    document.getElementById(`bar-${name}`).style.width = (val/max*100) + '%';
+    document.getElementById(`bs-${name}`).textContent = `${val}/${max}`;
+}
+
+function getFormData() {
+    return {
+        id: Date.now(),
+        name: document.getElementById('adName').value.trim() || 'Untitled Ad',
+        market: document.getElementById('adMarket').value,
+        type: document.getElementById('adType').value,
+        copy: document.getElementById('adCopy').value.trim(),
+        date: new Date().toISOString(),
+        scores: {
+            urgent: g('urgent'), problem: g('problem'),
+            unique: g('unique'), promise: g('promise'),
+            unquestionable: g('unquestionable'), proof: g('proof'),
+            userfriendly: g('userfriendly'), proposition: g('proposition'),
+            crackerjack: g('crackerjack')
+        },
+        subtotals: {
+            problem: g('urgent') + g('problem'),
+            promise: g('unique') + g('promise'),
+            proof: g('unquestionable') + g('proof'),
+            proposition: g('userfriendly') + g('proposition'),
+            crackerjack: g('crackerjack')
+        },
+        total: g('urgent') + g('problem') + g('unique') + g('promise') + g('unquestionable') + g('proof') + g('userfriendly') + g('proposition') + g('crackerjack'),
+        proofElements: PROOF_ELEMENTS.filter(p => document.getElementById(`pc-${p.id}`).checked).map(p => p.id),
+        bridge: ['b1','b2','b3','b4','b5'].filter(id => document.getElementById(id).checked).length,
+        notes: {
+            problem: document.getElementById('n-problem').value,
+            promise: document.getElementById('n-promise').value,
+            proof: document.getElementById('n-proof').value,
+            proposition: document.getElementById('n-proposition').value,
+            crackerjack: document.getElementById('n-crackerjack').value
+        }
+    };
+}
+
+function saveAd() {
+    const data = getFormData();
+    if (data.total === 0) { document.getElementById('saveMsg').textContent = '⚠️ Score at least one element first'; setTimeout(() => document.getElementById('saveMsg').textContent = '', 2000); return; }
+    
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    stored.unshift(data);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+    
+    document.getElementById('saveMsg').textContent = `✅ Saved "${data.name}" — ${data.total}/120 (${getGradeLetter(data.total)})`;
+    setTimeout(() => document.getElementById('saveMsg').textContent = '', 3000);
+}
+
+function resetForm() {
+    document.getElementById('adName').value = '';
+    document.getElementById('adCopy').value = '';
+    ['urgent','problem','unique','promise','unquestionable','proof','userfriendly','proposition','crackerjack'].forEach(id => {
+        document.getElementById(`s-${id}`).value = 0;
+    });
+    PROOF_ELEMENTS.forEach(p => document.getElementById(`pc-${p.id}`).checked = false);
+    ['b1','b2','b3','b4','b5'].forEach(id => document.getElementById(id).checked = false);
+    ['n-problem','n-promise','n-proof','n-proposition','n-crackerjack'].forEach(id => document.getElementById(id).value = '');
+    updateScores();
+    updateProofCount();
+    updateBridge();
+}
+
+function getGradeLetter(total) {
+    if (total >= 100) return 'S';
+    if (total >= 80) return 'A';
+    if (total >= 60) return 'B';
+    if (total >= 40) return 'C';
+    return 'D';
+}
+function getGradeClass(total) { return 'grade-' + getGradeLetter(total); }
+function getGradeColor(total) {
+    if (total >= 100) return '#ffd700';
+    if (total >= 80) return '#4caf50';
+    if (total >= 60) return '#2196f3';
+    if (total >= 40) return '#ff9800';
+    return '#f44336';
+}
+
+function switchTab(tab) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(`tab-${tab}`).classList.add('active');
+    event.target.classList.add('active');
+    if (tab === 'history') renderHistory();
+}
+
+function renderHistory() {
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    const statsEl = document.getElementById('historyStats');
+    const listEl = document.getElementById('historyList');
+    
+    if (stored.length === 0) {
+        statsEl.innerHTML = '';
+        listEl.innerHTML = '<div class="empty-state"><div class="emoji">📝</div><div>No scored ads yet.<br>Score your first ad to see it here.</div></div>';
+        return;
+    }
+    
+    const avg = Math.round(stored.reduce((s,a) => s + a.total, 0) / stored.length);
+    const best = Math.max(...stored.map(a => a.total));
+    const markets = {};
+    stored.forEach(a => { markets[a.market] = (markets[a.market]||0) + 1; });
+    const topMarket = Object.entries(markets).sort((a,b) => b[1]-a[1])[0];
+    
+    statsEl.innerHTML = `
+        <div class="stat-card"><div class="stat-value">${stored.length}</div><div class="stat-label">Ads Scored</div></div>
+        <div class="stat-card"><div class="stat-value">${avg}</div><div class="stat-label">Avg Score</div></div>
+        <div class="stat-card"><div class="stat-value">${best}</div><div class="stat-label">Best Score</div></div>
+        <div class="stat-card"><div class="stat-value">${topMarket[0]}</div><div class="stat-label">Top Market</div></div>
+    `;
+    
+    listEl.innerHTML = stored.map((ad, i) => {
+        const d = new Date(ad.date);
+        const dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        const st = ad.subtotals || {};
+        const barH = 24;
+        const pctProblem = (st.problem||0)/25*barH;
+        const pctPromise = (st.promise||0)/25*barH;
+        const pctProof = (st.proof||0)/25*barH;
+        const pctProp = (st.proposition||0)/25*barH;
+        
+        return `
+        <div class="history-card" onclick="loadAd(${i})">
+            <div class="history-top">
+                <div>
+                    <div class="history-name">${ad.name}</div>
+                    <div class="history-meta">
+                        <span>📅 ${dateStr}</span>
+                        <span>🌍 ${ad.market || '?'}</span>
+                        <span>📋 ${ad.type || 'brand'}</span>
+                        <span>🔬 ${(ad.proofElements||[]).length} proof layers</span>
+                        <span>🌊 ${ad.bridge||0}/5 bridge</span>
+                    </div>
+                </div>
+                <div class="history-actions">
+                    <div style="text-align: center;">
+                        <div class="history-score">${ad.total}</div>
+                        <span class="history-grade ${getGradeClass(ad.total)}" style="background: ${getGradeColor(ad.total)}20; color: ${getGradeColor(ad.total)}">${getGradeLetter(ad.total)}</span>
+                    </div>
+                    <button class="delete-btn" onclick="event.stopPropagation(); deleteAd(${i})" title="Delete">🗑️</button>
+                </div>
+            </div>
+            <div class="history-bars">
+                <div class="history-bar" style="height:${pctProblem}px; background:#e74c3c;" title="Problem: ${st.problem||0}/25"></div>
+                <div class="history-bar" style="height:${pctPromise}px; background:#3498db;" title="Promise: ${st.promise||0}/25"></div>
+                <div class="history-bar" style="height:${pctProof}px; background:#2ecc71;" title="Proof: ${st.proof||0}/25"></div>
+                <div class="history-bar" style="height:${pctProp}px; background:#9b59b6;" title="Proposition: ${st.proposition||0}/25"></div>
+            </div>
+            ${ad.copy ? `<div class="history-preview">"${ad.copy.substring(0,120)}${ad.copy.length > 120 ? '...' : ''}"</div>` : ''}
+        </div>`;
+    }).join('');
+}
+
+function loadAd(index) {
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    const ad = stored[index];
+    if (!ad) return;
+    
+    document.getElementById('adName').value = ad.name;
+    document.getElementById('adMarket').value = ad.market || 'GR';
+    document.getElementById('adType').value = ad.type || 'brand';
+    document.getElementById('adCopy').value = ad.copy || '';
+    
+    Object.entries(ad.scores).forEach(([key, val]) => {
+        const el = document.getElementById(`s-${key}`);
+        if (el) el.value = val;
+    });
+    
+    PROOF_ELEMENTS.forEach(p => {
+        document.getElementById(`pc-${p.id}`).checked = (ad.proofElements||[]).includes(p.id);
+    });
+    
+    ['b1','b2','b3','b4','b5'].forEach((id, i) => {
+        document.getElementById(id).checked = i < (ad.bridge || 0);
+    });
+    
+    if (ad.notes) {
+        Object.entries(ad.notes).forEach(([key, val]) => {
+            const el = document.getElementById(`n-${key}`);
+            if (el) el.value = val || '';
+        });
+    }
+    
+    updateScores();
+    updateProofCount();
+    updateBridge();
+    switchTabDirect('score');
+}
+
+function switchTabDirect(tab) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(`tab-${tab}`).classList.add('active');
+    document.querySelectorAll('.tab-btn').forEach(el => { if (el.textContent.includes(tab === 'score' ? 'Score' : tab === 'history' ? 'History' : 'Guide')) el.classList.add('active'); });
+    window.scrollTo(0, 0);
+}
+
+function deleteAd(index) {
+    if (!confirm('Delete this scored ad?')) return;
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    stored.splice(index, 1);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+    renderHistory();
+}
+
+// Import/Export
+function exportData() {
+    const data = localStorage.getItem(STORAGE_KEY) || '[]';
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'ad-scorer-data.json'; a.click();
+    URL.revokeObjectURL(url);
+}
+
+// Init
+initProofChecklists();
+updateScores();
+</script>
+</body>
+</html>

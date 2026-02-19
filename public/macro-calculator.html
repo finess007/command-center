@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Macro Calculator — Quick Food Lookup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding-top: 40px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle {
+            color: #6b7280;
+            font-size: 0.95rem;
+        }
+        
+        /* Search Box */
+        .search-box {
+            position: relative;
+            margin-bottom: 24px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 16px 20px;
+            padding-left: 50px;
+            font-size: 1.1rem;
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            outline: none;
+            transition: all 0.3s;
+        }
+        
+        .search-input:focus {
+            border-color: #22c55e;
+            background: rgba(34, 197, 94, 0.05);
+        }
+        
+        .search-input::placeholder {
+            color: #6b7280;
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.2rem;
+            opacity: 0.5;
+        }
+        
+        /* Amount Selector */
+        .amount-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            align-items: center;
+        }
+        
+        .amount-input {
+            width: 100px;
+            padding: 12px 16px;
+            font-size: 1rem;
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            outline: none;
+            text-align: center;
+        }
+        
+        .amount-input:focus {
+            border-color: #22c55e;
+        }
+        
+        .unit-select {
+            padding: 12px 16px;
+            font-size: 1rem;
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            outline: none;
+            cursor: pointer;
+        }
+        
+        .amount-label {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+        
+        /* Results */
+        .results {
+            display: none;
+        }
+        
+        .results.active {
+            display: block;
+        }
+        
+        .food-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .food-serving {
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+        
+        .macro-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        
+        .macro-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        
+        .macro-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        
+        .macro-label {
+            font-size: 0.85rem;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .macro-card.calories .macro-value { color: #f59e0b; }
+        .macro-card.protein .macro-value { color: #22c55e; }
+        .macro-card.carbs .macro-value { color: #3b82f6; }
+        .macro-card.fat .macro-value { color: #ef4444; }
+        
+        /* Quick Add Button */
+        .copy-btn {
+            width: 100%;
+            padding: 16px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 16px;
+        }
+        
+        .copy-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(34, 197, 94, 0.3);
+        }
+        
+        .copy-btn:active {
+            transform: translateY(0);
+        }
+        
+        .copied {
+            background: #16a34a !important;
+        }
+        
+        /* Food List */
+        .food-list {
+            margin-top: 32px;
+        }
+        
+        .food-list h3 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #6b7280;
+            margin-bottom: 16px;
+        }
+        
+        .food-category {
+            margin-bottom: 24px;
+        }
+        
+        .category-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #4b5563;
+            margin-bottom: 8px;
+            padding-left: 4px;
+        }
+        
+        .food-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        
+        .food-item:hover {
+            background: rgba(255,255,255,0.06);
+            border-color: rgba(255,255,255,0.1);
+        }
+        
+        .food-item-name {
+            font-weight: 500;
+        }
+        
+        .food-item-macros {
+            font-size: 0.85rem;
+            color: #6b7280;
+        }
+        
+        .food-item-macros span {
+            margin-left: 8px;
+        }
+        
+        .food-item-macros .protein { color: #22c55e; }
+        .food-item-macros .carbs { color: #3b82f6; }
+        .food-item-macros .fat { color: #ef4444; }
+        
+        /* Suggestions */
+        .suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #1a1a2e;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            margin-top: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+        }
+        
+        .suggestions.active {
+            display: block;
+        }
+        
+        .suggestion {
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .suggestion:hover, .suggestion.selected {
+            background: rgba(34, 197, 94, 0.1);
+        }
+        
+        .suggestion-name {
+            font-weight: 500;
+        }
+        
+        .suggestion-cal {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+        
+        /* Quick Presets */
+        .presets {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        
+        .preset-btn {
+            padding: 8px 14px;
+            font-size: 0.85rem;
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 20px;
+            background: transparent;
+            color: #9ca3af;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .preset-btn:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+        
+        /* Micros Section */
+        .micros-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        
+        .micros-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #6b7280;
+            margin-bottom: 12px;
+        }
+        
+        .micros-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .micro-tag {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        
+        .micro-tag.good {
+            background: rgba(34, 197, 94, 0.15);
+            border-color: rgba(34, 197, 94, 0.3);
+            color: #22c55e;
+        }
+        
+        /* Footer */
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+        
+        footer a {
+            color: #6b7280;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        
+        footer a:hover {
+            color: #22c55e;
+        }
+        
+        /* Mobile */
+        @media (max-width: 500px) {
+            .container { padding-top: 20px; }
+            h1 { font-size: 1.6rem; }
+            .macro-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+            .macro-card { padding: 16px; }
+            .macro-value { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🥗 Macro Calculator</h1>
+            <p class="subtitle">Quick food lookup for nutrition tracking</p>
+        </header>
+        
+        <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" id="searchInput" placeholder="Search foods..." autocomplete="off">
+            <div class="suggestions" id="suggestions"></div>
+        </div>
+        
+        <div class="presets">
+            <button class="preset-btn" data-food="chicken breast">🍗 Chicken</button>
+            <button class="preset-btn" data-food="beef steak">🥩 Steak</button>
+            <button class="preset-btn" data-food="eggs">🥚 Eggs</button>
+            <button class="preset-btn" data-food="salmon">🐟 Salmon</button>
+            <button class="preset-btn" data-food="avocado">🥑 Avocado</button>
+            <button class="preset-btn" data-food="greek yogurt">🥛 Yogurt</button>
+        </div>
+        
+        <div class="amount-row">
+            <input type="number" class="amount-input" id="amountInput" value="100" min="1">
+            <select class="unit-select" id="unitSelect">
+                <option value="g">grams</option>
+                <option value="oz">ounces</option>
+                <option value="piece">piece(s)</option>
+            </select>
+            <span class="amount-label" id="amountLabel"></span>
+        </div>
+        
+        <div class="results" id="results">
+            <div class="food-name" id="foodName"></div>
+            <div class="food-serving" id="foodServing"></div>
+            
+            <div class="macro-grid">
+                <div class="macro-card calories">
+                    <div class="macro-value" id="calories">0</div>
+                    <div class="macro-label">Calories</div>
+                </div>
+                <div class="macro-card protein">
+                    <div class="macro-value" id="protein">0g</div>
+                    <div class="macro-label">Protein</div>
+                </div>
+                <div class="macro-card carbs">
+                    <div class="macro-value" id="carbs">0g</div>
+                    <div class="macro-label">Carbs</div>
+                </div>
+                <div class="macro-card fat">
+                    <div class="macro-value" id="fat">0g</div>
+                    <div class="macro-label">Fat</div>
+                </div>
+            </div>
+            
+            <button class="copy-btn" id="copyBtn">📋 Copy for Nova</button>
+            
+            <div class="micros-section" id="microsSection" style="display: none;">
+                <div class="micros-title">Notable Nutrients</div>
+                <div class="micros-grid" id="microsGrid"></div>
+            </div>
+        </div>
+        
+        <div class="food-list">
+            <h3>Common Foods (per 100g)</h3>
+            
+            <div class="food-category">
+                <div class="category-title">🥩 Protein Sources</div>
+                <div id="proteinFoods"></div>
+            </div>
+            
+            <div class="food-category">
+                <div class="category-title">🥬 Vegetables</div>
+                <div id="vegFoods"></div>
+            </div>
+            
+            <div class="food-category">
+                <div class="category-title">🧈 Fats & Dairy</div>
+                <div id="fatFoods"></div>
+            </div>
+            
+            <div class="food-category">
+                <div class="category-title">🍚 Carbs</div>
+                <div id="carbFoods"></div>
+            </div>
+        </div>
+        
+        <footer>
+            <a href="index.html">← Back to Command Center</a>
+        </footer>
+    </div>
+    
+    <script>
+        // Food database (per 100g unless noted)
+        const foodDatabase = {
+            // Protein sources
+            "chicken breast": { cal: 165, protein: 31, carbs: 0, fat: 3.6, category: "protein", micros: ["B3", "B6", "selenium"] },
+            "chicken thigh": { cal: 209, protein: 26, carbs: 0, fat: 11, category: "protein", micros: ["B3", "zinc"] },
+            "beef steak": { cal: 271, protein: 26, carbs: 0, fat: 18, category: "protein", micros: ["B12", "zinc", "iron"] },
+            "ground beef 80/20": { cal: 254, protein: 17, carbs: 0, fat: 20, category: "protein", micros: ["B12", "zinc"] },
+            "pork chop": { cal: 231, protein: 25, carbs: 0, fat: 14, category: "protein", micros: ["B1", "selenium"] },
+            "salmon": { cal: 208, protein: 20, carbs: 0, fat: 13, category: "protein", micros: ["omega-3", "D", "B12"] },
+            "tuna": { cal: 132, protein: 28, carbs: 0, fat: 1, category: "protein", micros: ["omega-3", "selenium", "B12"] },
+            "shrimp": { cal: 99, protein: 24, carbs: 0, fat: 0.3, category: "protein", micros: ["selenium", "B12"] },
+            "eggs": { cal: 155, protein: 13, carbs: 1.1, fat: 11, pieceWeight: 50, pieceName: "egg", category: "protein", micros: ["B12", "D", "choline"] },
+            "egg whites": { cal: 52, protein: 11, carbs: 0.7, fat: 0.2, category: "protein" },
+            "turkey breast": { cal: 135, protein: 30, carbs: 0, fat: 1, category: "protein", micros: ["B3", "B6", "selenium"] },
+            "lamb": { cal: 294, protein: 25, carbs: 0, fat: 21, category: "protein", micros: ["B12", "zinc", "iron"] },
+            "bacon": { cal: 541, protein: 37, carbs: 1.4, fat: 42, category: "protein" },
+            "sausage bulgarian": { cal: 253, protein: 13, carbs: 1, fat: 22, category: "protein" },
+            "liver beef": { cal: 135, protein: 20, carbs: 4, fat: 4, category: "protein", micros: ["A", "B12", "iron", "copper"] },
+            
+            // Dairy & Eggs
+            "greek yogurt": { cal: 97, protein: 9, carbs: 3.6, fat: 5, category: "fat", micros: ["calcium", "B12"] },
+            "bulgarian yogurt": { cal: 67, protein: 3.5, carbs: 4.5, fat: 3.5, category: "fat", micros: ["calcium"] },
+            "cottage cheese": { cal: 98, protein: 11, carbs: 3.4, fat: 4.3, category: "fat", micros: ["calcium", "B12"] },
+            "cheddar cheese": { cal: 403, protein: 25, carbs: 1.3, fat: 33, category: "fat", micros: ["calcium", "A"] },
+            "mozzarella": { cal: 280, protein: 28, carbs: 3.1, fat: 17, category: "fat", micros: ["calcium"] },
+            "parmesan": { cal: 431, protein: 38, carbs: 4.1, fat: 29, category: "fat", micros: ["calcium"] },
+            "feta cheese": { cal: 264, protein: 14, carbs: 4.1, fat: 21, category: "fat", micros: ["calcium"] },
+            "sirene white cheese": { cal: 250, protein: 14, carbs: 1, fat: 20, category: "fat", micros: ["calcium"] },
+            "cream cheese": { cal: 342, protein: 6, carbs: 4.1, fat: 34, category: "fat" },
+            "butter": { cal: 717, protein: 0.9, carbs: 0.1, fat: 81, category: "fat", micros: ["A"] },
+            "heavy cream": { cal: 340, protein: 2.1, carbs: 2.8, fat: 36, category: "fat" },
+            "milk whole": { cal: 61, protein: 3.2, carbs: 4.8, fat: 3.3, category: "fat", micros: ["calcium", "D"] },
+            
+            // Fats
+            "olive oil": { cal: 884, protein: 0, carbs: 0, fat: 100, category: "fat", micros: ["E", "K"] },
+            "coconut oil": { cal: 862, protein: 0, carbs: 0, fat: 100, category: "fat" },
+            "avocado": { cal: 160, protein: 2, carbs: 9, fat: 15, pieceWeight: 150, pieceName: "avocado", category: "fat", micros: ["K", "folate", "potassium"] },
+            "almonds": { cal: 579, protein: 21, carbs: 22, fat: 50, category: "fat", micros: ["E", "magnesium"] },
+            "walnuts": { cal: 654, protein: 15, carbs: 14, fat: 65, category: "fat", micros: ["omega-3", "copper"] },
+            "macadamia nuts": { cal: 718, protein: 8, carbs: 14, fat: 76, category: "fat" },
+            "peanut butter": { cal: 588, protein: 25, carbs: 20, fat: 50, category: "fat", micros: ["E", "magnesium"] },
+            "chia seeds": { cal: 486, protein: 17, carbs: 42, fat: 31, category: "fat", micros: ["omega-3", "fiber", "calcium"] },
+            "flax seeds": { cal: 534, protein: 18, carbs: 29, fat: 42, category: "fat", micros: ["omega-3", "fiber"] },
+            "sunflower seeds": { cal: 584, protein: 21, carbs: 20, fat: 51, category: "fat", micros: ["E", "selenium"] },
+            
+            // Vegetables
+            "broccoli": { cal: 34, protein: 2.8, carbs: 7, fat: 0.4, category: "veg", micros: ["C", "K", "folate"] },
+            "spinach": { cal: 23, protein: 2.9, carbs: 3.6, fat: 0.4, category: "veg", micros: ["K", "A", "iron", "folate"] },
+            "kale": { cal: 49, protein: 4.3, carbs: 9, fat: 0.9, category: "veg", micros: ["K", "C", "A"] },
+            "cauliflower": { cal: 25, protein: 1.9, carbs: 5, fat: 0.3, category: "veg", micros: ["C", "K"] },
+            "zucchini": { cal: 17, protein: 1.2, carbs: 3.1, fat: 0.3, category: "veg", micros: ["C"] },
+            "cucumber": { cal: 16, protein: 0.7, carbs: 3.6, fat: 0.1, category: "veg", micros: ["K"] },
+            "tomato": { cal: 18, protein: 0.9, carbs: 3.9, fat: 0.2, category: "veg", micros: ["C", "K", "lycopene"] },
+            "bell pepper": { cal: 31, protein: 1, carbs: 6, fat: 0.3, category: "veg", micros: ["C", "A"] },
+            "asparagus": { cal: 20, protein: 2.2, carbs: 3.9, fat: 0.1, category: "veg", micros: ["K", "folate"] },
+            "mushrooms": { cal: 22, protein: 3.1, carbs: 3.3, fat: 0.3, category: "veg", micros: ["D", "selenium", "B3"] },
+            "onion": { cal: 40, protein: 1.1, carbs: 9, fat: 0.1, category: "veg" },
+            "garlic": { cal: 149, protein: 6.4, carbs: 33, fat: 0.5, category: "veg", micros: ["C", "B6", "selenium"] },
+            "lettuce": { cal: 15, protein: 1.4, carbs: 2.9, fat: 0.2, category: "veg", micros: ["K", "A"] },
+            "cabbage": { cal: 25, protein: 1.3, carbs: 6, fat: 0.1, category: "veg", micros: ["C", "K"] },
+            "carrot": { cal: 41, protein: 0.9, carbs: 10, fat: 0.2, category: "veg", micros: ["A", "K"] },
+            "eggplant": { cal: 25, protein: 1, carbs: 6, fat: 0.2, category: "veg" },
+            "green beans": { cal: 31, protein: 1.8, carbs: 7, fat: 0.1, category: "veg", micros: ["C", "K"] },
+            "radish": { cal: 16, protein: 0.7, carbs: 3.4, fat: 0.1, category: "veg", micros: ["C"] },
+            
+            // Fruits (tracked for carbs awareness)
+            "strawberries": { cal: 32, protein: 0.7, carbs: 8, fat: 0.3, category: "carb", micros: ["C"] },
+            "blueberries": { cal: 57, protein: 0.7, carbs: 14, fat: 0.3, category: "carb", micros: ["C", "K"] },
+            "raspberries": { cal: 52, protein: 1.2, carbs: 12, fat: 0.7, category: "carb", micros: ["C", "fiber"] },
+            "banana": { cal: 89, protein: 1.1, carbs: 23, fat: 0.3, pieceWeight: 118, pieceName: "banana", category: "carb", micros: ["B6", "potassium"] },
+            "apple": { cal: 52, protein: 0.3, carbs: 14, fat: 0.2, pieceWeight: 180, pieceName: "apple", category: "carb", micros: ["C", "fiber"] },
+            "orange": { cal: 47, protein: 0.9, carbs: 12, fat: 0.1, pieceWeight: 130, pieceName: "orange", category: "carb", micros: ["C"] },
+            "kiwi": { cal: 61, protein: 1.1, carbs: 15, fat: 0.5, pieceWeight: 69, pieceName: "kiwi", category: "carb", micros: ["C", "K"] },
+            "grapes": { cal: 69, protein: 0.7, carbs: 18, fat: 0.2, category: "carb" },
+            "watermelon": { cal: 30, protein: 0.6, carbs: 8, fat: 0.2, category: "carb", micros: ["C", "lycopene"] },
+            
+            // Carbs (for reference)
+            "rice white": { cal: 130, protein: 2.7, carbs: 28, fat: 0.3, category: "carb" },
+            "rice brown": { cal: 111, protein: 2.6, carbs: 23, fat: 0.9, category: "carb", micros: ["magnesium", "fiber"] },
+            "pasta": { cal: 131, protein: 5, carbs: 25, fat: 1.1, category: "carb" },
+            "bread white": { cal: 265, protein: 9, carbs: 49, fat: 3.2, category: "carb" },
+            "bread whole wheat": { cal: 247, protein: 13, carbs: 41, fat: 4.2, category: "carb", micros: ["fiber"] },
+            "oatmeal": { cal: 68, protein: 2.4, carbs: 12, fat: 1.4, category: "carb", micros: ["fiber", "magnesium"] },
+            "potato": { cal: 77, protein: 2, carbs: 17, fat: 0.1, pieceWeight: 150, pieceName: "potato", category: "carb", micros: ["C", "potassium", "B6"] },
+            "sweet potato": { cal: 86, protein: 1.6, carbs: 20, fat: 0.1, category: "carb", micros: ["A", "C", "potassium"] },
+            "quinoa": { cal: 120, protein: 4.4, carbs: 21, fat: 1.9, category: "carb", micros: ["magnesium", "iron"] },
+            
+            // Condiments & extras
+            "guacamole": { cal: 160, protein: 2, carbs: 8, fat: 14, category: "fat" },
+            "hummus": { cal: 166, protein: 8, carbs: 14, fat: 10, category: "carb", micros: ["fiber"] },
+            "mayonnaise": { cal: 680, protein: 1, carbs: 0.6, fat: 75, category: "fat" },
+            "sour cream": { cal: 193, protein: 2.4, carbs: 4.6, fat: 19, category: "fat" },
+            "salsa": { cal: 36, protein: 1.5, carbs: 7, fat: 0.2, category: "veg" },
+            "orange juice": { cal: 45, protein: 0.7, carbs: 10, fat: 0.2, category: "carb", micros: ["C"] },
+            
+            // Supplements
+            "whey protein": { cal: 120, protein: 24, carbs: 3, fat: 1, category: "protein" },
+            "perfect amino eaa": { cal: 0, protein: 25, carbs: 0, fat: 0, category: "protein" },
+            "collagen peptides": { cal: 35, protein: 9, carbs: 0, fat: 0, category: "protein" }
+        };
+        
+        let selectedFood = null;
+        let selectedIndex = -1;
+        
+        const searchInput = document.getElementById('searchInput');
+        const suggestions = document.getElementById('suggestions');
+        const results = document.getElementById('results');
+        const amountInput = document.getElementById('amountInput');
+        const unitSelect = document.getElementById('unitSelect');
+        
+        // Render food lists
+        function renderFoodLists() {
+            const categories = {
+                protein: document.getElementById('proteinFoods'),
+                veg: document.getElementById('vegFoods'),
+                fat: document.getElementById('fatFoods'),
+                carb: document.getElementById('carbFoods')
+            };
+            
+            Object.entries(foodDatabase).forEach(([name, food]) => {
+                const container = categories[food.category];
+                if (!container) return;
+                
+                const item = document.createElement('div');
+                item.className = 'food-item';
+                item.innerHTML = `
+                    <span class="food-item-name">${name}</span>
+                    <span class="food-item-macros">
+                        ${food.cal} cal
+                        <span class="protein">${food.protein}p</span>
+                        <span class="carbs">${food.carbs}c</span>
+                        <span class="fat">${food.fat}f</span>
+                    </span>
+                `;
+                item.addEventListener('click', () => selectFood(name));
+                container.appendChild(item);
+            });
+        }
+        
+        // Search functionality
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            selectedIndex = -1;
+            
+            if (query.length < 2) {
+                suggestions.classList.remove('active');
+                return;
+            }
+            
+            const matches = Object.keys(foodDatabase).filter(name => 
+                name.toLowerCase().includes(query)
+            ).slice(0, 8);
+            
+            if (matches.length === 0) {
+                suggestions.classList.remove('active');
+                return;
+            }
+            
+            suggestions.innerHTML = matches.map((name, idx) => `
+                <div class="suggestion" data-food="${name}" data-index="${idx}">
+                    <span class="suggestion-name">${name}</span>
+                    <span class="suggestion-cal">${foodDatabase[name].cal} cal/100g</span>
+                </div>
+            `).join('');
+            
+            suggestions.classList.add('active');
+            
+            // Add click handlers
+            suggestions.querySelectorAll('.suggestion').forEach(el => {
+                el.addEventListener('click', () => selectFood(el.dataset.food));
+            });
+        });
+        
+        // Keyboard navigation
+        searchInput.addEventListener('keydown', (e) => {
+            const items = suggestions.querySelectorAll('.suggestion');
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+                updateSelection(items);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                selectedIndex = Math.max(selectedIndex - 1, 0);
+                updateSelection(items);
+            } else if (e.key === 'Enter' && selectedIndex >= 0) {
+                e.preventDefault();
+                selectFood(items[selectedIndex].dataset.food);
+            }
+        });
+        
+        function updateSelection(items) {
+            items.forEach((item, idx) => {
+                item.classList.toggle('selected', idx === selectedIndex);
+            });
+        }
+        
+        // Select food
+        function selectFood(name) {
+            selectedFood = name;
+            searchInput.value = name;
+            suggestions.classList.remove('active');
+            
+            const food = foodDatabase[name];
+            
+            // Update unit options based on food
+            unitSelect.innerHTML = `
+                <option value="g">grams</option>
+                <option value="oz">ounces</option>
+                ${food.pieceWeight ? `<option value="piece">${food.pieceName}(s)</option>` : ''}
+            `;
+            
+            updateResults();
+        }
+        
+        // Update results based on amount
+        function updateResults() {
+            if (!selectedFood) return;
+            
+            const food = foodDatabase[selectedFood];
+            let amount = parseFloat(amountInput.value) || 100;
+            const unit = unitSelect.value;
+            
+            // Convert to grams
+            let grams = amount;
+            if (unit === 'oz') {
+                grams = amount * 28.35;
+            } else if (unit === 'piece' && food.pieceWeight) {
+                grams = amount * food.pieceWeight;
+            }
+            
+            const multiplier = grams / 100;
+            
+            const cal = Math.round(food.cal * multiplier);
+            const protein = Math.round(food.protein * multiplier);
+            const carbs = Math.round(food.carbs * multiplier);
+            const fat = Math.round(food.fat * multiplier);
+            
+            document.getElementById('foodName').textContent = selectedFood.charAt(0).toUpperCase() + selectedFood.slice(1);
+            document.getElementById('foodServing').textContent = unit === 'piece' 
+                ? `${amount} ${food.pieceName}${amount > 1 ? 's' : ''} (${Math.round(grams)}g)`
+                : `${Math.round(grams)}g`;
+            
+            document.getElementById('calories').textContent = cal;
+            document.getElementById('protein').textContent = protein + 'g';
+            document.getElementById('carbs').textContent = carbs + 'g';
+            document.getElementById('fat').textContent = fat + 'g';
+            
+            // Show micros if available
+            const microsSection = document.getElementById('microsSection');
+            const microsGrid = document.getElementById('microsGrid');
+            
+            if (food.micros && food.micros.length > 0) {
+                microsGrid.innerHTML = food.micros.map(m => 
+                    `<span class="micro-tag good">✓ ${m}</span>`
+                ).join('');
+                microsSection.style.display = 'block';
+            } else {
+                microsSection.style.display = 'none';
+            }
+            
+            results.classList.add('active');
+        }
+        
+        // Copy button
+        document.getElementById('copyBtn').addEventListener('click', () => {
+            if (!selectedFood) return;
+            
+            const food = foodDatabase[selectedFood];
+            let amount = parseFloat(amountInput.value) || 100;
+            const unit = unitSelect.value;
+            
+            let grams = amount;
+            if (unit === 'oz') grams = amount * 28.35;
+            else if (unit === 'piece' && food.pieceWeight) grams = amount * food.pieceWeight;
+            
+            const multiplier = grams / 100;
+            
+            const text = `${selectedFood.charAt(0).toUpperCase() + selectedFood.slice(1)}, ${Math.round(grams)}g: ${Math.round(food.cal * multiplier)} cal, ${Math.round(food.protein * multiplier)}g protein, ${Math.round(food.carbs * multiplier)}g carbs, ${Math.round(food.fat * multiplier)}g fat`;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('copyBtn');
+                btn.textContent = '✓ Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = '📋 Copy for Nova';
+                    btn.classList.remove('copied');
+                }, 1500);
+            });
+        });
+        
+        // Amount/unit change listeners
+        amountInput.addEventListener('input', updateResults);
+        unitSelect.addEventListener('change', updateResults);
+        
+        // Preset buttons
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => selectFood(btn.dataset.food));
+        });
+        
+        // Close suggestions on click outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-box')) {
+                suggestions.classList.remove('active');
+            }
+        });
+        
+        // Init
+        renderFoodLists();
+    </script>
+</body>
+</html>

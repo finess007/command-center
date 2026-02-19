@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alessa Copy — Review Flagged Descriptions</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0e1621; color: #e4e6eb; line-height: 1.6; }
+        
+        .header { padding: 24px 24px 16px; border-bottom: 1px solid #1e2c3a; position: sticky; top: 0; background: #0e1621; z-index: 10; }
+        .header h1 { font-size: 20px; font-weight: 600; }
+        .header p { font-size: 13px; color: #7b8ea0; margin-top: 4px; }
+        
+        .filters { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+        .filter-btn { padding: 6px 14px; border-radius: 20px; border: 1px solid #2b3945; background: none; color: #7b8ea0; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+        .filter-btn:hover { border-color: #5b7a99; color: #e4e6eb; }
+        .filter-btn.active { background: #2b5278; color: white; border-color: #2b5278; }
+        .filter-btn .count { opacity: 0.6; margin-left: 4px; }
+        
+        .stats { display: flex; gap: 16px; margin-top: 12px; font-size: 13px; color: #7b8ea0; }
+        .stat { display: flex; align-items: center; gap: 4px; }
+        .stat .dot { width: 8px; height: 8px; border-radius: 50%; }
+        .dot.red { background: #ff4757; }
+        .dot.orange { background: #ffa502; }
+        .dot.yellow { background: #ffd43b; }
+        .dot.blue { background: #6ab3f3; }
+        .dot.green { background: #34c759; }
+        
+        .container { max-width: 800px; margin: 0 auto; padding: 16px 24px 100px; }
+        
+        .card { background: #17212b; border: 1px solid #1e2c3a; border-radius: 12px; padding: 16px; margin-bottom: 12px; transition: border-color 0.2s; }
+        .card:hover { border-color: #2b5278; }
+        .card.approved { border-left: 3px solid #34c759; }
+        .card.rejected { border-left: 3px solid #ff4757; opacity: 0.6; }
+        
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+        .card-row { font-size: 12px; color: #5b7a99; font-weight: 600; }
+        .card-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+        .tag { padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+        .tag.short { background: #ff475720; color: #ff6b81; }
+        .tag.cliche { background: #ffa50220; color: #ffc048; }
+        .tag.lazy { background: #ffd43b20; color: #ffd43b; }
+        .tag.price { background: #ff475720; color: #ff6b81; }
+        .tag.duplicate { background: #6ab3f320; color: #6ab3f3; }
+        
+        .card-desc { font-size: 15px; line-height: 1.5; margin: 8px 0; color: #e4e6eb; }
+        .card-chars { font-size: 12px; color: #5b7a99; }
+        
+        .card-url { display: block; font-size: 12px; color: #6ab3f3; text-decoration: none; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .card-url:hover { text-decoration: underline; }
+        
+        .card-actions { display: flex; gap: 8px; margin-top: 12px; }
+        .action-btn { padding: 6px 16px; border-radius: 8px; border: none; font-size: 13px; cursor: pointer; font-weight: 500; transition: all 0.2s; }
+        .btn-ok { background: #1a3a1a; color: #34c759; border: 1px solid #34c75940; }
+        .btn-ok:hover { background: #234a23; }
+        .btn-fix { background: #3a2a1a; color: #ffa502; border: 1px solid #ffa50240; }
+        .btn-fix:hover { background: #4a3520; }
+        
+        .summary-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #0e1621; border-top: 1px solid #1e2c3a; padding: 12px 24px; display: flex; justify-content: center; gap: 24px; font-size: 14px; z-index: 10; }
+        .summary-item { display: flex; align-items: center; gap: 6px; }
+        
+        .hidden { display: none !important; }
+        
+        .highlight { background: #ffa50230; padding: 1px 4px; border-radius: 3px; }
+        
+        .empty-state { text-align: center; padding: 60px 20px; color: #5b7a99; }
+        .empty-state .emoji { font-size: 48px; margin-bottom: 12px; }
+        
+        .export-btn { padding: 6px 14px; border-radius: 8px; border: 1px solid #2b3945; background: none; color: #7b8ea0; font-size: 13px; cursor: pointer; margin-left: auto; }
+        .export-btn:hover { border-color: #6ab3f3; color: #6ab3f3; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div>
+            <h1>📋 Copy Review — Flagged Descriptions</h1>
+            <p>Review descriptions that may need fixes. Click ✅ OK or 🔧 Needs Fix for each.</p>
+        </div>
+        <button class="export-btn" onclick="exportResults()">📥 Export Results</button>
+    </div>
+    <div class="filters">
+        <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">All <span class="count" id="count-all"></span></button>
+        <button class="filter-btn" data-filter="short" onclick="setFilter('short')">📏 Short <span class="count" id="count-short"></span></button>
+        <button class="filter-btn" data-filter="cliche" onclick="setFilter('cliche')">🔄 Cliché <span class="count" id="count-cliche"></span></button>
+        <button class="filter-btn" data-filter="lazy" onclick="setFilter('lazy')">😴 Lazy <span class="count" id="count-lazy"></span></button>
+        <button class="filter-btn" data-filter="price" onclick="setFilter('price')">💰 Price <span class="count" id="count-price"></span></button>
+        <button class="filter-btn" data-filter="duplicate" onclick="setFilter('duplicate')">🔁 Duplicate <span class="count" id="count-duplicate"></span></button>
+        <button class="filter-btn" data-filter="unreviewed" onclick="setFilter('unreviewed')">⏳ Unreviewed <span class="count" id="count-unreviewed"></span></button>
+        <button class="filter-btn" data-filter="needsfix" onclick="setFilter('needsfix')">🔧 Needs Fix <span class="count" id="count-needsfix"></span></button>
+    </div>
+</div>
+
+<div class="container" id="cards"></div>
+
+<div class="summary-bar">
+    <div class="summary-item"><span class="dot green"></span> OK: <strong id="sum-ok">0</strong></div>
+    <div class="summary-item"><span class="dot orange"></span> Needs Fix: <strong id="sum-fix">0</strong></div>
+    <div class="summary-item"><span class="dot blue"></span> Unreviewed: <strong id="sum-unreviewed">0</strong></div>
+</div>
+
+<script>
+const DATA = [{"row": 7, "id": "7159", "url": "https://alessa.bg/butterfly-beauty-ksa-roklya-black", "desc": "Your new go-to LBD - sleek, ruched in all the right places, and dangerously flattering. Like moths to a flame. 🔥", "chars": 112, "tags": ["short", "lazy"]}, {"row": 34, "id": "7129", "url": "https://alessa.bg/touch-of-elegance-bluzka-mocha", "desc": "Warm neutral, cool vibes. This soft knit blouse in rich mocha is the understated hero your wardrobe needs. Pairs with everything, impresses always. 🤎", "chars": 149, "tags": ["cliche"]}, {"row": 113, "id": "6962", "url": "https://alessa.bg/viral-look-ksa-bluza-grey", "desc": "The cropped version of viral. This grey blouse is sleek, minimal, and matches everything in your closet. Coordinating set available if you're feeling extra. 🩶", "chars": 158, "tags": ["cliche"]}, {"row": 132, "id": "6932", "url": "https://alessa.bg/comfy-flow-bluza-ot-pletivo-blue", "desc": "Blue Comfy Flow blouse - same cozy knit vibes, cooler color palette. The effortless piece that elevates joggers and jeans alike. 💙", "chars": 130, "tags": ["lazy"]}, {"row": 139, "id": "6923", "url": "https://alessa.bg/winter-hug-pantalon-ot-pletivo-nude", "desc": "Nude Winter Hug knit pants - same cozy vibes, warmer neutral tone. Comfort you can actually wear in public. 🤍", "chars": 109, "tags": ["short", "lazy"]}, {"row": 146, "id": "6913", "url": "https://alessa.bg/cozy-elegance-pulover-ot-pletivo-pinkblue", "desc": "Pink and blue Cozy Elegance sweater - soft colorblock magic. The kind of pullover that gets compliments on repeat. 💕💙", "chars": 117, "tags": ["short"]}, {"row": 148, "id": "6909", "url": "https://alessa.bg/cozy-elegance-pola-ot-pletivo-pinkblue", "desc": "Pink and blue Cozy Elegance knit skirt - complete the colorblock look or wear solo with basics. Either way, you win. 💕💙", "chars": 119, "tags": ["short"]}, {"row": 152, "id": "6898", "url": "https://alessa.bg/viral-look-ksa-bluza-mocha", "desc": "Mocha Viral Look blouse - same effortless energy, warmer tone. The cropped piece that ties everything together. 🤎", "chars": 113, "tags": ["short"]}, {"row": 158, "id": "6886", "url": "https://alessa.bg/cherry-on-top-pulover-ot-pletivo-4-colors", "desc": "Cherry on Top sweater in 4 colors - pick your personality. Same beloved embroidered cherry details, choose your vibe. 🍒", "chars": 119, "tags": ["short"]}, {"row": 169, "id": "6865", "url": "https://alessa.bg/sexy-touch-krop-top-mocha-alessa", "desc": "\"Mocha crop top with just the right amount of sexy. Fitted, flattering, and pairs with everything high-waisted. A touch is all you need. 🤎\"", "chars": 139, "tags": ["cliche"]}, {"row": 208, "id": "6651", "url": "https://alessa.bg/melody-grace-krop-top-ot-pletivo-black", "desc": "Black knit crop top that hits all the right notes. Pair with the matching skirt for a set - or mix it up your way. 🖤", "chars": 116, "tags": ["short"]}, {"row": 224, "id": "6611", "url": "https://alessa.bg/trendsetter-icon-banski-top-triglnici-orange", "desc": "Orange triangle bikini top for the bold ones. Bright, flattering, and made for those who set trends, not follow them. 🧡", "chars": 119, "tags": ["short"]}, {"row": 230, "id": "6595", "url": "https://alessa.bg/a-touch-of-romance-tyurban-pink", "desc": "Pink turban with a soft, romantic feel. Pretty and practical - wraps your hair in style while you soak up the sun. 💕", "chars": 116, "tags": ["short"]}, {"row": 231, "id": "6594", "url": "https://alessa.bg/trendsetter-icon-tyurban-orange", "desc": "Orange turban for bold beach days. Bright, statement-making, and keeps your hair perfect while you make waves. 🧡", "chars": 112, "tags": ["short"]}, {"row": 235, "id": "6587", "url": "https://alessa.bg/a-touch-of-romance-bodi-cyal-banski-vista-blue", "desc": "One-piece in vista blue with romantic details. Flattering, feminine, and makes a statement without trying too hard. 💙", "chars": 117, "tags": ["short"]}, {"row": 236, "id": "6585", "url": "https://alessa.bg/a-touch-of-romance-gashherizon-s-dlg-rkav-pink", "desc": "Pink jumpsuit with long sleeves and romantic soul. Flows like a dream, covers like a charm - beach to bar, sorted. 💕", "chars": 116, "tags": ["short"]}, {"row": 238, "id": "6574", "url": "https://alessa.bg/trendsetter-icon-dlg-plazen-pantalon-orange", "desc": "Orange beach pants for bold summer days. Long, flowing, and impossible to ignore - walk the shore like you own it. 🧡", "chars": 116, "tags": ["short"]}, {"row": 239, "id": "6573", "url": "https://alessa.bg/a-touch-of-romance-ks-plazen-pantalon-vista-blue", "desc": "Vista blue shorts with a romantic twist. Short, sweet, and perfect for beach days that need a little extra charm. 💙", "chars": 115, "tags": ["short"]}, {"row": 240, "id": "6571", "url": "https://alessa.bg/a-touch-of-romance-dlg-plazen-pantalon-pink", "desc": "Pink beach pants that flow like a love letter. Long, breezy, and romantic - for sunset walks and seaside daydreams. 💕", "chars": 117, "tags": ["short"]}, {"row": 241, "id": "6570", "url": "https://alessa.bg/a-touch-of-romance-dlg-plazen-pantalon-vista-blue", "desc": "Vista blue beach pants with effortless flow. Long, cool, and made for lazy summer days with nowhere to rush. 💙", "chars": 110, "tags": ["short"]}, {"row": 242, "id": "6568", "url": "https://alessa.bg/a-touch-of-romance-banski-top-triglnici-pink", "desc": "Pink triangle bikini top with romantic vibes. Soft, flattering, and perfect for beach days that feel like a dream. 💕", "chars": 116, "tags": ["short"]}, {"row": 243, "id": "6566", "url": "https://alessa.bg/a-touch-of-romance-banski-bikini-s-niska-taliya-i-vrzki-vista-blue", "desc": "Vista blue bikini bottoms with tie sides. Low-rise, adjustable, and effortlessly romantic - made for endless summer. 💙", "chars": 118, "tags": ["short"]}, {"row": 244, "id": "6565", "url": "https://alessa.bg/a-touch-of-romance-banski-bikini-s-niska-taliya-i-vrzki-pink", "desc": "Pink bikini bottoms with tie details. Low-rise and oh-so-pretty - the romantic choice for sun-kissed days. 💕", "chars": 108, "tags": ["short"]}, {"row": 245, "id": "6559", "url": "https://alessa.bg/tan-lines-mojitos-banski-bikini-soft-beige", "desc": "Soft beige bikini for the perfect tan. Minimal lines, maximum sun - add a mojito and summer is served. 🍹", "chars": 104, "tags": ["short"]}, {"row": 248, "id": "6546", "url": "https://alessa.bg/daily-dream-ksa-bluzka-ecru", "desc": "Ecru cropped blouse for dreamy everyday moments. Simple, soft, and pairs with anything - your daily uniform upgrade. ✨", "chars": 118, "tags": ["short"]}, {"row": 249, "id": "6542", "url": "https://alessa.bg/floral-whisper-krop-top", "desc": "Floral crop top that whispers summer. Delicate prints, feminine fit - like a garden wrapped around you. 🌸", "chars": 105, "tags": ["short"]}, {"row": 250, "id": "6541", "url": "https://alessa.bg/floral-whisper-pola", "desc": "Floral skirt that matches the moment. Soft prints, easy flow - pair with the crop top for a full bloom look. 🌸", "chars": 110, "tags": ["short"]}, {"row": 252, "id": "6538", "url": "https://alessa.bg/trendsetter-icon-plazna-xavliya-orange", "desc": "Orange beach towel that stands out on any shore. Bold, bright, and claims your spot with confidence. 🧡", "chars": 102, "tags": ["short"]}, {"row": 254, "id": "6534", "url": "https://alessa.bg/desert-bloom-roklya-ot-pletivo-nude", "desc": "Nude knit dress that blooms beautifully. Soft, neutral, and effortlessly elegant - the desert dream in dress form. 🤍", "chars": 116, "tags": ["short"]}, {"row": 255, "id": "6530", "url": "https://alessa.bg/desert-bloom-top-ot-pletivo-ecru", "desc": "Ecru knit top from the Desert Bloom family. Light, breezy, and pairs perfectly with everything summer throws at you. ✨", "chars": 118, "tags": ["short"]}, {"row": 256, "id": "6528", "url": "https://alessa.bg/desert-bloom-top-ot-pletivo-red", "desc": "Red knit top that blooms with confidence. Bold color, soft texture - the statement piece your summer needs. ❤️", "chars": 110, "tags": ["short"]}, {"row": 257, "id": "6526", "url": "https://alessa.bg/strut-perfection-cexli-black-denim", "desc": "Black denim slides for effortless strutting. Casual cool meets perfect comfort - slip on, step out, own it. 🖤", "chars": 109, "tags": ["short"]}, {"row": 258, "id": "6525", "url": "https://alessa.bg/sunset-sensation-cexli", "desc": "Sunset slides for golden hour strolls. Warm tones, easy comfort - slip into summer's favorite colors. 🌅", "chars": 103, "tags": ["short"]}, {"row": 259, "id": "6524", "url": "https://alessa.bg/trendsetter-icon-cexli-orange", "desc": "Orange slides for trendsetters only. Bold, bright, and impossible to miss - step into summer with confidence. 🧡", "chars": 111, "tags": ["short"]}, {"row": 260, "id": "6523", "url": "https://alessa.bg/a-touch-of-romance-cexli-pink", "desc": "Pink slides with romantic charm. Soft, pretty, and perfect for poolside moments that need a feminine touch. 💕", "chars": 109, "tags": ["short"]}, {"row": 261, "id": "6522", "url": "https://alessa.bg/a-touch-of-romance-cexli-vista-blue", "desc": "Vista blue slides with a romantic soul. Cool, comfortable, and adds a soft touch to any beach day look. 💙", "chars": 105, "tags": ["short"]}, {"row": 262, "id": "6520", "url": "https://alessa.bg/trendsetter-icon-canta-orange", "desc": "Orange bag that carries your essentials and your attitude. Bold, bright, and perfect for trendsetters on the go. 🧡", "chars": 114, "tags": ["short"]}, {"row": 263, "id": "6519", "url": "https://alessa.bg/a-touch-of-romance-canta-pink", "desc": "Pink bag with romantic details. Holds everything you need and adds a sweet touch to any summer outfit. 💕", "chars": 104, "tags": ["short"]}, {"row": 264, "id": "6517", "url": "https://alessa.bg/rooftop-romance-dlga-roklya", "desc": "Long dress made for rooftop sunsets. Romantic, flowing, and perfect for nights when the city lights feel magical. ✨", "chars": 115, "tags": ["short"]}, {"row": 265, "id": "6514", "url": "https://alessa.bg/sunset-sensation-lenta-za-kosa", "desc": "Sunset headband that crowns your look. Warm tones wrapped around your hair - easy style, instant glow. 🌅", "chars": 104, "tags": ["short"]}, {"row": 266, "id": "6513", "url": "https://alessa.bg/a-touch-of-romance-lenta-za-kosa-vista-blue", "desc": "Vista blue headband with romantic flair. Keeps hair back, adds style - the little touch that completes the look. 💙", "chars": 114, "tags": ["short"]}, {"row": 267, "id": "6512", "url": "https://alessa.bg/a-touch-of-romance-lenta-za-kosa-pink", "desc": "Pink headband for romantic hair days. Sweet, soft, and frames your face beautifully. Simple magic. 💕", "chars": 100, "tags": ["short"]}, {"row": 268, "id": "6511", "url": "https://alessa.bg/trendsetter-icon-lenta-za-kosa-orange", "desc": "Orange headband for bold hair moments. Bright, eye-catching, and keeps you looking put-together while setting trends. 🧡", "chars": 119, "tags": ["short"]}, {"row": 269, "id": "6509", "url": "https://alessa.bg/a-touch-of-romance-lenta-za-kosa-tip-tyurban-vista-blue", "desc": "Vista blue turban headband with romantic energy. Wraps beautifully, looks effortless - beach hair, elevated. 💙", "chars": 110, "tags": ["short"]}, {"row": 270, "id": "6508", "url": "https://alessa.bg/a-touch-of-romance-lenta-za-kosa-tip-tyurban-pink", "desc": "Pink turban headband for soft romantic vibes. Wraps your hair in style - pretty, practical, perfect. 💕", "chars": 102, "tags": ["short"]}, {"row": 273, "id": "6494", "url": "https://alessa.bg/show-off-riza-ecru", "desc": "Ecru shirt made for showing off. Elegant, easy, and gives everything you pair it with an instant upgrade. ✨", "chars": 107, "tags": ["short"]}, {"row": 274, "id": "6485", "url": "https://alessa.bg/flirt-flow-pola-ot-bukle", "desc": "Bouclé skirt that flirts with elegance. Textured, tailored, and flows just right - French girl energy in every step. ✨", "chars": 118, "tags": ["short"]}, {"row": 275, "id": "6484", "url": "https://alessa.bg/flirt-flow-krop-top-ot-bukle", "desc": "Bouclé crop top that pairs with the skirt - or steals the show solo. Textured, chic, and effortlessly flirty. ✨", "chars": 111, "tags": ["short"]}, {"row": 276, "id": "6474", "url": "https://alessa.bg/a-touch-of-romance-dlga-roklya-vista-blue", "desc": "Vista blue maxi with romantic flow. Long, dreamy, and moves like poetry - for days that deserve something beautiful. 💙", "chars": 118, "tags": ["short"]}, {"row": 277, "id": "6472", "url": "https://alessa.bg/urban-oasis-krop-top-black", "desc": "Black crop top for urban escapes. Sleek, simple, and pairs with everything - your city uniform staple. 🖤", "chars": 104, "tags": ["short", "cliche"]}, {"row": 281, "id": "6437", "url": "https://alessa.bg/vibrant-veil-roklya-black", "desc": "Black dress with vibrant energy hiding beneath. Sheer details, bold attitude - mysterious and magnetic. 🖤", "chars": 105, "tags": ["short"]}, {"row": 287, "id": "6390", "url": "https://alessa.bg/dainty-jewelry-pola-black", "desc": "Black skirt with dainty details. Like wearing jewelry on your hips - delicate, feminine, unforgettable. 🖤", "chars": 105, "tags": ["short"]}, {"row": 288, "id": "6384", "url": "https://alessa.bg/feerie-show-ksa-riza-ot-sifon-light-pink", "desc": "Light pink chiffon shirt that floats like a fairytale. Sheer, romantic, and puts on a show without trying. 💕", "chars": 108, "tags": ["short"]}, {"row": 289, "id": "6383", "url": "https://alessa.bg/colorful-bomb-pola-greenpinkyellow", "desc": "Skirt that explodes with color. Green, pink, yellow - a bomb of fun that makes every outfit a party. 🎨", "chars": 102, "tags": ["short"]}, {"row": 290, "id": "6381", "url": "https://alessa.bg/read-my-lips-krop-top-purplegreen", "desc": "Purple and green crop top that speaks volumes. Bold color clash, zero apologies - read it and weep. 💜💚", "chars": 102, "tags": ["short"]}, {"row": 291, "id": "6375", "url": "https://alessa.bg/boho-beauty-dlga-roklya-ecru", "desc": "Ecru maxi with boho soul. Flowy, free-spirited, and made for barefoot summer days. Beautiful wanderer energy. 🤍", "chars": 111, "tags": ["short"]}, {"row": 294, "id": "6371", "url": "https://alessa.bg/trendsetter-icon-riza-orange", "desc": "Orange shirt for bold moves. Bright, confident, and impossible to ignore - the statement piece your closet craves. 🧡", "chars": 116, "tags": ["short"]}, {"row": 295, "id": "6370", "url": "https://alessa.bg/trendsetter-icon-dlg-pantalon-orange", "desc": "Orange pants that demand attention. Long, bold, and perfect for those who set the trends. Walk in, own it. 🧡", "chars": 108, "tags": ["short"]}, {"row": 296, "id": "6367", "url": "https://alessa.bg/melody-beauty-top-ot-pletivo-blue", "desc": "Blue knit top that's easy to love. Soft, flattering, and pairs with everything from shorts to maxi skirts. Summer staple. 💙", "chars": 123, "tags": ["cliche"]}, {"row": 297, "id": "6365", "url": "https://alessa.bg/melody-beauty-top-ot-pletivo-nude", "desc": "Nude knit top that goes with your whole wardrobe. Soft, versatile, and effortlessly beautiful. The neutral you need. 🤍", "chars": 118, "tags": ["short"]}, {"row": 298, "id": "6362", "url": "https://alessa.bg/disco-dazzle-pola-soft-beige", "desc": "Soft beige sequin skirt that catches every light. Sparkle meets neutral - disco energy, daytime approved. ✨", "chars": 107, "tags": ["short"]}, {"row": 299, "id": "6361", "url": "https://alessa.bg/disco-dazzle-krop-top-soft-beige", "desc": "Soft beige sequin crop top that sparkles without screaming. Pairs with the skirt or jeans - dazzle your way. ✨", "chars": 110, "tags": ["short"]}, {"row": 300, "id": "6353", "url": "https://alessa.bg/extravagant-beauty-banski-top-triglnici", "desc": "Triangle bikini top with extravagant print. Bold, flattering, and turns any beach into your runway. ✨", "chars": 101, "tags": ["short"]}, {"row": 301, "id": "6352", "url": "https://alessa.bg/extravagant-beauty-banski-bikini-s-niska-taliya", "desc": "Low-rise bikini bottoms with extravagant style. Bold print, perfect fit - the finishing touch for beach queens. ✨", "chars": 113, "tags": ["short"]}, {"row": 320, "id": "6268", "url": "https://alessa.bg/luxury-classic-ksa-bluzka-ot-pamuk-green", "desc": "Fresh mint cotton crop - the kind that turns just running errands\" into turning heads. Your move. 💚\"", "chars": 100, "tags": ["short"]}, {"row": 324, "id": "6257", "url": "https://alessa.bg/daily-dream-bikini-ecru", "desc": "Creamy ecru bikini that makes beach days feel like a photoshoot. Simple, stunning, all eyes on you. Grab yours. 🐚", "chars": 113, "tags": ["short"]}, {"row": 331, "id": "6240", "url": "https://alessa.bg/fuchsia-fantasy-elek", "desc": "Hot fuchsia vest - the kind of bold that makes everyone else look beige. Throw it on, own the room. 💖", "chars": 101, "tags": ["short"]}, {"row": 336, "id": "6210", "url": "https://alessa.bg/gold-rush-krop-top", "desc": "Golden crop top that catches light like it was born to shine. Pair with the set or let it steal the show solo. ✨", "chars": 112, "tags": ["short"]}, {"row": 340, "id": "6206", "url": "https://alessa.bg/walk-it-talk-it-krop-top-dark-blue", "desc": "Deep blue crop that does exactly what the name says. Confident, cool, zero apologies. Show up and own it. 💙", "chars": 107, "tags": ["short"]}, {"row": 341, "id": "6204", "url": "https://alessa.bg/feathered-euphoria-pola-s-estestveni-pera-blue", "desc": "Blue skirt with real feathers - the kind of entrance that needs no introduction. Pure drama, pure glamour. 💙", "chars": 108, "tags": ["short"]}, {"row": 342, "id": "6203", "url": "https://alessa.bg/daily-dream-bikini-black", "desc": "Minimal black bikini that lets your confidence do the talking. Clean lines, killer fit, zero fuss. 🖤", "chars": 100, "tags": ["short"]}, {"row": 344, "id": "6200", "url": "https://alessa.bg/gentle-beauty-pantalon-gray", "desc": "Soft gray satin trousers with a high-waisted silhouette that moves like a dream. Comfortable, polished, and your new go-to for looking effortlessly put together. 🤍", "chars": 163, "tags": ["lazy"]}, {"row": 345, "id": "6192", "url": "https://alessa.bg/impossible-beauty-bleizr-mocha", "desc": "Warm mocha blazer with a perfect fit. Looks sharp over jeans, sharper over a dress. Bestseller for a reason. ☕", "chars": 110, "tags": ["short"]}, {"row": 346, "id": "6186", "url": "https://alessa.bg/overnight-sensation-roklya-black-satin", "desc": "Black satin mini that does the talking for you. Sleek, sultry, weak-at-the-knees gorgeous. Date night sorted. 🖤", "chars": 111, "tags": ["short"]}, {"row": 356, "id": "6128", "url": "https://alessa.bg/pulse-pleat-mini-pola-aksesoar-soft-beige", "desc": "Pleats that twirl, a color that matches everything - this mini skirt is made for photo-worthy moments. Lined for comfort, perfect for little fashionistas. 🎀", "chars": 156, "tags": ["cliche"]}, {"row": 359, "id": "6118", "url": "https://alessa.bg/alpha-aura-roklya-black", "desc": "Off-shoulder, long sleeves, and a silhouette that does all the work. The little black dress - but make it dangerous. 🖤", "chars": 118, "tags": ["short"]}, {"row": 361, "id": "6094", "url": "https://alessa.bg/provocative-look-krop-top-s-edin-rkav-nude", "desc": "One sleeve, all the drama. This nude crop hugs just right and pairs with everything - high-waisted pants, skirts, your best night out. Effortlessly bold. ✨", "chars": 155, "tags": ["cliche"]}, {"row": 384, "id": "6032", "url": "https://alessa.bg/soft-power-bluza-ot-pletivo-nude", "desc": "The everyday top that refuses to be basic. Ribbed knit, body-loving fit, and a subtle gold logo that says you know quality when you see it. Your new go-to. 🤎", "chars": 157, "tags": ["lazy"]}, {"row": 425, "id": "5798", "url": "https://alessa.bg/alessa-beauty-team-krop-top", "desc": "Team Alessa, represented. White crop with teal and pink graphics, spaghetti straps, and that sporty cut that pairs with everything from joggers to high-waisted jeans. Wear the brand, own the vibe. 💪", "chars": 198, "tags": ["cliche"]}, {"row": 427, "id": "5772", "url": "https://alessa.bg/podarcen-vaucer-250lv", "desc": "Can't decide? Let her choose. 250лв gift voucher for the Alessa woman in your life - because she knows exactly what she wants. Zero stress gifting, 100% guaranteed smile. 🎁", "chars": 172, "tags": ["price"]}, {"row": 431, "id": "5751", "url": "https://alessa.bg/mojito-magic-krop-top-ot-mreza-mocha", "desc": "Mocha mesh with warmth that works year-round. Same sheer sleeves, same crossover detail, but in a richer tone that pairs with everything from white to black. Layering made easy. 🤎", "chars": 179, "tags": ["cliche", "lazy"]}, {"row": 479, "id": "5626", "url": "https://alessa.bg/secret-garden-plazen-pantalon", "desc": "Flowy beach pants with a print that turns heads from the poolside to sunset cocktails. Pairs with everything in the collection - or nothing at all. Vacation mode: on. 🌸", "chars": 168, "tags": ["cliche"]}, {"row": 506, "id": "5556", "url": "https://alessa.bg/trendsetter-icon-canta-blue", "desc": "Blue toile meets wild spirit — this structured tote pairs classic pastoral print with a fierce tiger motif. Gold medallion accent, roomy interior. Your new go-to for brunch to beach. 💙🐯", "chars": 185, "tags": ["lazy"]}, {"row": 616, "id": "4970", "url": "https://alessa.bg/charmers-choice-bluzka-black", "desc": "Cutout cool. Black fitted top with asymmetrical cold-shoulder detail - sleek, edgy, and effortlessly fashion-forward. 🖤", "chars": 119, "tags": ["short"]}, {"row": 619, "id": "4938", "url": "https://alessa.bg/treasure-island-pola-pantalon", "desc": "The little detail that ties it all together - literally. Mini scrunchies in that signature Trendsetter Icon pink tropical print. Set of two, perfect for pigtails or wrist stacking. Match with the full collection. 🌸", "chars": 214, "tags": ["duplicate"]}, {"row": 624, "id": "4916", "url": "https://alessa.bg/aksesoar-za-kosa-ot-pletivo-ecru", "desc": "Cream knit, instant summer. The finishing touch that turns a simple outfit into a whole mood. Pairs with everything, steals nothing. ✨", "chars": 134, "tags": ["cliche"]}, {"row": 626, "id": "4914", "url": "https://alessa.bg/aksesoar-za-kosa-ot-pletivo-black", "desc": "Black knit, zero effort, maximum polish. The headband that works as hard as you do - beach, city, anywhere. 🖤", "chars": 109, "tags": ["short"]}, {"row": 628, "id": "4910", "url": "https://alessa.bg/swagger-diva-skrnci-pandelka", "desc": "Graphic print, long ribbon ties, pure attitude. The bow-scrunchie for when you want your ponytail to do the talking. 💫", "chars": 118, "tags": ["short"]}, {"row": 638, "id": "4869", "url": "https://alessa.bg/oceans-charm-banski-top-s-povdigashh-efekt-brown", "desc": "Chocolate brown triangle top with those signature wrap ties - rich color, flattering lift, effortless beach elegance. 🤎", "chars": 119, "tags": ["short"]}, {"row": 639, "id": "4868", "url": "https://alessa.bg/oceans-charm-banski-bikini-brown", "desc": "Brown tie-side bikini - the warm neutral that makes tan skin look even better. Low-rise, adjustable, endlessly chic. 🤎", "chars": 118, "tags": ["short"]}, {"row": 653, "id": "4792", "url": "https://alessa.bg/fierce-fashionista-pola-ot-denim-soft-beige", "desc": "Denim with a soft side - beige that pairs with everything and attitude that pairs with nothing. 🤍 Fierce by name, effortless by nature. Grab yours.", "chars": 147, "tags": ["cliche"]}, {"row": 682, "id": "4657", "url": "https://alessa.bg/the-power-of-flowers-canta-alessa", "desc": "Your new go-to carryall just bloomed. 🌺 This roomy textile tote brings flower power everywhere you go - farmer's market, brunch, wherever. Bold print, bigger personality.", "chars": 170, "tags": ["lazy"]}, {"row": 697, "id": "4571", "url": "https://alessa.bg/podarcen-vaucer-1000lv", "desc": "N/A - Product discontinued", "chars": 26, "tags": ["short"]}, {"row": 698, "id": "4570", "url": "https://alessa.bg/podarcen-vaucer-500lv", "desc": "N/A - Product discontinued", "chars": 26, "tags": ["short"]}, {"row": 704, "id": "4502", "url": "https://alessa.bg/for-your-eyes-only-ks-t-shirt-ot-pamuk-black", "desc": "For your eyes only - and everyone else's too. 🖤 Cropped black tee in soft cotton that works with everything and looks good doing it. Simple, effortless, done.", "chars": 158, "tags": ["cliche"]}];
+
+const state = JSON.parse(localStorage.getItem('copy-review-state') || '{}');
+let currentFilter = 'all';
+
+const clichePatterns = ['pairs with everything', 'matches everything', 'works with everything', 'goes with everything'];
+const lazyPatterns = ['same soft', 'same micro', 'same cozy', 'same sheer', 'same style', 'same vibe', 'your new go-to'];
+
+function highlightIssues(desc, tags) {
+    let html = desc;
+    if (tags.includes('cliche')) {
+        clichePatterns.forEach(p => {
+            const regex = new RegExp(`(${p})`, 'gi');
+            html = html.replace(regex, '<span class="highlight">$1</span>');
+        });
+    }
+    if (tags.includes('lazy')) {
+        lazyPatterns.forEach(p => {
+            const regex = new RegExp(`(${p})`, 'gi');
+            html = html.replace(regex, '<span class="highlight">$1</span>');
+        });
+    }
+    if (tags.includes('price')) {
+        html = html.replace(/(\d+\s*лв)/gi, '<span class="highlight">$1</span>');
+    }
+    return html;
+}
+
+function renderCards() {
+    const container = document.getElementById('cards');
+    let html = '';
+    let visible = 0;
+    
+    DATA.forEach(item => {
+        const review = state[item.row];
+        let show = true;
+        
+        if (currentFilter === 'unreviewed' && review) show = false;
+        else if (currentFilter === 'needsfix' && review !== 'fix') show = false;
+        else if (['short','cliche','lazy','price','duplicate'].includes(currentFilter) && !item.tags.includes(currentFilter)) show = false;
+        
+        if (!show) return;
+        visible++;
+        
+        const statusClass = review === 'ok' ? 'approved' : review === 'fix' ? 'rejected' : '';
+        
+        html += `
+        <div class="card ${statusClass}" id="card-${item.row}">
+            <div class="card-header">
+                <span class="card-row">Row ${item.row} · ID ${item.id}</span>
+                <div class="card-tags">
+                    ${item.tags.map(t => `<span class="tag ${t}">${t}</span>`).join('')}
+                </div>
+            </div>
+            <div class="card-desc">${highlightIssues(item.desc, item.tags)}</div>
+            <div class="card-chars">${item.chars} chars</div>
+            <a class="card-url" href="${item.url}" target="_blank">${item.url}</a>
+            <div class="card-actions">
+                <button class="action-btn btn-ok ${review === 'ok' ? 'active' : ''}" onclick="setReview(${item.row}, 'ok')" style="${review === 'ok' ? 'background:#34c759;color:white;' : ''}">✅ OK</button>
+                <button class="action-btn btn-fix ${review === 'fix' ? 'active' : ''}" onclick="setReview(${item.row}, 'fix')" style="${review === 'fix' ? 'background:#ff4757;color:white;' : ''}">🔧 Needs Fix</button>
+            </div>
+        </div>`;
+    });
+    
+    if (visible === 0) {
+        html = '<div class="empty-state"><div class="emoji">✨</div><p>No items match this filter</p></div>';
+    }
+    
+    container.innerHTML = html;
+    updateCounts();
+}
+
+function setReview(row, value) {
+    if (state[row] === value) {
+        delete state[row];
+    } else {
+        state[row] = value;
+    }
+    localStorage.setItem('copy-review-state', JSON.stringify(state));
+    renderCards();
+}
+
+function setFilter(f) {
+    currentFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`[data-filter="${f}"]`).classList.add('active');
+    renderCards();
+}
+
+function updateCounts() {
+    const okCount = Object.values(state).filter(v => v === 'ok').length;
+    const fixCount = Object.values(state).filter(v => v === 'fix').length;
+    const unreviewed = DATA.length - okCount - fixCount;
+    
+    document.getElementById('sum-ok').textContent = okCount;
+    document.getElementById('sum-fix').textContent = fixCount;
+    document.getElementById('sum-unreviewed').textContent = unreviewed;
+    
+    document.getElementById('count-all').textContent = `(${DATA.length})`;
+    document.getElementById('count-short').textContent = `(${DATA.filter(d=>d.tags.includes('short')).length})`;
+    document.getElementById('count-cliche').textContent = `(${DATA.filter(d=>d.tags.includes('cliche')).length})`;
+    document.getElementById('count-lazy').textContent = `(${DATA.filter(d=>d.tags.includes('lazy')).length})`;
+    document.getElementById('count-price').textContent = `(${DATA.filter(d=>d.tags.includes('price')).length})`;
+    document.getElementById('count-duplicate').textContent = `(${DATA.filter(d=>d.tags.includes('duplicate')).length})`;
+    document.getElementById('count-unreviewed').textContent = `(${unreviewed})`;
+    document.getElementById('count-needsfix').textContent = `(${fixCount})`;
+}
+
+function exportResults() {
+    const fixes = DATA.filter(d => state[d.row] === 'fix');
+    if (fixes.length === 0) {
+        alert('No items marked as "Needs Fix" yet.');
+        return;
+    }
+    let text = 'NEEDS FIX — ' + fixes.length + ' descriptions\n\n';
+    fixes.forEach(f => {
+        text += `Row ${f.row} | ID ${f.id} | ${f.tags.join(', ')}\n`;
+        text += `${f.desc}\n`;
+        text += `${f.url}\n\n`;
+    });
+    
+    const blob = new Blob([text], {type: 'text/plain'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'needs-fix.txt';
+    a.click();
+}
+
+renderCards();
+</script>
+
+</body>
+</html>

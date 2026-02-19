@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Command Center</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #fff;
+            overflow-x: hidden;
+        }
+        
+        /* Animated background */
+        .bg-gradient {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(ellipse at 20% 20%, rgba(120, 0, 255, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(0, 200, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(100, 50, 200, 0.05) 0%, transparent 70%);
+            z-index: -1;
+        }
+        
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 60px 24px;
+            position: relative;
+        }
+        
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 64px;
+        }
+        
+        .logo {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        h1 {
+            font-size: 2.75rem;
+            font-weight: 700;
+            letter-spacing: -1px;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #fff 0%, #a78bfa 50%, #60a5fa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .tagline {
+            font-size: 1.1rem;
+            color: #6b7280;
+            font-weight: 400;
+        }
+        
+        /* Section */
+        .section {
+            margin-bottom: 48px;
+        }
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding-left: 4px;
+        }
+        
+        .section-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+        
+        .section-icon.learning { background: linear-gradient(135deg, #a855f7, #7c3aed); }
+        .section-icon.business { background: linear-gradient(135deg, #22c55e, #16a34a); }
+        .section-icon.productivity { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        .section-icon.finance { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .section-icon.health { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        
+        .section-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #9ca3af;
+        }
+        
+        /* Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        /* Cards */
+        .card {
+            position: relative;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 28px;
+            text-decoration: none;
+            color: #fff;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+        
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+        }
+        
+        .card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-4px);
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.3),
+                0 0 60px rgba(120, 0, 255, 0.1);
+        }
+        
+        .card-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .card.learning .card-icon { background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(124, 58, 237, 0.2)); }
+        .card.business .card-icon { background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(22, 163, 74, 0.2)); }
+        .card.productivity .card-icon { background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.2)); }
+        .card.finance .card-icon { background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.2)); }
+        .card.health .card-icon { background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.2)); }
+        
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            letter-spacing: -0.3px;
+        }
+        
+        .card-desc {
+            font-size: 0.9rem;
+            color: #6b7280;
+            line-height: 1.6;
+        }
+        
+        .card-arrow {
+            position: absolute;
+            top: 28px;
+            right: 28px;
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: all 0.3s ease;
+            color: #6b7280;
+        }
+        
+        .card:hover .card-arrow {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 80px;
+            padding-top: 32px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        
+        .footer-text {
+            font-size: 0.9rem;
+            color: #4b5563;
+        }
+        
+        .footer-text a {
+            color: #6b7280;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        
+        .footer-text a:hover {
+            color: #a78bfa;
+        }
+        
+        .nova-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(167, 139, 250, 0.1);
+            border: 1px solid rgba(167, 139, 250, 0.2);
+            padding: 8px 16px;
+            border-radius: 100px;
+            font-size: 0.85rem;
+            color: #a78bfa;
+            margin-top: 16px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 640px) {
+            .container { padding: 40px 16px; }
+            h1 { font-size: 2rem; }
+            .logo { font-size: 2.5rem; }
+            .grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-gradient"></div>
+    
+    <div class="container">
+        <header class="header">
+            <div class="logo">🎯</div>
+            <h1>Command Center</h1>
+            <p class="tagline">All your dashboards in one place</p>
+        </header>
+        
+        <section class="section">
+            <div class="section-header">
+                <div class="section-icon learning">📚</div>
+                <h2 class="section-title">Learning</h2>
+            </div>
+            <div class="grid">
+                <a href="english/phrasal-verbs.html" class="card learning">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">💬</div>
+                    <div class="card-title">Phrasal Verbs</div>
+                    <div class="card-desc">Master 400 essential verbs with Leitner spaced repetition. Track your progress to fluency.</div>
+                </a>
+                <a href="quiz-progress.html" class="card learning">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">🧠</div>
+                    <div class="card-title">300 Great Figures</div>
+                    <div class="card-desc">Historical knowledge mastery. Learn the people who shaped the world.</div>
+                </a>
+                <a href="focus.html" class="card learning">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">🎯</div>
+                    <div class="card-title">Focus</div>
+                    <div class="card-desc">YouTube video summarizer. Queue, summarize, and track your learning velocity.</div>
+                </a>
+                <a href="transitions.html" class="card learning">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">⚡</div>
+                    <div class="card-title">Power Transitions</div>
+                    <div class="card-desc">638 transition phrases for killer copy. Bucket brigades, open loops, seeds of curiosity &amp; more.</div>
+                </a>
+                <a href="idioms.html" class="card learning">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">💬</div>
+                    <div class="card-title">Power Expressions</div>
+                    <div class="card-desc">949 colloquial expressions for electrifying copy. Money, conflict, success, emotion &amp; more.</div>
+                </a>
+                <a href="idioms-practice.html" class="card learning">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">🔥</div>
+                    <div class="card-title">Idioms Practice</div>
+                    <div class="card-desc">Flashcard practice with Leitner spaced repetition. Master 949 expressions through active recall.</div>
+                </a>
+                <a href="english-mistakes.html" class="card learning">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">📝</div>
+                    <div class="card-title">English Mistakes</div>
+                    <div class="card-desc">Track real mistakes, practice with quizzes, drill prepositions. Leitner spaced repetition.</div>
+                </a>
+            </div>
+        </section>
+        
+        <section class="section">
+            <div class="section-header">
+                <div class="section-icon business">🎯</div>
+                <h2 class="section-title">Strategy</h2>
+            </div>
+            <div class="grid">
+                <a href="radar.html" class="card business">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">👁️</div>
+                    <div class="card-title">Opportunity Radar</div>
+                    <div class="card-desc">5 wealth paths, daily signals, blind spots. Your edge on the world.</div>
+                </a>
+                <a href="radar.html#core-theses-section" class="card finance">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">🔐</div>
+                    <div class="card-title">Core Theses</div>
+                    <div class="card-desc">High-conviction investment theses. Bitcoin as post-AI trust layer & more.</div>
+                </a>
+                <a href="lightning.html" class="card finance">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">⚡</div>
+                    <div class="card-title">Lightning Lab</div>
+                    <div class="card-desc">Node setup guide, BTC trust thesis visualization, Lightning ecosystem tracker & reference.</div>
+                </a>
+                <a href="agent-economy.html" class="card finance">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">🤖</div>
+                    <div class="card-title">Agent Economy</div>
+                    <div class="card-desc">Nova's Lightning-powered agent business. NIP-90 DVM, specialties, revenue model & status.</div>
+                </a>
+                <a href="btc-l2-watch.html" class="card finance">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">₿</div>
+                    <div class="card-title">Bitcoin L2 Watch</div>
+                    <div class="card-desc">Citrea vs BitcoinOS. BitVM vs BitSNARK. AI vulnerability framework. Smart money tracking.</div>
+                </a>
+            </div>
+        </section>
+        
+        <section class="section">
+            <div class="section-header">
+                <div class="section-icon business">🏢</div>
+                <h2 class="section-title">Business</h2>
+            </div>
+            <div class="grid">
+                <a href="https://alessa-cmd.vercel.app/" class="card business">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">📊</div>
+                    <div class="card-title">Alessa Analytics</div>
+                    <div class="card-desc">GA4 performance metrics. Revenue, sessions, and conversion tracking for BG + GR.</div>
+                </a>
+                <a href="copy-style-guide.html" class="card business">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">📝</div>
+                    <div class="card-title">Style Guide</div>
+                    <div class="card-desc">Brand voice, writing rules, and reference documentation for consistent copy.</div>
+                </a>
+                <a href="bencivenga.html" class="card business">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">🧠</div>
+                    <div class="card-title">Bencivenga KB</div>
+                    <div class="card-desc">Persuasion Equation, 12 Proof Elements, Trojan Horse, and Alessa Playbook.</div>
+                </a>
+                <a href="ad-scorer.html" class="card business">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">🎯</div>
+                    <div class="card-title">Ad Copy Scorer</div>
+                    <div class="card-desc">Score ads with Bencivenga's Persuasion Equation. 12 proof elements, Bridge Principle check, history tracking.</div>
+                </a>
+                <a href="meta-ads-kb.html" class="card business">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">📣</div>
+                    <div class="card-title">Meta Ads KB</div>
+                    <div class="card-desc">Expert strategies from Ben Heath, Charley T, and top media buyers.</div>
+                </a>
+                <a href="copy-progress.html" class="card business">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">✍️</div>
+                    <div class="card-title">Copy Progress</div>
+                    <div class="card-desc">Track product descriptions progress for the 952 products project.</div>
+                </a>
+                <a href="ocs-manager.html" class="card business">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">📢</div>
+                    <div class="card-title">OCS Ad Manager</div>
+                    <div class="card-desc">Manage omnipresent content ads across markets with social proof tracking.</div>
+                </a>
+                <a href="content-marketing.html" class="card business">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">📱</div>
+                    <div class="card-title">Content Marketing</div>
+                    <div class="card-desc">Content angles, pipeline tracker, calendar & publishing log for Alessa social media.</div>
+                </a>
+            </div>
+        </section>
+        
+        <section class="section">
+            <div class="section-header">
+                <div class="section-icon productivity">⚡</div>
+                <h2 class="section-title">Productivity</h2>
+            </div>
+            <div class="grid">
+                <a href="habits/index.html" class="card productivity">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">🔥</div>
+                    <div class="card-title">Habit Streaks</div>
+                    <div class="card-desc">Track daily habits and build consistency with streak tracking.</div>
+                </a>
+                <a href="knowledge-graph.html" class="card productivity">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">🧠</div>
+                    <div class="card-title">Knowledge Graph</div>
+                    <div class="card-desc">People, companies, projects & investments. Nova's structured memory.</div>
+                </a>
+                <a href="kanban.html" class="card productivity">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">🗂️</div>
+                    <div class="card-title">Kanban</div>
+                    <div class="card-desc">Lightweight task board. Local storage + import/export backups.</div>
+                </a>
+                <a href="morning-brief.html" class="card productivity">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">☀️</div>
+                    <div class="card-title">Morning Brief Config</div>
+                    <div class="card-desc">Configure sections, rules, ordering & delivery for the daily 10 AM brief.</div>
+                </a>
+            </div>
+        </section>
+        
+        <section class="section">
+            <div class="section-header">
+                <div class="section-icon health">❤️</div>
+                <h2 class="section-title">Health</h2>
+            </div>
+            <div class="grid">
+                <a href="https://nutrition-tracker-neon.vercel.app/" class="card health">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">💪</div>
+                    <div class="card-title">Nutrition Tracker</div>
+                    <div class="card-desc">Daily macro tracking. Calories, protein, carbs & fat for the recomp goal.</div>
+                </a>
+                <a href="macro-calculator.html" class="card health">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">🥗</div>
+                    <div class="card-title">Macro Calculator</div>
+                    <div class="card-desc">Quick food lookup. Type any food + amount, get instant macros.</div>
+                </a>
+            </div>
+        </section>
+        
+        <section class="section">
+            <div class="section-header">
+                <div class="section-icon finance">💰</div>
+                <h2 class="section-title">Finance</h2>
+            </div>
+            <div class="grid">
+                <a href="trading-live.html" class="card finance">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">🤖</div>
+                    <div class="card-title">Live Trading</div>
+                    <div class="card-desc">Real-time P&L, equity curve, open positions & bot status from the Nova scanner.</div>
+                </a>
+                <a href="strategy-lab.html" class="card finance">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">🔬</div>
+                    <div class="card-title">PF 2.0 Strategy Lab</div>
+                    <div class="card-desc">Road to PF 2.0 — improvement roadmap, test results, edge heatmap, key insights & compound projections.</div>
+                </a>
+                <a href="v11c-bands.html" class="card finance">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">🎯</div>
+                    <div class="card-title">V11c Band Selector</div>
+                    <div class="card-desc">Visual comparison of all 6 bands. Charts, efficiency frontier, compound projections & recommendation.</div>
+                </a>
+                <a href="v11c-honest.html" class="card finance">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">📊</div>
+                    <div class="card-title">V11c Honest Review</div>
+                    <div class="card-desc">7,595 ATR trades. Zero look-ahead. Candlestick charts, equity curve, filters & 3-Box overlay.</div>
+                </a>
+                <a href="v11c-improvements.html" class="card finance">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">🔧</div>
+                    <div class="card-title">V11c Improvements</div>
+                    <div class="card-desc">ATR band comparison, pivot test results, improvement stack tracker.</div>
+                </a>
+                <a href="trade-review-v11c.html" class="card finance">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">📊</div>
+                    <div class="card-title">V11c Trade Review</div>
+                    <div class="card-desc">5,245 trades across BTC/ETH/SOL. Interactive filters, equity curve, chart visualization & full breakdown.</div>
+                </a>
+                <a href="trade-review.html" class="card finance">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">📋</div>
+                    <div class="card-title">V5.2 Trade Review (Legacy)</div>
+                    <div class="card-desc">835 original V5.2 backtest trades with candlestick charts and filter controls.</div>
+                </a>
+                <a href="trading-rules.html" class="card finance">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">📜</div>
+                    <div class="card-title">Trading Rules</div>
+                    <div class="card-desc">Market Maker Method rules reference. The 6 rules, patterns, and entry criteria.</div>
+                </a>
+                <a href="trading-simulator.html" class="card finance">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">📈</div>
+                    <div class="card-title">Growth Simulator</div>
+                    <div class="card-desc">Monte Carlo compound growth projections. 500 simulated paths from V5.2 backtest data.</div>
+                </a>
+                <a href="https://trading-journal-ten-cyan.vercel.app/" class="card finance">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">📓</div>
+                    <div class="card-title">Trading Journal</div>
+                    <div class="card-desc">Log trades, track P&L, and analyze your win rate over time.</div>
+                </a>
+            </div>
+        </section>
+        
+        <section class="section">
+            <div class="section-header">
+                <div class="section-icon learning">👨‍👩‍👧</div>
+                <h2 class="section-title">Family</h2>
+            </div>
+            <div class="grid">
+                <a href="https://avia-quiz.vercel.app/" class="card learning">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">🌟</div>
+                    <div class="card-title">Аз вече знам!</div>
+                    <div class="card-desc">Avia's quiz — 34 categories, 205 questions in Bulgarian. Stars, confetti & fun!</div>
+                </a>
+                <a href="https://bukvichki.vercel.app/" class="card learning">
+                    <span class="card-arrow">→</span>
+                    <div class="card-icon">📚</div>
+                    <div class="card-title">Буквички</div>
+                    <div class="card-desc">Bulgarian alphabet learning — 30 letters, emoji words, speech, practice quizzes & stars!</div>
+                </a>
+            </div>
+        </section>
+        
+        <footer class="footer">
+            <p class="footer-text">Built with care for getting things done</p>
+            <div class="nova-badge">
+                <span>✨</span>
+                <span>Powered by Nova</span>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>

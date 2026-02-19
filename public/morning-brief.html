@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Morning Brief — Full Pipeline</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+      color: #e8e8e8;
+      min-height: 100vh;
+      padding: 18px;
+    }
+    a.back {
+      position: fixed; top: 16px; left: 16px; color: #888; text-decoration: none;
+      font-size: 0.9rem; z-index: 1000; background: rgba(0,0,0,0.5);
+      padding: 8px 12px; border-radius: 8px;
+    }
+    a.back:hover { color: #fff; }
+
+    .wrap { max-width: 1200px; margin: 0 auto; padding-top: 40px; }
+    header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    h1 { font-size: 1.6rem; }
+    h1 .pulse { display: inline-block; animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .sub { color: #888; font-size: 0.9rem; margin-top: 4px; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .btn {
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14);
+      color: #e8e8e8; padding: 8px 14px; border-radius: 10px; cursor: pointer;
+      font-size: 0.85rem; transition: all 0.2s;
+    }
+    .btn:hover { background: rgba(255,255,255,0.14); }
+    .btn.primary { background: rgba(167,139,250,0.22); border-color: rgba(167,139,250,0.35); }
+    .btn.primary:hover { background: rgba(167,139,250,0.35); }
+    .btn.success { background: rgba(34,197,94,0.18); border-color: rgba(34,197,94,0.3); color: #4ade80; }
+    .btn.success:hover { background: rgba(34,197,94,0.3); }
+    .btn.danger { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.3); color: #f87171; }
+    .btn.danger:hover { background: rgba(239,68,68,0.25); }
+    .btn.sm { padding: 5px 10px; font-size: 0.78rem; }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; background: rgba(34,197,94,0.15);
+      border: 1px solid rgba(34,197,94,0.3); color: #4ade80; padding: 12px 20px;
+      border-radius: 10px; font-size: 0.9rem; z-index: 9999; opacity: 0;
+      transform: translateY(10px); transition: all 0.3s; pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 4px; margin-bottom: 24px; flex-wrap: wrap; }
+    .tab {
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      color: #888; padding: 10px 18px; border-radius: 10px; cursor: pointer;
+      font-size: 0.85rem; transition: all 0.2s;
+    }
+    .tab:hover { color: #ccc; background: rgba(255,255,255,0.08); }
+    .tab.active {
+      background: rgba(167,139,250,0.18); border-color: rgba(167,139,250,0.35);
+      color: #c4b5fd;
+    }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* ─── Pipeline Timeline ─── */
+    .pipeline-wrap { position: relative; padding: 20px 0; }
+    .pipeline-row {
+      display: flex; gap: 12px; align-items: stretch; overflow-x: auto;
+      padding-bottom: 12px; scroll-snap-type: x mandatory;
+    }
+    .pipe-card {
+      flex: 0 0 220px; scroll-snap-align: start;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px; padding: 18px; position: relative;
+      transition: all 0.25s; display: flex; flex-direction: column;
+    }
+    .pipe-card:hover { border-color: rgba(167,139,250,0.35); transform: translateY(-2px); }
+    .pipe-card.night { border-left: 3px solid rgba(129,140,248,0.5); }
+    .pipe-card.morning { border-left: 3px solid rgba(251,191,36,0.5); }
+    .pipe-time {
+      font-size: 1.8rem; font-weight: 800; color: #c4b5fd;
+      letter-spacing: -0.02em; line-height: 1;
+    }
+    .pipe-card.morning .pipe-time { color: #fbbf24; }
+    .pipe-label { font-size: 0.72rem; color: #666; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+    .pipe-name { font-size: 0.95rem; font-weight: 600; margin-top: 10px; line-height: 1.3; }
+    .pipe-desc { font-size: 0.78rem; color: #888; margin-top: 6px; line-height: 1.4; flex: 1; }
+    .pipe-meta { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+    .pipe-tag {
+      font-size: 0.7rem; padding: 3px 8px; border-radius: 6px;
+      background: rgba(255,255,255,0.06); color: #aaa;
+    }
+    .pipe-tag.duration { background: rgba(56,189,248,0.12); color: #38bdf8; }
+    .pipe-tag.model { background: rgba(167,139,250,0.12); color: #a78bfa; }
+    .pipe-arrow {
+      flex: 0 0 30px; display: flex; align-items: center; justify-content: center;
+      color: #444; font-size: 1.2rem;
+    }
+    .pipe-connector {
+      display: flex; align-items: center; justify-content: center; padding: 12px 0;
+    }
+    .pipe-connector-line {
+      height: 2px; flex: 1; background: linear-gradient(90deg, rgba(129,140,248,0.3), rgba(251,191,36,0.3));
+      position: relative;
+    }
+    .pipe-connector-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: #a78bfa;
+      flex-shrink: 0;
+    }
+
+    /* Data flow diagram */
+    .flow-diagram {
+      background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px; padding: 20px; margin-top: 20px;
+    }
+    .flow-title { font-size: 0.8rem; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 14px; }
+    .flow-chain {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      font-size: 0.85rem;
+    }
+    .flow-node {
+      background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.2);
+      padding: 8px 14px; border-radius: 10px; white-space: nowrap;
+    }
+    .flow-node.file { background: rgba(56,189,248,0.1); border-color: rgba(56,189,248,0.2); color: #38bdf8; }
+    .flow-node.output { background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.2); color: #4ade80; }
+    .flow-arrow { color: #555; font-size: 1rem; }
+
+    /* ─── Axioms ─── */
+    .axioms-box {
+      background: linear-gradient(135deg, rgba(167,139,250,0.08), rgba(251,191,36,0.05));
+      border: 1px solid rgba(167,139,250,0.2);
+      border-radius: 16px; padding: 22px; margin-bottom: 24px;
+    }
+    .axioms-title {
+      font-size: 1rem; font-weight: 700; color: #fbbf24; margin-bottom: 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .axiom-item {
+      display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px;
+    }
+    .axiom-bullet { color: #a78bfa; font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+    .axiom-text {
+      flex: 1; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08);
+      color: #e8e8e8; padding: 8px 12px; border-radius: 8px; font-size: 0.88rem;
+      font-family: inherit; width: 100%; resize: none; min-height: 32px;
+    }
+    .axiom-text:focus { outline: none; border-color: rgba(167,139,250,0.4); }
+    .axiom-remove {
+      background: none; border: none; color: #555; cursor: pointer;
+      font-size: 0.8rem; padding: 4px; flex-shrink: 0;
+    }
+    .axiom-remove:hover { color: #f87171; }
+
+    /* ─── Search List ─── */
+    .search-section {
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px; padding: 20px; margin-bottom: 20px;
+    }
+    .search-section h3 {
+      font-size: 0.95rem; color: #c4b5fd; margin-bottom: 14px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .search-list { list-style: none; }
+    .search-item {
+      display: flex; align-items: center; gap: 8px; padding: 7px 10px;
+      border-radius: 8px; margin-bottom: 4px; transition: 0.15s;
+      background: rgba(255,255,255,0.02);
+    }
+    .search-item:hover { background: rgba(255,255,255,0.05); }
+    .search-num { color: #555; font-size: 0.75rem; min-width: 22px; text-align: right; }
+    .search-text {
+      flex: 1; background: transparent; border: 1px solid transparent;
+      color: #ccc; font-size: 0.85rem; padding: 4px 8px; border-radius: 6px;
+      font-family: inherit;
+    }
+    .search-text:focus { border-color: rgba(167,139,250,0.3); background: rgba(0,0,0,0.2); outline: none; }
+    .search-remove { background: none; border: none; color: #444; cursor: pointer; font-size: 0.75rem; padding: 4px; }
+    .search-remove:hover { color: #f87171; }
+    .search-drag { cursor: grab; color: #444; font-size: 0.85rem; user-select: none; }
+    .search-drag:active { cursor: grabbing; }
+
+    /* Categories */
+    .cat-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .cat-tag {
+      background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.2);
+      color: #fbbf24; padding: 5px 12px; border-radius: 8px; font-size: 0.8rem;
+      cursor: default; display: flex; align-items: center; gap: 6px;
+    }
+    .cat-tag .cat-remove {
+      background: none; border: none; color: rgba(251,191,36,0.4); cursor: pointer;
+      font-size: 0.7rem; padding: 0;
+    }
+    .cat-tag .cat-remove:hover { color: #f87171; }
+
+    /* Deep dive rules */
+    .rules-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 700px) { .rules-grid { grid-template-columns: 1fr; } }
+    .rule-card {
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px; padding: 16px;
+    }
+    .rule-card h4 { font-size: 0.85rem; color: #a78bfa; margin-bottom: 10px; }
+    .rule-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .rule-row:last-child { border-bottom: none; }
+    .rule-label { color: #aaa; font-size: 0.82rem; }
+    .rule-input {
+      background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+      color: #e8e8e8; border-radius: 8px; padding: 5px 10px; font-size: 0.85rem;
+      width: 60px; text-align: center;
+    }
+    .rule-input:focus { outline: none; border-color: rgba(167,139,250,0.4); }
+
+    /* Scoring criteria list */
+    .criteria-list { list-style: none; }
+    .criteria-item {
+      display: flex; align-items: center; gap: 8px; padding: 6px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.83rem; color: #bbb;
+    }
+    .criteria-item:last-child { border-bottom: none; }
+    .criteria-num { color: #a78bfa; font-weight: 700; font-size: 0.75rem; min-width: 18px; }
+
+    /* Delivery template */
+    .template-area {
+      background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+      color: #e8e8e8; border-radius: 10px; padding: 14px; font-size: 0.85rem;
+      font-family: 'SF Mono', 'Fira Code', monospace; width: 100%; min-height: 80px;
+      resize: vertical;
+    }
+    .template-area:focus { outline: none; border-color: rgba(167,139,250,0.4); }
+
+    /* ─── Section Cards ─── */
+    .part-label {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.2);
+      padding: 6px 14px; border-radius: 10px; font-size: 0.8rem; color: #a78bfa;
+      margin-bottom: 16px; font-weight: 600;
+    }
+    .part-label.part2 { background: rgba(56,189,248,0.1); border-color: rgba(56,189,248,0.2); color: #38bdf8; }
+
+    .section-card {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px; padding: 18px; margin-bottom: 12px;
+      transition: all 0.2s; position: relative;
+    }
+    .section-card:hover { border-color: rgba(255,255,255,0.16); }
+    .section-card.disabled { opacity: 0.5; }
+    .section-card.dragging { opacity: 0.4; border-color: rgba(167,139,250,0.5); }
+    .section-card.drag-over { border-color: rgba(167,139,250,0.6); background: rgba(167,139,250,0.06); }
+
+    .card-header {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+    .drag-handle {
+      cursor: grab; color: #555; font-size: 1.2rem; user-select: none;
+      padding: 4px; line-height: 1;
+    }
+    .drag-handle:active { cursor: grabbing; }
+    .card-order {
+      background: rgba(167,139,250,0.15); color: #a78bfa; font-size: 0.75rem;
+      font-weight: 700; width: 26px; height: 26px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .card-emoji { font-size: 1.3rem; flex-shrink: 0; }
+    .card-title { font-weight: 600; font-size: 0.95rem; flex: 1; min-width: 120px; }
+    .card-desc { color: #888; font-size: 0.8rem; margin-top: 2px; }
+    .card-part-badge {
+      font-size: 0.68rem; padding: 2px 7px; border-radius: 5px; font-weight: 600;
+    }
+    .card-part-badge.p1 { background: rgba(167,139,250,0.15); color: #a78bfa; }
+    .card-part-badge.p2 { background: rgba(56,189,248,0.15); color: #38bdf8; }
+    .card-meta {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-left: auto;
+    }
+    .char-badge {
+      background: rgba(56,189,248,0.12); color: #38bdf8; font-size: 0.75rem;
+      padding: 3px 8px; border-radius: 6px; white-space: nowrap;
+    }
+
+    /* Toggle */
+    .toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle .slider {
+      position: absolute; inset: 0; background: rgba(255,255,255,0.1);
+      border-radius: 24px; cursor: pointer; transition: 0.3s;
+    }
+    .toggle .slider::before {
+      content: ''; position: absolute; width: 18px; height: 18px; left: 3px; bottom: 3px;
+      background: #666; border-radius: 50%; transition: 0.3s;
+    }
+    .toggle input:checked + .slider { background: rgba(34,197,94,0.3); }
+    .toggle input:checked + .slider::before { transform: translateX(20px); background: #4ade80; }
+
+    /* Expand */
+    .expand-btn {
+      background: none; border: none; color: #888; cursor: pointer; font-size: 0.8rem;
+      padding: 4px 8px; border-radius: 6px; transition: 0.2s;
+    }
+    .expand-btn:hover { color: #ccc; background: rgba(255,255,255,0.06); }
+    .card-detail {
+      display: none; margin-top: 16px; padding-top: 16px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .card-detail.open { display: block; }
+
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 700px) { .detail-grid { grid-template-columns: 1fr; } }
+
+    .detail-group label {
+      display: block; color: #888; font-size: 0.75rem; text-transform: uppercase;
+      letter-spacing: 0.05em; margin-bottom: 6px;
+    }
+    .detail-group textarea, .detail-group input[type="text"] {
+      width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+      color: #e8e8e8; border-radius: 8px; padding: 10px; font-size: 0.85rem;
+      font-family: inherit; resize: vertical;
+    }
+    .detail-group textarea { min-height: 100px; }
+    .detail-group textarea:focus, .detail-group input:focus {
+      outline: none; border-color: rgba(167,139,250,0.4);
+    }
+
+    /* Slider */
+    .slider-wrap { display: flex; align-items: center; gap: 10px; }
+    .slider-wrap input[type="range"] {
+      flex: 1; -webkit-appearance: none; height: 6px; background: rgba(255,255,255,0.1);
+      border-radius: 3px; outline: none;
+    }
+    .slider-wrap input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+      background: #a78bfa; cursor: pointer;
+    }
+    .slider-val {
+      color: #a78bfa; font-size: 0.85rem; font-weight: 600; min-width: 50px; text-align: right;
+    }
+
+    .move-arrows { display: flex; flex-direction: column; gap: 2px; }
+    .arrow-btn {
+      background: none; border: none; color: #555; cursor: pointer; font-size: 0.7rem;
+      padding: 1px 4px; line-height: 1; transition: 0.2s;
+    }
+    .arrow-btn:hover { color: #a78bfa; }
+
+    /* ─── Delivery Settings ─── */
+    .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    @media (max-width: 700px) { .settings-grid { grid-template-columns: 1fr; } }
+    .setting-card {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px; padding: 20px;
+    }
+    .setting-card h3 {
+      font-size: 0.9rem; margin-bottom: 14px; color: #c4b5fd;
+    }
+    .setting-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+      flex-wrap: wrap; gap: 8px;
+    }
+    .setting-row:last-child { border-bottom: none; }
+    .setting-label { color: #aaa; font-size: 0.85rem; }
+    .setting-value select, .setting-value input {
+      background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+      color: #e8e8e8; border-radius: 8px; padding: 6px 10px; font-size: 0.85rem;
+    }
+    .setting-value select:focus, .setting-value input:focus {
+      outline: none; border-color: rgba(167,139,250,0.4);
+    }
+    .setting-value input[type="number"] { width: 80px; text-align: center; }
+    .setting-value input[type="time"] { width: 120px; }
+    .setting-value select { min-width: 160px; }
+
+    /* Model assignment table */
+    .model-table {
+      width: 100%; border-collapse: collapse; margin-top: 10px;
+    }
+    .model-table th {
+      text-align: left; color: #888; font-size: 0.75rem; text-transform: uppercase;
+      letter-spacing: 0.05em; padding: 8px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .model-table td {
+      padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 0.85rem;
+    }
+    .model-table td:first-child { color: #ccc; }
+    .model-table select {
+      background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+      color: #e8e8e8; border-radius: 8px; padding: 5px 10px; font-size: 0.82rem;
+      min-width: 180px;
+    }
+    .model-table select:focus { outline: none; border-color: rgba(167,139,250,0.4); }
+
+    /* ─── JSON View ─── */
+    .json-view {
+      background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px; padding: 20px; position: relative;
+    }
+    .json-view pre {
+      color: #a78bfa; font-size: 0.8rem; line-height: 1.6; overflow-x: auto;
+      white-space: pre-wrap; word-break: break-all; max-height: 70vh;
+    }
+    .json-copy-btn { position: absolute; top: 12px; right: 12px; }
+
+    /* ─── Summary bar ─── */
+    .summary-bar {
+      display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px;
+      padding: 14px 18px; background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06); border-radius: 12px;
+    }
+    .summary-stat { text-align: center; }
+    .summary-stat .val { font-size: 1.3rem; font-weight: 700; color: #c4b5fd; }
+    .summary-stat .lbl { font-size: 0.7rem; color: #666; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      body { padding: 10px; }
+      .wrap { padding-top: 50px; }
+      .card-header { gap: 8px; }
+      .card-meta { margin-left: 0; margin-top: 8px; width: 100%; }
+      .summary-bar { gap: 10px; }
+      header { flex-direction: column; }
+      .pipe-card { flex: 0 0 180px; padding: 14px; }
+      .pipe-time { font-size: 1.4rem; }
+      .settings-grid { grid-template-columns: 1fr; }
+      .rules-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<a class="back" href="index.html">← Back</a>
+<div class="wrap">
+  <header>
+    <div>
+      <h1><span class="pulse">👁️</span> Morning Brief — Full Pipeline</h1>
+      <div class="sub">5-stage daily intelligence pipeline · 3:00 AM → 10:30 AM · All cron instructions editable</div>
+    </div>
+    <div class="actions">
+      <button class="btn success" onclick="saveConfig()">💾 Save</button>
+      <button class="btn primary" onclick="switchTab('json')">{ } JSON</button>
+      <button class="btn" onclick="resetDefaults()">↻ Reset</button>
+    </div>
+  </header>
+
+  <div class="summary-bar" id="summaryBar"></div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="pipeline" onclick="switchTab('pipeline')">🔄 Pipeline</div>
+    <div class="tab" data-tab="radar" onclick="switchTab('radar')">👁️ Radar</div>
+    <div class="tab" data-tab="sections" onclick="switchTab('sections')">📋 Sections</div>
+    <div class="tab" data-tab="delivery" onclick="switchTab('delivery')">⚙️ Delivery</div>
+    <div class="tab" data-tab="json" onclick="switchTab('json')">{ } JSON</div>
+  </div>
+
+  <div class="panel active" id="panel-pipeline"></div>
+  <div class="panel" id="panel-radar"></div>
+  <div class="panel" id="panel-sections"></div>
+  <div class="panel" id="panel-delivery"></div>
+  <div class="panel" id="panel-json"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── Default Config ───
+const DEFAULT_AXIOMS = [
+  "BTC WILL become the backbone of future finance",
+  "AI WILL run every business",
+  "BTC + AI intersection = where the real alpha is",
+  "Opportunities are everywhere but we're BLIND. Help him SEE.",
+  "Think like a billionaire, not an analyst"
+];
+
+const DEFAULT_PIPELINE = [
+  {
+    id: 'phase1', cronId: '31ee414e-0636-49d9-912b-715e22b1faf7',
+    name: 'Phase 1: Wide Scan', emoji: '🌙', time: '03:00', period: 'night',
+    targetDuration: '25-30 min', model: 'anthropic/claude-opus-4-6',
+    description: '28 explicit searches across BTC, AI, agent economy, space, emerging tech',
+    output: 'memory/daily-scan/YYYY-MM-DD-phase1-raw.md',
+    instructions: 'Execute 28 web searches across all categories. For each search: save title, URL, 2-sentence summary, relevance score (1-10). Group by category. Save raw results to memory/daily-scan/YYYY-MM-DD-phase1-raw.md. Target: 25-30 minutes total.'
+  },
+  {
+    id: 'phase2', cronId: '7fef4399-90f6-4d8c-8c35-ad0f269ec594',
+    name: 'Phase 2: Deep Dives', emoji: '🌙', time: '03:45', period: 'night',
+    targetDuration: '30-40 min', model: 'anthropic/claude-opus-4-6',
+    description: 'Reads Phase 1, ranks signals, does 3-5 deep dives with full articles',
+    input: 'memory/daily-scan/YYYY-MM-DD-phase1-raw.md',
+    output: 'memory/daily-scan/YYYY-MM-DD.md',
+    instructions: 'Read Phase 1 raw file. Rank all signals by: (1) relevance to axioms, (2) actionability, (3) time-sensitivity. Pick top 3-5 signals. For each: fetch full article, extract key data, write 150-300 word analysis. Save final report to memory/daily-scan/YYYY-MM-DD.md.'
+  },
+  {
+    id: 'radar', cronId: '04adc0f3-f4f8-4038-8c80-90468dfdbf2d',
+    name: 'Opportunity Radar Delivery', emoji: '👁️', time: '09:30', period: 'morning',
+    targetDuration: '5 min', model: 'anthropic/claude-opus-4-6',
+    description: 'THE most important daily delivery — punchy espresso shot to Telegram',
+    input: 'memory/daily-scan/YYYY-MM-DD.md', output: 'Telegram message',
+    maxChars: 2000,
+    instructions: 'Read deep scan report. Distill into punchy, high-signal Telegram message. Format: 👁️ OPPORTUNITY RADAR header, then 3-5 bullets. Each bullet: emoji + bold headline + 1 sentence why it matters + actionability tag. Under 2000 chars. No fluff. Think billionaire briefing, not analyst report.'
+  },
+  {
+    id: 'brief_part1', cronId: '5fd1593c-e58d-4cc0-9313-a06a615520eb',
+    name: 'Brief Part 1: Intel & Analytics', emoji: '☀️', time: '10:00', period: 'morning',
+    targetDuration: '10-15 min', model: 'anthropic/claude-opus-4-6',
+    description: 'Sections: Overnight Build, AI Daily (@alexwg), Alessa Analytics, X/Twitter Scout',
+    output: 'Telegram messages',
+    sectionIds: ['overnight', 'ai_daily', 'analytics', 'x_scout'],
+    instructions: 'Deliver Brief Part 1 to Telegram. Four sections: Overnight Build, AI Daily, Alessa Analytics, X/Twitter Scout. Each section as a separate message if needed. Stay within char budgets. Use real data from tools and APIs.'
+  },
+  {
+    id: 'brief_part2', cronId: '5480000b-42e4-47a3-8f53-4e043a72e715',
+    name: 'Brief Part 2: Scouts & Action', emoji: '☀️', time: '10:30', period: 'morning',
+    targetDuration: '10-15 min', model: 'anthropic/claude-opus-4-6',
+    description: 'Sections: HN Scout, YouTube Scout, Creative Briefs, Edge Feed, Today\'s Plan, Delegation',
+    output: 'Telegram messages',
+    sectionIds: ['hn_scout', 'youtube', 'creative', 'edge_feed', 'todays_plan', 'delegation'],
+    instructions: 'Deliver Brief Part 2 to Telegram. Six sections: HN Scout, YouTube Scout, Creative Briefs, Edge Feed, Today\'s Plan, Delegation. Each section as a separate message if needed. Stay within char budgets. Use real data from tools and APIs.'
+  }
+];
+
+const DEFAULT_SEARCHES = [
+  "Bitcoin adoption institutional 2026",
+  "Bitcoin L2 Lightning Network updates",
+  "Bitcoin mining energy innovation",
+  "BTC + AI convergence projects",
+  "SOFTWAR Bitcoin as strategic asset",
+  "AI agent economy autonomous agents",
+  "AI agent marketplace MCP protocol",
+  "AI coding assistants latest",
+  "Claude Anthropic news updates",
+  "OpenAI GPT latest releases",
+  "Google Gemini AI updates",
+  "AI running business automation",
+  "AI ecommerce automation tools",
+  "Robotics humanoid latest breakthroughs",
+  "Space tech commercialization 2026",
+  "SpaceX Starship updates",
+  "Metaverse virtual economy updates",
+  "AR VR Apple Vision Pro adoption",
+  "Emerging tech breakthroughs today",
+  "Quantum computing practical applications",
+  "Energy tech nuclear fusion updates",
+  "DeFi Bitcoin decentralized finance",
+  "Stablecoin regulation adoption",
+  "AI bottleneck compute GPU shortage",
+  "AI chip semiconductor race",
+  "Platform economy creator tools",
+  "Ecommerce AI personalization trends",
+  "Macro BTC gold commodities outlook"
+];
+
+const DEFAULT_CATEGORIES = [
+  "SOFTWAR", "New internet", "Metaverse", "Bot economy", "Space",
+  "Robotics", "Energy", "Platforms", "BTC L2s", "AI bottlenecks"
+];
+
+const DEFAULT_DEEP_DIVE_RULES = {
+  minSearchesPerDive: 2, maxDives: 5, minDives: 3,
+  scoringCriteria: [
+    "Relevance to core axioms (BTC + AI)",
+    "Actionability — can Ivo do something with this?",
+    "Time-sensitivity — is this breaking or can it wait?",
+    "Alpha potential — does this give an edge?",
+    "Convergence — does it connect multiple categories?"
+  ]
+};
+
+const DEFAULT_DELIVERY_TEMPLATE = "👁️ OPPORTUNITY RADAR — {date}\n\n{bullets}\n\n⚡ Alpha Score: {score}/10";
+
+const DEFAULT_SECTIONS = [
+  { id: 'overnight', emoji: '🌅', name: 'Overnight Build Report', enabled: true, part: 1, charBudget: 400,
+    description: 'What Nova built overnight — cron jobs, builds, deploys, errors.',
+    rules: 'Check memory/YYYY-MM-DD.md for ## Nightly Build section. Check nova-tasks.json for overnightBuilds. 1-2 sentences + link. Copy tasks.json to command-center and git push.',
+    sources: 'memory/YYYY-MM-DD.md, nova-tasks.json, cron logs' },
+  { id: 'ai_daily', emoji: '🌐', name: 'AI Daily (@alexwg)', enabled: true, part: 1, charBudget: 600,
+    description: 'Extensive summary of Dr. Alex Wissner-Gross daily AI article from X.',
+    rules: "Run: bird user-tweets @alexwg -n 5 --plain. Find latest 'Welcome to [date]' post. bird read <url> --plain. EXTENSIVE summary in SIMPLE language — like a smart friend over coffee. 10-15 bullets: what happened + why it matters. Include numbers, companies, products. End with 🔗 link.",
+    sources: 'bird CLI (@alexwg)' },
+  { id: 'analytics', emoji: '📊', name: 'Alessa Analytics (GA)', enabled: true, part: 1, charBudget: 400,
+    description: 'Google Analytics for Alessa BG + GR. Alerts, revenue, CVR, sessions.',
+    rules: 'Run: python3 ~/clawd/scripts/ga-monitor.py. ALERTS first (>20% drops). Key metrics: Revenue, Orders, CVR, Sessions (yesterday + WoW). BG vs GR. Brief analysis + action items.',
+    sources: 'scripts/ga-monitor.py' },
+  { id: 'x_scout', emoji: '🐦', name: 'X/Twitter Scout', enabled: true, part: 1, charBudget: 400,
+    description: 'Crypto, Macro, World/Trump, AI/Tech, Health/Bio, Emerging, Marketing.',
+    rules: 'Use bird CLI. Topics: BTC/crypto, gold/silver/commodities, Trump/geopolitics, AI/tech, biohacking/health, emerging tech, ecommerce/marketing. VERIFY ALL PRICE CLAIMS with web_search. Top 5-7 bullets with links.',
+    sources: 'bird CLI, web_search' },
+  { id: 'hn_scout', emoji: '🔶', name: 'Hacker News Scout', enabled: true, part: 2, charBudget: 300,
+    description: 'Top HN stories: AI/LLMs, crypto, startups, emerging tech, contrarian essays.',
+    rules: 'Fetch top stories from news.ycombinator.com. Filter relevant topics. Top 5-7 posts: title + link + why it matters. Check comments on top 2-3 for gold insights.',
+    sources: 'HN API, web_fetch' },
+  { id: 'youtube', emoji: '📺', name: 'YouTube Scout', enabled: true, part: 2, charBudget: 300,
+    description: 'Fresh videos (<48h) on Meta ads, ecommerce, CRO.',
+    rules: 'Channels: Chase Chappell, Fraser Cottrell, Blue Sense Digital, Sam Piliero. Each: link + 1-sentence + 2-4 takeaways.',
+    sources: 'web_search, YouTube' },
+  { id: 'creative', emoji: '🎨', name: 'Alessa Creative Briefs', enabled: true, part: 2, charBudget: 400,
+    description: 'Ad hooks, openers, offers for Greece + Romania. FASHION ONLY.',
+    rules: '⚠️ ALESSA IS WOMEN\'S FASHION — DRESSES, CLOTHING, ACCESSORIES. NOT SKINCARE! Greece: 3 angles + 5 hooks + 3 openers + offer (with English translations). Romania: same format. CRO suggestion: 1 test idea.',
+    sources: 'Creative knowledge base' },
+  { id: 'edge_feed', emoji: '💡', name: 'Edge Feed + Ideas', enabled: true, part: 2, charBudget: 350,
+    description: 'BTC + AI + macro + investing ideas + learning resources.',
+    rules: '5 bullets: BTC + AI + macro + 1 investing idea + 1 thing to learn. 3 personalized ideas: (i) Nova autonomous task (ii) High-leverage Ivo task (iii) 10-20 min learning resource.',
+    sources: 'Opportunity radar, web_search' },
+  { id: 'todays_plan', emoji: '📋', name: "Today's Plan", enabled: true, part: 2, charBudget: 200,
+    description: 'Ask Ivo for priorities, reminders, notes.',
+    rules: 'Ask: Top 3 priorities? Any reminders to set? Notes to capture?',
+    sources: 'Interactive' },
+  { id: 'delegation', emoji: '📝', name: 'Delegation Check', enabled: true, part: 2, charBudget: 200,
+    description: 'Ask about boring/repetitive tasks to offload to Nova.',
+    rules: "Ask: Any boring/repetitive tasks to offload? Get: task name + frequency + where info lives.",
+    sources: 'Interactive' }
+];
+
+const DEFAULT_DELIVERY = {
+  maxCharsPerMessage: 3500,
+  radarMaxChars: 2000
+};
+
+const DEFAULT_MODELS = {
+  phase1: 'anthropic/claude-opus-4-6',
+  phase2: 'anthropic/claude-opus-4-6',
+  radar: 'anthropic/claude-opus-4-6',
+  brief_part1: 'anthropic/claude-opus-4-6',
+  brief_part2: 'anthropic/claude-opus-4-6',
+  midjourney_cron: 'anthropic/claude-sonnet-4'
+};
+
+const MODEL_OPTIONS = [
+  'anthropic/claude-opus-4-6',
+  'anthropic/claude-sonnet-4',
+  'anthropic/claude-haiku-3.5'
+];
+
+const STORAGE_KEY = 'morning-brief-config-v2';
+
+// ─── State ───
+let config = loadConfig();
+
+function loadConfig() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const c = JSON.parse(raw);
+      // Ensure all keys exist
+      if (!c.axioms) c.axioms = [...DEFAULT_AXIOMS];
+      if (!c.pipeline) c.pipeline = DEFAULT_PIPELINE.map(p => ({...p}));
+      if (!c.searches) c.searches = [...DEFAULT_SEARCHES];
+      if (!c.categories) c.categories = [...DEFAULT_CATEGORIES];
+      if (!c.deepDiveRules) c.deepDiveRules = {...DEFAULT_DEEP_DIVE_RULES, scoringCriteria: [...DEFAULT_DEEP_DIVE_RULES.scoringCriteria]};
+      if (!c.deliveryTemplate) c.deliveryTemplate = DEFAULT_DELIVERY_TEMPLATE;
+      if (!c.sections) c.sections = DEFAULT_SECTIONS.map(s => ({...s}));
+      if (!c.delivery) c.delivery = {...DEFAULT_DELIVERY};
+      if (!c.models) c.models = {...DEFAULT_MODELS};
+      return c;
+    }
+  } catch(e) { console.error('Config load error:', e); }
+  return getDefaults();
+}
+
+function getDefaults() {
+  return {
+    axioms: [...DEFAULT_AXIOMS],
+    pipeline: DEFAULT_PIPELINE.map(p => ({...p})),
+    searches: [...DEFAULT_SEARCHES],
+    categories: [...DEFAULT_CATEGORIES],
+    deepDiveRules: {...DEFAULT_DEEP_DIVE_RULES, scoringCriteria: [...DEFAULT_DEEP_DIVE_RULES.scoringCriteria]},
+    deliveryTemplate: DEFAULT_DELIVERY_TEMPLATE,
+    sections: DEFAULT_SECTIONS.map(s => ({...s})),
+    delivery: {...DEFAULT_DELIVERY},
+    models: {...DEFAULT_MODELS}
+  };
+}
+
+function saveConfig() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+  renderJSON();
+  toast('Configuration saved ✓');
+}
+
+function resetDefaults() {
+  if (!confirm('Reset all settings to defaults?')) return;
+  config = getDefaults();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+  renderAll();
+  toast('Reset to defaults ✓');
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function esc(str) { return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ─── Tabs ───
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + name));
+  if (name === 'json') renderJSON();
+}
+
+// ─── Summary Bar ───
+function renderSummary() {
+  const enabled = config.sections.filter(s => s.enabled).length;
+  const total = config.sections.length;
+  const totalChars = config.sections.filter(s => s.enabled).reduce((sum, s) => sum + s.charBudget, 0);
+  const stages = config.pipeline.length;
+  document.getElementById('summaryBar').innerHTML = `
+    <div class="summary-stat"><div class="val">${stages}</div><div class="lbl">Pipeline Stages</div></div>
+    <div class="summary-stat"><div class="val">${config.searches.length}</div><div class="lbl">Searches</div></div>
+    <div class="summary-stat"><div class="val">${enabled}/${total}</div><div class="lbl">Sections On</div></div>
+    <div class="summary-stat"><div class="val">${totalChars.toLocaleString()}</div><div class="lbl">Total Chars</div></div>
+    <div class="summary-stat"><div class="val">${config.categories.length}</div><div class="lbl">Categories</div></div>
+    <div class="summary-stat"><div class="val">${config.delivery.maxCharsPerMessage}</div><div class="lbl">Max/Msg</div></div>
+  `;
+}
+
+// ═══════════════════════════════════════════
+// TAB 1: PIPELINE OVERVIEW
+// ═══════════════════════════════════════════
+function renderPipeline() {
+  const el = document.getElementById('panel-pipeline');
+  const cards = config.pipeline.map((p, i) => {
+    const isNight = p.period === 'night';
+    return `
+      ${i > 0 ? '<div class="pipe-arrow">→</div>' : ''}
+      <div class="pipe-card ${isNight ? 'night' : 'morning'}">
+        <div class="pipe-time">${p.time}</div>
+        <div class="pipe-label">${isNight ? '🌙 Night Phase' : '☀️ Morning Delivery'}</div>
+        <div class="pipe-name">${p.emoji} ${p.name}</div>
+        <div class="pipe-desc">${p.description}</div>
+        <div class="pipe-meta">
+          <span class="pipe-tag duration">⏱ ${p.targetDuration}</span>
+          <span class="pipe-tag model">${p.model.split('/')[1]}</span>
+          ${p.maxChars ? `<span class="pipe-tag" style="background:rgba(251,191,36,0.12);color:#fbbf24;">≤${p.maxChars} chars</span>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="pipeline-wrap">
+      <div class="pipeline-row">${cards}</div>
+    </div>
+
+    <div class="flow-diagram">
+      <div class="flow-title">📁 Data Flow</div>
+      <div class="flow-chain">
+        <div class="flow-node">🌙 Wide Scan</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-node file">phase1-raw.md</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-node">🌙 Deep Dives</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-node file">daily-scan.md</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-node output">👁️ Radar (TG)</div>
+      </div>
+      <div class="flow-chain" style="margin-top: 10px;">
+        <div class="flow-node file">daily-scan.md</div>
+        <span class="flow-arrow">+</span>
+        <div class="flow-node">Live APIs</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-node output">☀️ Part 1 (TG)</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-node output">☀️ Part 2 (TG)</div>
+      </div>
+    </div>
+
+    <h3 style="margin-top: 28px; margin-bottom: 16px; font-size: 1rem; color: #c4b5fd;">📝 Cron Instructions (editable)</h3>
+    ${config.pipeline.map((p, i) => `
+      <div class="section-card" style="margin-bottom: 14px;">
+        <div class="card-header">
+          <span class="card-emoji">${p.emoji}</span>
+          <div style="flex:1;">
+            <div class="card-title">${p.name}</div>
+            <div class="card-desc">${p.time} · ${p.targetDuration} · cronId: <code style="color:#666;font-size:0.72rem;">${p.cronId}</code></div>
+          </div>
+          <button class="expand-btn" onclick="togglePipeDetail(${i}, this)">▸ Edit</button>
+        </div>
+        <div class="card-detail" id="pipe-detail-${i}">
+          <div class="detail-grid">
+            <div class="detail-group" style="grid-column:1/-1;">
+              <label>Full Instructions</label>
+              <textarea rows="5" onchange="config.pipeline[${i}].instructions=this.value">${esc(p.instructions)}</textarea>
+            </div>
+            ${p.input ? `<div class="detail-group"><label>Input</label><input type="text" value="${esc(p.input)}" onchange="config.pipeline[${i}].input=this.value"></div>` : ''}
+            <div class="detail-group"><label>Output</label><input type="text" value="${esc(p.output)}" onchange="config.pipeline[${i}].output=this.value"></div>
+            <div class="detail-group">
+              <label>Target Duration</label>
+              <input type="text" value="${esc(p.targetDuration)}" onchange="config.pipeline[${i}].targetDuration=this.value">
+            </div>
+            <div class="detail-group">
+              <label>Schedule Time</label>
+              <div class="setting-value"><input type="time" value="${p.time}" onchange="config.pipeline[${i}].time=this.value"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `).join('')}
+  `;
+}
+
+function togglePipeDetail(idx, btn) {
+  const d = document.getElementById('pipe-detail-' + idx);
+  const open = d.classList.toggle('open');
+  btn.textContent = open ? '▾ Close' : '▸ Edit';
+}
+
+// ═══════════════════════════════════════════
+// TAB 2: OPPORTUNITY RADAR
+// ═══════════════════════════════════════════
+function renderRadar() {
+  const el = document.getElementById('panel-radar');
+
+  const axiomsHtml = config.axioms.map((a, i) => `
+    <div class="axiom-item">
+      <span class="axiom-bullet">⚡</span>
+      <textarea class="axiom-text" rows="1" oninput="config.axioms[${i}]=this.value;autoResize(this)">${esc(a)}</textarea>
+      <button class="axiom-remove" onclick="removeAxiom(${i})" title="Remove">✕</button>
+    </div>
+  `).join('');
+
+  const searchesHtml = config.searches.map((s, i) => `
+    <li class="search-item" draggable="true" data-idx="${i}"
+        ondragstart="dragSearch(event,${i})" ondragover="dragOverSearch(event,${i})"
+        ondragleave="dragLeaveSearch(event)" ondrop="dropSearch(event,${i})">
+      <span class="search-drag">⠿</span>
+      <span class="search-num">${i + 1}.</span>
+      <input class="search-text" type="text" value="${esc(s)}" onchange="config.searches[${i}]=this.value">
+      <button class="search-remove" onclick="removeSearch(${i})" title="Remove">✕</button>
+    </li>
+  `).join('');
+
+  const categoriesHtml = config.categories.map((c, i) => `
+    <div class="cat-tag">
+      ${esc(c)}
+      <button class="cat-remove" onclick="removeCategory(${i})" title="Remove">✕</button>
+    </div>
+  `).join('');
+
+  const criteriaHtml = config.deepDiveRules.scoringCriteria.map((c, i) => `
+    <li class="criteria-item">
+      <span class="criteria-num">${i + 1}</span>
+      <span>${esc(c)}</span>
+    </li>
+  `).join('');
+
+  el.innerHTML = `
+    <div class="axioms-box">
+      <div class="axioms-title">⚡ Ivo's Core Axioms</div>
+      ${axiomsHtml}
+      <button class="btn sm" style="margin-top:10px;" onclick="addAxiom()">+ Add Axiom</button>
+    </div>
+
+    <div class="search-section">
+      <h3>
+        🔍 Phase 1 Search List (${config.searches.length} searches)
+        <button class="btn sm" onclick="addSearch()">+ Add Search</button>
+      </h3>
+      <ul class="search-list">${searchesHtml}</ul>
+    </div>
+
+    <div class="search-section">
+      <h3>🏷️ Categories</h3>
+      <div class="cat-list">${categoriesHtml}</div>
+      <button class="btn sm" style="margin-top:12px;" onclick="addCategory()">+ Add Category</button>
+    </div>
+
+    <div class="rules-grid" style="margin-top: 20px;">
+      <div class="rule-card">
+        <h4>🎯 Deep Dive Rules</h4>
+        <div class="rule-row">
+          <span class="rule-label">Min searches per dive</span>
+          <input class="rule-input" type="number" min="1" max="10" value="${config.deepDiveRules.minSearchesPerDive}"
+                 onchange="config.deepDiveRules.minSearchesPerDive=parseInt(this.value)">
+        </div>
+        <div class="rule-row">
+          <span class="rule-label">Min dives</span>
+          <input class="rule-input" type="number" min="1" max="10" value="${config.deepDiveRules.minDives}"
+                 onchange="config.deepDiveRules.minDives=parseInt(this.value)">
+        </div>
+        <div class="rule-row">
+          <span class="rule-label">Max dives</span>
+          <input class="rule-input" type="number" min="1" max="10" value="${config.deepDiveRules.maxDives}"
+                 onchange="config.deepDiveRules.maxDives=parseInt(this.value)">
+        </div>
+      </div>
+      <div class="rule-card">
+        <h4>📊 Scoring Criteria</h4>
+        <ul class="criteria-list">${criteriaHtml}</ul>
+      </div>
+    </div>
+
+    <div class="search-section" style="margin-top: 20px;">
+      <h3>📨 Radar Delivery Template</h3>
+      <textarea class="template-area" onchange="config.deliveryTemplate=this.value">${esc(config.deliveryTemplate)}</textarea>
+      <div style="margin-top:8px; color:#666; font-size:0.78rem;">
+        Placeholders: <code>{date}</code> <code>{bullets}</code> <code>{score}</code>
+      </div>
+    </div>
+  `;
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+function addAxiom() { config.axioms.push('New axiom here'); renderRadar(); }
+function removeAxiom(i) { config.axioms.splice(i, 1); renderRadar(); }
+function addSearch() { config.searches.push('New search query'); renderRadar(); }
+function removeSearch(i) { config.searches.splice(i, 1); renderRadar(); }
+function addCategory() {
+  const c = prompt('New category name:');
+  if (c) { config.categories.push(c); renderRadar(); }
+}
+function removeCategory(i) { config.categories.splice(i, 1); renderRadar(); }
+
+let dragSearchIdx = null;
+function dragSearch(e, idx) { dragSearchIdx = idx; e.dataTransfer.effectAllowed = 'move'; }
+function dragOverSearch(e, idx) { e.preventDefault(); e.target.closest('.search-item')?.classList.add('drag-over'); }
+function dragLeaveSearch(e) { e.target.closest('.search-item')?.classList.remove('drag-over'); }
+function dropSearch(e, idx) {
+  e.preventDefault();
+  document.querySelectorAll('.search-item').forEach(el => el.classList.remove('drag-over'));
+  if (dragSearchIdx === null || dragSearchIdx === idx) return;
+  const [moved] = config.searches.splice(dragSearchIdx, 1);
+  config.searches.splice(idx, 0, moved);
+  dragSearchIdx = null;
+  renderRadar();
+}
+
+// ═══════════════════════════════════════════
+// TAB 3: BRIEF SECTIONS
+// ═══════════════════════════════════════════
+function renderSections() {
+  const el = document.getElementById('panel-sections');
+  const part1 = config.sections.filter(s => s.part === 1);
+  const part2 = config.sections.filter(s => s.part === 2);
+
+  function renderGroup(sections, partNum, label) {
+    return `
+      <div class="part-label ${partNum === 2 ? 'part2' : ''}">
+        ${partNum === 1 ? '☀️' : '☀️'} ${label}
+        · ${partNum === 1 ? '10:00 AM' : '10:30 AM'}
+        · ${sections.filter(s => s.enabled).reduce((a,s) => a + s.charBudget, 0)} chars total
+      </div>
+      ${sections.map(s => {
+        const idx = config.sections.indexOf(s);
+        return renderSectionCard(s, idx);
+      }).join('')}
+    `;
+  }
+
+  el.innerHTML =
+    renderGroup(part1, 1, 'Part 1: Intel & Analytics') +
+    '<div style="margin:24px 0;border-top:1px solid rgba(255,255,255,0.06);"></div>' +
+    renderGroup(part2, 2, 'Part 2: Scouts & Action');
+}
+
+function renderSectionCard(s, i) {
+  return `
+    <div class="section-card ${s.enabled ? '' : 'disabled'}" data-idx="${i}" draggable="true"
+         ondragstart="dragSection(event,${i})" ondragover="dragOverSection(event,${i})"
+         ondragleave="dragLeaveSection(event)" ondrop="dropSection(event,${i})">
+      <div class="card-header">
+        <span class="drag-handle" title="Drag to reorder">⠿</span>
+        <div class="move-arrows">
+          <button class="arrow-btn" onclick="moveSection(${i},-1)" title="Move up">▲</button>
+          <button class="arrow-btn" onclick="moveSection(${i},1)" title="Move down">▼</button>
+        </div>
+        <span class="card-order">${i+1}</span>
+        <span class="card-emoji">${s.emoji}</span>
+        <div>
+          <div class="card-title">${s.name}</div>
+          <div class="card-desc">${s.description}</div>
+        </div>
+        <div class="card-meta">
+          <span class="card-part-badge ${s.part === 1 ? 'p1' : 'p2'}">Part ${s.part}</span>
+          <span class="char-badge">${s.charBudget} chars</span>
+          <label class="toggle">
+            <input type="checkbox" ${s.enabled ? 'checked' : ''} onchange="toggleSection(${i}, this.checked)">
+            <span class="slider"></span>
+          </label>
+          <button class="expand-btn" onclick="toggleSectionDetail(${i}, this)">▸ Details</button>
+        </div>
+      </div>
+      <div class="card-detail" id="sec-detail-${i}">
+        <div class="detail-grid">
+          <div class="detail-group" style="grid-column: 1/-1;">
+            <label>Rules / Instructions</label>
+            <textarea onchange="config.sections[${i}].rules=this.value" rows="4">${esc(s.rules)}</textarea>
+          </div>
+          <div class="detail-group">
+            <label>Data Sources</label>
+            <input type="text" value="${esc(s.sources)}" onchange="config.sections[${i}].sources=this.value">
+          </div>
+          <div class="detail-group">
+            <label>Character Budget</label>
+            <div class="slider-wrap">
+              <input type="range" min="100" max="1000" step="50" value="${s.charBudget}"
+                     oninput="updateCharBudget(${i}, this.value)">
+              <span class="slider-val" id="charval-${i}">${s.charBudget}</span>
+            </div>
+          </div>
+          <div class="detail-group">
+            <label>Part Assignment</label>
+            <div style="display:flex;gap:8px;">
+              <button class="btn sm ${s.part===1?'primary':''}" onclick="config.sections[${i}].part=1;renderSections()">Part 1 (10:00)</button>
+              <button class="btn sm ${s.part===2?'primary':''}" onclick="config.sections[${i}].part=2;renderSections()">Part 2 (10:30)</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function toggleSection(idx, val) { config.sections[idx].enabled = val; renderSections(); renderSummary(); }
+function toggleSectionDetail(idx, btn) {
+  const d = document.getElementById('sec-detail-' + idx);
+  const open = d.classList.toggle('open');
+  btn.textContent = open ? '▾ Details' : '▸ Details';
+}
+function updateCharBudget(idx, val) {
+  val = parseInt(val);
+  config.sections[idx].charBudget = val;
+  const sv = document.getElementById('charval-' + idx);
+  if (sv) sv.textContent = val;
+  renderSummary();
+}
+function moveSection(idx, dir) {
+  const target = idx + dir;
+  if (target < 0 || target >= config.sections.length) return;
+  [config.sections[idx], config.sections[target]] = [config.sections[target], config.sections[idx]];
+  renderSections();
+}
+
+let dragSrcIdx = null;
+function dragSection(e, idx) { dragSrcIdx = idx; e.dataTransfer.effectAllowed = 'move'; setTimeout(() => e.target.closest('.section-card')?.classList.add('dragging'), 0); }
+function dragOverSection(e, idx) { e.preventDefault(); e.target.closest('.section-card')?.classList.add('drag-over'); }
+function dragLeaveSection(e) { e.target.closest('.section-card')?.classList.remove('drag-over'); }
+function dropSection(e, idx) {
+  e.preventDefault();
+  document.querySelectorAll('.section-card').forEach(c => c.classList.remove('drag-over','dragging'));
+  if (dragSrcIdx === null || dragSrcIdx === idx) return;
+  const [moved] = config.sections.splice(dragSrcIdx, 1);
+  config.sections.splice(idx, 0, moved);
+  dragSrcIdx = null;
+  renderSections();
+}
+
+// ═══════════════════════════════════════════
+// TAB 4: DELIVERY SETTINGS
+// ═══════════════════════════════════════════
+function renderDelivery() {
+  const d = config.delivery;
+  const m = config.models;
+
+  const scheduleRows = config.pipeline.map(p => `
+    <div class="setting-row">
+      <span class="setting-label">${p.emoji} ${p.name}</span>
+      <div class="setting-value">
+        <input type="time" value="${p.time}" onchange="updatePipeTime('${p.id}', this.value)">
+      </div>
+    </div>
+  `).join('');
+
+  const modelRows = config.pipeline.map(p => `
+    <tr>
+      <td>${p.emoji} ${p.name.split(':')[0]}</td>
+      <td>
+        <select onchange="config.models['${p.id}']=this.value;config.pipeline[${config.pipeline.indexOf(p)}].model=this.value">
+          ${MODEL_OPTIONS.map(mo => `<option value="${mo}" ${m[p.id] === mo ? 'selected' : ''}>${mo.split('/')[1]}</option>`).join('')}
+        </select>
+      </td>
+    </tr>
+  `).join('');
+
+  document.getElementById('panel-delivery').innerHTML = `
+    <div class="settings-grid">
+      <div class="setting-card">
+        <h3>📨 Message Limits</h3>
+        <div class="setting-row">
+          <span class="setting-label">Max chars per message</span>
+          <div class="setting-value">
+            <input type="number" value="${d.maxCharsPerMessage}" min="1000" max="4096" step="100"
+                   onchange="config.delivery.maxCharsPerMessage=parseInt(this.value);renderSummary()">
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Radar max chars</span>
+          <div class="setting-value">
+            <input type="number" value="${d.radarMaxChars}" min="500" max="4096" step="100"
+                   onchange="config.delivery.radarMaxChars=parseInt(this.value)">
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Telegram limit</span>
+          <span style="color:#fbbf24; font-size:0.82rem;">4096 chars max</span>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Timezone</span>
+          <span style="color:#888; font-size:0.82rem;">Europe/Sofia</span>
+        </div>
+      </div>
+      <div class="setting-card">
+        <h3>⏰ Schedule</h3>
+        ${scheduleRows}
+      </div>
+    </div>
+
+    <div class="setting-card" style="margin-top: 18px;">
+      <h3>🤖 Model Assignments</h3>
+      <table class="model-table">
+        <thead><tr><th>Cron Job</th><th>Model</th></tr></thead>
+        <tbody>
+          ${modelRows}
+          <tr>
+            <td>🎨 Midjourney Nightly</td>
+            <td>
+              <select onchange="config.models.midjourney_cron=this.value">
+                ${MODEL_OPTIONS.map(mo => `<option value="${mo}" ${m.midjourney_cron === mo ? 'selected' : ''}>${mo.split('/')[1]}</option>`).join('')}
+              </select>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="margin-top:12px; color:#666; font-size:0.78rem;">
+        💡 Midjourney uses Sonnet (cost optimization). All intelligence jobs use Opus.
+      </div>
+    </div>
+
+    <div class="setting-card" style="margin-top: 18px;">
+      <h3>📏 Character Budget Overview</h3>
+      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top: 8px;">
+        ${config.sections.map(s => `
+          <div style="background:rgba(${s.enabled ? '167,139,250,0.1' : '255,255,255,0.03'}); border:1px solid rgba(${s.enabled ? '167,139,250,0.2' : '255,255,255,0.06'});
+               border-radius:8px; padding:8px 12px; font-size:0.8rem; ${s.enabled ? '' : 'opacity:0.4;'}">
+            <span>${s.emoji}</span>
+            <span style="color:#aaa;">${s.name.split(' ')[0]}</span>
+            <span style="color:#a78bfa; font-weight:600; margin-left:4px;">${s.charBudget}</span>
+          </div>
+        `).join('')}
+      </div>
+      <div style="margin-top:12px; color:#888; font-size:0.8rem;">
+        Total enabled: <strong style="color:#c4b5fd;">${config.sections.filter(s=>s.enabled).reduce((a,s)=>a+s.charBudget,0).toLocaleString()} chars</strong>
+        · Part 1: <strong style="color:#a78bfa;">${config.sections.filter(s=>s.enabled&&s.part===1).reduce((a,s)=>a+s.charBudget,0)}</strong>
+        · Part 2: <strong style="color:#38bdf8;">${config.sections.filter(s=>s.enabled&&s.part===2).reduce((a,s)=>a+s.charBudget,0)}</strong>
+      </div>
+    </div>
+  `;
+}
+
+function updatePipeTime(id, val) {
+  const p = config.pipeline.find(p => p.id === id);
+  if (p) p.time = val;
+}
+
+// ═══════════════════════════════════════════
+// TAB 5: JSON
+// ═══════════════════════════════════════════
+function renderJSON() {
+  const json = JSON.stringify(config, null, 2);
+  document.getElementById('panel-json').innerHTML = `
+    <div class="json-view">
+      <button class="btn primary json-copy-btn" onclick="copyJSON()">📋 Copy</button>
+      <pre>${esc(json)}</pre>
+    </div>
+  `;
+}
+
+function copyJSON() {
+  navigator.clipboard.writeText(JSON.stringify(config, null, 2))
+    .then(() => toast('JSON copied to clipboard ✓'))
+    .catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = JSON.stringify(config, null, 2);
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      toast('JSON copied ✓');
+    });
+}
+
+// ─── Render All ───
+function renderAll() {
+  renderSummary();
+  renderPipeline();
+  renderRadar();
+  renderSections();
+  renderDelivery();
+  renderJSON();
+}
+
+renderAll();
+</script>
+</body>
+</html>

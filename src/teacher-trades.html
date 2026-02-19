@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teacher Method — Trade Review</title>
+<script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0f;color:#e0e0e0;font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;overflow:hidden}
+#header{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;background:#111118;border-bottom:1px solid #222}
+#header h1{font-size:16px;color:#7c8aff}
+#filters{display:flex;gap:6px;align-items:center}
+.btn{padding:4px 10px;border:1px solid #333;background:#1a1a24;color:#aaa;border-radius:4px;cursor:pointer;font-size:12px}
+.btn.active{background:#2a2a44;color:#7c8aff;border-color:#7c8aff}
+.btn:hover{background:#2a2a34}
+#info{padding:6px 16px;background:#0d0d14;font-size:13px;display:flex;gap:20px;flex-wrap:wrap;border-bottom:1px solid #1a1a24}
+.info-item{display:flex;gap:4px}.info-label{color:#666}.info-val{color:#ddd;font-weight:600}
+.win{color:#22c55e!important}.loss{color:#ef4444!important}
+#chart-container{width:100%;height:calc(100vh - 90px)}
+#nav-hint{position:fixed;bottom:8px;left:50%;transform:translateX(-50%);color:#555;font-size:11px;z-index:10}
+#loading{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:#7c8aff;font-size:18px}
+#stats{font-size:12px;color:#888}
+</style>
+</head>
+<body>
+<div id="loading">Loading trades... (37 MB, may take a moment)</div>
+<div id="header" style="display:none">
+  <h1>📐 Teacher Method — Trade Review</h1>
+  <div id="filters">
+    <button class="btn active" data-filter="all">All</button>
+    <button class="btn" data-filter="win">Winners</button>
+    <button class="btn" data-filter="loss">Losers</button>
+    <button class="btn" data-filter="long">Long</button>
+    <button class="btn" data-filter="short">Short</button>
+    <button class="btn" data-filter="15m">15m</button>
+    <button class="btn" data-filter="1m">1m</button>
+    <span id="stats"></span>
+  </div>
+</div>
+<div id="info" style="display:none">
+  <div class="info-item"><span class="info-label">Trade:</span><span class="info-val" id="i-idx">-</span></div>
+  <div class="info-item"><span class="info-label">Dir:</span><span class="info-val" id="i-dir">-</span></div>
+  <div class="info-item"><span class="info-label">TF:</span><span class="info-val" id="i-tf">-</span></div>
+  <div class="info-item"><span class="info-label">Date:</span><span class="info-val" id="i-date">-</span></div>
+  <div class="info-item"><span class="info-label">Entry:</span><span class="info-val" id="i-entry">-</span></div>
+  <div class="info-item"><span class="info-label">Stop:</span><span class="info-val" id="i-stop">-</span></div>
+  <div class="info-item"><span class="info-label">Exit:</span><span class="info-val" id="i-exit">-</span></div>
+  <div class="info-item"><span class="info-label">R:</span><span class="info-val" id="i-r">-</span></div>
+  <div class="info-item"><span class="info-label">L1:</span><span class="info-val" id="i-l1">-</span></div>
+  <div class="info-item"><span class="info-label">L2:</span><span class="info-val" id="i-l2">-</span></div>
+  <div class="info-item"><span class="info-label">L3:</span><span class="info-val" id="i-l3">-</span></div>
+</div>
+<div id="chart-container"></div>
+<div id="nav-hint">← → navigate trades &nbsp;|&nbsp; W/L = winners/losers &nbsp;|&nbsp; S/B = short/long</div>
+
+<script>
+let allTrades=[], filteredTrades=[], currentIdx=0;
+let chart, candleSeries;
+
+async function init(){
+  const tradeData = await fetch('teacher-trades-view.json').then(r=>r.json());
+  allTrades = tradeData;
+  filteredTrades = [...allTrades];
+
+  document.getElementById('loading').style.display='none';
+  document.getElementById('header').style.display='flex';
+  document.getElementById('info').style.display='flex';
+
+  chart = LightweightCharts.createChart(document.getElementById('chart-container'),{
+    width:window.innerWidth,
+    height:window.innerHeight-90,
+    layout:{background:{type:'solid',color:'#0a0a0f'},textColor:'#666',fontSize:11},
+    grid:{vertLines:{color:'#111'},horzLines:{color:'#111'}},
+    crosshair:{mode:0},
+    timeScale:{timeVisible:true,secondsVisible:false,borderColor:'#222'},
+    rightPriceScale:{borderColor:'#222'}
+  });
+
+  candleSeries = chart.addCandlestickSeries({
+    upColor:'#22c55e',downColor:'#ef4444',borderUpColor:'#22c55e',borderDownColor:'#ef4444',
+    wickUpColor:'#22c55e66',wickDownColor:'#ef444466'
+  });
+
+  updateStats();
+  if(filteredTrades.length>0) showTrade(0);
+
+  window.addEventListener('resize',()=>{
+    chart.resize(window.innerWidth, window.innerHeight-90);
+  });
+}
+
+function showTrade(idx){
+  if(filteredTrades.length===0) return;
+  currentIdx = Math.max(0, Math.min(idx, filteredTrades.length-1));
+  const t = filteredTrades[currentIdx];
+  const isWin = t.r > 0;
+  const isShort = t.dir === 'S';
+
+  // Update info bar
+  document.getElementById('i-idx').textContent = `${currentIdx+1}/${filteredTrades.length}`;
+  document.getElementById('i-dir').textContent = isShort ? '🔴 SHORT' : '🟢 LONG';
+  document.getElementById('i-tf').textContent = t.tf;
+  document.getElementById('i-date').textContent = t.date;
+  document.getElementById('i-entry').textContent = t.entry.toFixed(2);
+  document.getElementById('i-stop').textContent = t.stop.toFixed(2);
+  document.getElementById('i-exit').textContent = t.exit.toFixed(2);
+  const rEl = document.getElementById('i-r');
+  rEl.textContent = (t.r>0?'+':'')+t.r.toFixed(2)+'R';
+  rEl.className = 'info-val '+(isWin?'win':'loss');
+  document.getElementById('i-l1').textContent = t.l1.toFixed(2);
+  document.getElementById('i-l2').textContent = t.l2.toFixed(2);
+  document.getElementById('i-l3').textContent = t.l3.toFixed(2);
+
+  // Convert compact array candles [time,o,h,l,c] to objects
+  const candles = t.candles.map(c => ({
+    time: c[0], open: c[1], high: c[2], low: c[3], close: c[4]
+  }));
+
+  // Clear and set candle data
+  candleSeries.setData(candles);
+
+  // Set markers for entry and exit
+  const entryMarker = {
+    time: t.et, position: isShort ? 'aboveBar' : 'belowBar',
+    color: '#60a5fa', shape: isShort ? 'arrowDown' : 'arrowUp',
+    text: isShort ? 'SHORT' : 'LONG'
+  };
+  const exitMarker = {
+    time: t.xt, position: isShort ? 'belowBar' : 'aboveBar',
+    color: isWin ? '#22c55e' : '#ef4444', shape: 'circle',
+    text: (t.r>0?'+':'')+t.r.toFixed(1)+'R'
+  };
+  // Sort markers by time
+  const markers = [entryMarker, exitMarker].sort((a,b) => a.time - b.time);
+  candleSeries.setMarkers(markers);
+
+  // Price lines
+  // Remove old lines by recreating series? No, lightweight-charts has no removeAllPriceLines
+  // Workaround: recreate series
+  chart.removeSeries(candleSeries);
+  candleSeries = chart.addCandlestickSeries({
+    upColor:'#22c55e',downColor:'#ef4444',borderUpColor:'#22c55e',borderDownColor:'#ef4444',
+    wickUpColor:'#22c55e66',wickDownColor:'#ef444466'
+  });
+  candleSeries.setData(candles);
+  candleSeries.setMarkers(markers);
+
+  // Add price lines
+  candleSeries.createPriceLine({
+    price:t.entry, color:'#60a5fa', lineWidth:2, lineStyle:0,
+    axisLabelVisible:true, title:'Entry'
+  });
+  candleSeries.createPriceLine({
+    price:t.stop, color:'#ef4444', lineWidth:1, lineStyle:2,
+    axisLabelVisible:true, title:'Stop'
+  });
+  candleSeries.createPriceLine({
+    price:t.exit, color:isWin?'#22c55e':'#f59e0b', lineWidth:1, lineStyle:2,
+    axisLabelVisible:true, title:'Exit'
+  });
+
+  // Level lines
+  if(t.l1) candleSeries.createPriceLine({
+    price:t.l1, color:'#8b5cf644', lineWidth:1, lineStyle:1,
+    axisLabelVisible:true, title:'L1'
+  });
+  if(t.l2) candleSeries.createPriceLine({
+    price:t.l2, color:'#8b5cf688', lineWidth:1, lineStyle:1,
+    axisLabelVisible:true, title:'L2'
+  });
+  if(t.l3) candleSeries.createPriceLine({
+    price:t.l3, color:'#8b5cf6cc', lineWidth:1, lineStyle:1,
+    axisLabelVisible:true, title:'L3'
+  });
+
+  // Fit content to show the trade
+  chart.timeScale().fitContent();
+}
+
+function updateStats(){
+  const total = filteredTrades.length;
+  const wins = filteredTrades.filter(t=>t.r>0).length;
+  const wr = total>0 ? (wins/total*100).toFixed(1) : 0;
+  const totalR = filteredTrades.reduce((s,t)=>s+t.r,0).toFixed(1);
+  document.getElementById('stats').textContent = `${total} trades | ${wr}% WR | ${totalR>0?'+':''}${totalR}R`;
+}
+
+function applyFilter(filter){
+  document.querySelectorAll('.btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector(`[data-filter="${filter}"]`).classList.add('active');
+
+  switch(filter){
+    case 'all': filteredTrades=[...allTrades]; break;
+    case 'win': filteredTrades=allTrades.filter(t=>t.r>0); break;
+    case 'loss': filteredTrades=allTrades.filter(t=>t.r<=0); break;
+    case 'long': filteredTrades=allTrades.filter(t=>t.dir==='L'); break;
+    case 'short': filteredTrades=allTrades.filter(t=>t.dir==='S'); break;
+    case '15m': filteredTrades=allTrades.filter(t=>t.tf==='15m'); break;
+    case '1m': filteredTrades=allTrades.filter(t=>t.tf==='1m'); break;
+  }
+  updateStats();
+  if(filteredTrades.length>0) showTrade(0);
+}
+
+document.querySelectorAll('.btn').forEach(b=>{
+  b.addEventListener('click',()=>applyFilter(b.dataset.filter));
+});
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight') showTrade(currentIdx+1);
+  else if(e.key==='ArrowLeft') showTrade(currentIdx-1);
+  else if(e.key==='w'||e.key==='W') applyFilter('win');
+  else if(e.key==='l'||e.key==='L') applyFilter('loss');
+  else if(e.key==='s'||e.key==='S') applyFilter('short');
+  else if(e.key==='b'||e.key==='B') applyFilter('long');
+  else if(e.key==='a'||e.key==='A') applyFilter('all');
+  else if(e.key==='Home') showTrade(0);
+  else if(e.key==='End') showTrade(filteredTrades.length-1);
+});
+
+init();
+</script>
+</body>
+</html>

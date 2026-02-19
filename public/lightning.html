@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lightning Lab ⚡</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --btc: #F7931A;
+            --btc-dim: rgba(247, 147, 26, 0.15);
+            --btc-glow: rgba(247, 147, 26, 0.3);
+            --lightning: #792DE4;
+            --lightning-dim: rgba(121, 45, 228, 0.15);
+            --lightning-glow: rgba(121, 45, 228, 0.3);
+            --surface: rgba(255, 255, 255, 0.03);
+            --surface-hover: rgba(255, 255, 255, 0.06);
+            --border: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(255, 255, 255, 0.15);
+            --text: #e5e7eb;
+            --text-dim: #6b7280;
+            --text-bright: #fff;
+            --green: #22c55e;
+            --green-dim: rgba(34, 197, 94, 0.15);
+            --red: #ef4444;
+            --blue: #3b82f6;
+            --blue-dim: rgba(59, 130, 246, 0.15);
+            --yellow: #eab308;
+            --yellow-dim: rgba(234, 179, 8, 0.15);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        .bg {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: -1;
+            background:
+                radial-gradient(ellipse at 20% 10%, rgba(247, 147, 26, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(121, 45, 228, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(247, 147, 26, 0.03) 0%, transparent 70%);
+        }
+
+        .container { max-width: 960px; margin: 0 auto; padding: 40px 20px 80px; }
+
+        /* Header */
+        .header { text-align: center; margin-bottom: 40px; }
+        .header-icon { font-size: 3rem; margin-bottom: 16px; animation: pulse 2s ease-in-out infinite; }
+        @keyframes pulse {
+            0%, 100% { filter: drop-shadow(0 0 8px rgba(247, 147, 26, 0.4)); }
+            50% { filter: drop-shadow(0 0 20px rgba(247, 147, 26, 0.7)); }
+        }
+        .header h1 {
+            font-size: 2.5rem; font-weight: 800; letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--btc) 0%, #fbbf24 50%, var(--lightning) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .header p { color: var(--text-dim); margin-top: 8px; font-size: 1rem; }
+
+        /* Tabs */
+        .tabs {
+            display: flex; gap: 4px; margin-bottom: 32px;
+            background: rgba(255,255,255,0.02); border-radius: 14px; padding: 4px;
+            border: 1px solid var(--border); overflow-x: auto;
+        }
+        .tab {
+            flex: 1; padding: 12px 16px; border-radius: 10px; border: none;
+            background: transparent; color: var(--text-dim); font-family: inherit;
+            font-size: 0.85rem; font-weight: 500; cursor: pointer;
+            transition: all 0.2s; white-space: nowrap; min-width: 0;
+        }
+        .tab:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+        .tab.active {
+            background: linear-gradient(135deg, var(--btc-dim), var(--lightning-dim));
+            color: var(--text-bright); font-weight: 600;
+            box-shadow: 0 2px 12px rgba(247, 147, 26, 0.15);
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Cards */
+        .card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 16px; padding: 24px; margin-bottom: 16px;
+            transition: all 0.2s;
+        }
+        .card:hover { background: var(--surface-hover); border-color: var(--border-hover); }
+        .card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+        .card-icon {
+            width: 44px; height: 44px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+        .card-title { font-size: 1.15rem; font-weight: 600; color: var(--text-bright); }
+        .card-subtitle { font-size: 0.8rem; color: var(--text-dim); margin-top: 2px; }
+
+        /* Setup section */
+        .setup-step {
+            display: flex; gap: 16px; padding: 16px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .setup-step:last-child { border-bottom: none; }
+        .step-check {
+            width: 28px; height: 28px; border-radius: 8px;
+            border: 2px solid rgba(255,255,255,0.15); background: transparent;
+            cursor: pointer; flex-shrink: 0; transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center;
+            color: transparent; font-size: 0.9rem; margin-top: 2px;
+        }
+        .step-check:hover { border-color: var(--btc); }
+        .step-check.done {
+            background: var(--btc); border-color: var(--btc);
+            color: #000; box-shadow: 0 0 12px var(--btc-glow);
+        }
+        .step-content { flex: 1; }
+        .step-title { font-weight: 600; color: var(--text-bright); margin-bottom: 4px; }
+        .step-desc { font-size: 0.88rem; color: var(--text-dim); line-height: 1.6; }
+        .step-cmd {
+            margin-top: 8px; padding: 10px 14px; border-radius: 8px;
+            background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.06);
+            font-family: 'JetBrains Mono', monospace; font-size: 0.82rem;
+            color: var(--btc); overflow-x: auto; white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .step-number {
+            font-size: 0.7rem; color: var(--text-dim); font-weight: 600;
+            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;
+        }
+        .progress-bar-wrap {
+            background: rgba(255,255,255,0.05); border-radius: 8px; height: 8px;
+            margin-bottom: 24px; overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%; border-radius: 8px; transition: width 0.5s ease;
+            background: linear-gradient(90deg, var(--btc), var(--lightning));
+        }
+        .progress-label {
+            font-size: 0.82rem; color: var(--text-dim); margin-bottom: 8px;
+            display: flex; justify-content: space-between;
+        }
+
+        /* Thesis layers */
+        .thesis-tower { display: flex; flex-direction: column; gap: 8px; }
+        .thesis-layer {
+            display: flex; align-items: stretch; gap: 16px; padding: 18px 20px;
+            border-radius: 14px; border: 1px solid var(--border);
+            background: var(--surface); cursor: pointer; transition: all 0.3s;
+            position: relative; overflow: hidden;
+        }
+        .thesis-layer::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+            border-radius: 4px 0 0 4px;
+        }
+        .thesis-layer:nth-child(1)::before { background: #ef4444; }
+        .thesis-layer:nth-child(2)::before { background: var(--btc); }
+        .thesis-layer:nth-child(3)::before { background: var(--yellow); }
+        .thesis-layer:nth-child(4)::before { background: var(--green); }
+        .thesis-layer:nth-child(5)::before { background: var(--blue); }
+        .thesis-layer:nth-child(6)::before { background: var(--lightning); }
+        .thesis-layer:hover { background: var(--surface-hover); transform: translateX(4px); }
+        .thesis-layer.expanded { background: var(--surface-hover); }
+        .layer-num {
+            font-size: 1.5rem; font-weight: 800; min-width: 36px;
+            display: flex; align-items: flex-start; justify-content: center;
+            padding-top: 2px;
+        }
+        .thesis-layer:nth-child(1) .layer-num { color: #ef4444; }
+        .thesis-layer:nth-child(2) .layer-num { color: var(--btc); }
+        .thesis-layer:nth-child(3) .layer-num { color: var(--yellow); }
+        .thesis-layer:nth-child(4) .layer-num { color: var(--green); }
+        .thesis-layer:nth-child(5) .layer-num { color: var(--blue); }
+        .thesis-layer:nth-child(6) .layer-num { color: var(--lightning); }
+        .layer-main { flex: 1; }
+        .layer-title { font-weight: 600; color: var(--text-bright); font-size: 1.05rem; }
+        .layer-tagline { font-size: 0.85rem; color: var(--text-dim); margin-top: 4px; }
+        .layer-details {
+            max-height: 0; overflow: hidden; transition: max-height 0.4s ease;
+            margin-top: 0;
+        }
+        .thesis-layer.expanded .layer-details { max-height: 500px; margin-top: 14px; }
+        .layer-details ul { list-style: none; padding: 0; }
+        .layer-details li {
+            padding: 6px 0; font-size: 0.88rem; color: var(--text);
+            line-height: 1.5; display: flex; gap: 8px;
+        }
+        .layer-details li::before { content: '→'; color: var(--text-dim); flex-shrink: 0; }
+        .layer-expand {
+            font-size: 0.75rem; color: var(--text-dim); transition: transform 0.3s;
+            display: flex; align-items: flex-start; padding-top: 4px;
+        }
+        .thesis-layer.expanded .layer-expand { transform: rotate(180deg); }
+
+        .meta-insight {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 24px;
+        }
+        .insight-box {
+            padding: 20px; border-radius: 14px; border: 1px solid var(--border);
+            text-align: center;
+        }
+        .insight-box.old { background: rgba(239, 68, 68, 0.05); border-color: rgba(239, 68, 68, 0.2); }
+        .insight-box.new { background: rgba(34, 197, 94, 0.05); border-color: rgba(34, 197, 94, 0.2); }
+        .insight-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 8px; }
+        .insight-box.old .insight-label { color: #ef4444; }
+        .insight-box.new .insight-label { color: var(--green); }
+        .insight-question { font-size: 1.1rem; font-weight: 600; color: var(--text-bright); margin-bottom: 4px; }
+        .insight-answer { font-size: 0.85rem; color: var(--text-dim); }
+
+        /* Ecosystem */
+        .ecosystem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .eco-card {
+            padding: 20px; border-radius: 14px; border: 1px solid var(--border);
+            background: var(--surface); transition: all 0.2s;
+        }
+        .eco-card:hover { background: var(--surface-hover); border-color: var(--border-hover); transform: translateY(-2px); }
+        .eco-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .eco-name { font-weight: 600; color: var(--text-bright); font-size: 1rem; }
+        .eco-badge {
+            font-size: 0.65rem; padding: 3px 8px; border-radius: 6px;
+            font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .eco-badge.infra { background: var(--btc-dim); color: var(--btc); }
+        .eco-badge.consumer { background: var(--blue-dim); color: var(--blue); }
+        .eco-badge.defi { background: var(--lightning-dim); color: var(--lightning); }
+        .eco-badge.competitor { background: rgba(239, 68, 68, 0.15); color: var(--red); }
+        .eco-badge.draper { background: var(--yellow-dim); color: var(--yellow); }
+        .eco-desc { font-size: 0.83rem; color: var(--text-dim); line-height: 1.5; margin-bottom: 10px; }
+        .eco-stats { display: flex; gap: 12px; flex-wrap: wrap; }
+        .eco-stat {
+            font-size: 0.75rem; padding: 4px 10px; border-radius: 6px;
+            background: rgba(255,255,255,0.04); color: var(--text-dim);
+        }
+        .eco-stat strong { color: var(--text); }
+        .eco-link {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 0.78rem; color: var(--btc); text-decoration: none;
+            margin-top: 8px; transition: color 0.2s;
+        }
+        .eco-link:hover { color: #fbbf24; }
+
+        /* Concepts */
+        .concept {
+            padding: 18px 20px; border-radius: 12px; border: 1px solid var(--border);
+            background: var(--surface); margin-bottom: 10px; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .concept:hover { background: var(--surface-hover); }
+        .concept-header { display: flex; justify-content: space-between; align-items: center; }
+        .concept-term { font-weight: 600; color: var(--text-bright); font-size: 1rem; }
+        .concept-toggle { color: var(--text-dim); font-size: 0.8rem; transition: transform 0.3s; }
+        .concept.expanded .concept-toggle { transform: rotate(180deg); }
+        .concept-body {
+            max-height: 0; overflow: hidden; transition: max-height 0.4s ease;
+        }
+        .concept.expanded .concept-body { max-height: 400px; }
+        .concept-text {
+            padding-top: 14px; font-size: 0.88rem; color: var(--text);
+            line-height: 1.7; border-top: 1px solid rgba(255,255,255,0.04);
+            margin-top: 14px;
+        }
+        .concept-text code {
+            font-family: 'JetBrains Mono', monospace; font-size: 0.82rem;
+            background: rgba(247, 147, 26, 0.1); color: var(--btc);
+            padding: 2px 6px; border-radius: 4px;
+        }
+
+        /* Resources */
+        .resource-group { margin-bottom: 24px; }
+        .resource-group-title {
+            font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1.5px;
+            color: var(--text-dim); font-weight: 600; margin-bottom: 12px; padding-left: 4px;
+        }
+        .resource-list { display: flex; flex-direction: column; gap: 8px; }
+        .resource-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 18px; border-radius: 12px; border: 1px solid var(--border);
+            background: var(--surface); text-decoration: none; color: var(--text);
+            transition: all 0.2s;
+        }
+        .resource-item:hover {
+            background: var(--surface-hover); border-color: var(--border-hover);
+            transform: translateX(4px);
+        }
+        .resource-icon { font-size: 1.2rem; width: 32px; text-align: center; }
+        .resource-name { font-weight: 500; color: var(--text-bright); font-size: 0.92rem; }
+        .resource-url { font-size: 0.78rem; color: var(--text-dim); margin-top: 2px; }
+        .resource-arrow { margin-left: auto; color: var(--text-dim); font-size: 0.8rem; }
+
+        /* Price target */
+        .price-target {
+            text-align: center; padding: 32px; border-radius: 16px;
+            background: linear-gradient(135deg, rgba(247, 147, 26, 0.08), rgba(121, 45, 228, 0.08));
+            border: 1px solid rgba(247, 147, 26, 0.2); margin-top: 24px;
+        }
+        .price-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); }
+        .price-value {
+            font-size: 3rem; font-weight: 800; margin: 8px 0;
+            background: linear-gradient(135deg, var(--btc), #fbbf24);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .price-note { font-size: 0.85rem; color: var(--text-dim); }
+
+        /* Invest section */
+        .invest-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 20px; }
+        .invest-card {
+            padding: 18px; border-radius: 14px; border: 1px solid var(--border);
+            background: var(--surface);
+        }
+        .invest-title { font-weight: 600; color: var(--text-bright); margin-bottom: 6px; font-size: 0.95rem; }
+        .invest-desc { font-size: 0.82rem; color: var(--text-dim); line-height: 1.5; }
+        .invest-plays { margin-top: 10px; }
+        .invest-play {
+            font-size: 0.8rem; padding: 4px 0; color: var(--text);
+            display: flex; align-items: center; gap: 6px;
+        }
+        .invest-play::before { content: '⚡'; font-size: 0.7rem; }
+
+        /* Back link */
+        .back-link {
+            position: fixed; top: 20px; left: 20px;
+            font-size: 0.85rem; color: var(--text-dim); text-decoration: none;
+            display: flex; align-items: center; gap: 6px; z-index: 10;
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: var(--text-bright); }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .container { padding: 24px 16px 60px; }
+            .header h1 { font-size: 1.8rem; }
+            .tabs { gap: 2px; }
+            .tab { padding: 10px 8px; font-size: 0.78rem; }
+            .ecosystem-grid, .meta-insight, .invest-grid { grid-template-columns: 1fr; }
+            .price-value { font-size: 2.2rem; }
+            .back-link { position: static; margin-bottom: 16px; }
+        }
+
+        /* Section titles */
+        .section-title {
+            font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1.5px;
+            color: var(--text-dim); font-weight: 600; margin: 28px 0 16px; padding-left: 4px;
+        }
+        .section-title:first-child { margin-top: 0; }
+    </style>
+</head>
+<body>
+    <div class="bg"></div>
+    <a href="index.html" class="back-link">← Command Center</a>
+
+    <div class="container">
+        <header class="header">
+            <div class="header-icon">⚡</div>
+            <h1>Lightning Lab</h1>
+            <p>Bitcoin's trust layer for the AI era</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="setup">🔧 Setup</button>
+            <button class="tab" data-tab="thesis">🔐 Thesis</button>
+            <button class="tab" data-tab="ecosystem">🏗️ Ecosystem</button>
+            <button class="tab" data-tab="concepts">📚 Concepts</button>
+            <button class="tab" data-tab="resources">🔗 Resources</button>
+        </div>
+
+        <!-- SETUP TAB -->
+        <div class="tab-content active" id="tab-setup">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon" style="background: var(--btc-dim);">⚡</div>
+                    <div>
+                        <div class="card-title">Lightning Node Setup</div>
+                        <div class="card-subtitle">Mac mini • LND Neutrino mode • ~15-20 min</div>
+                    </div>
+                </div>
+                <div class="progress-label">
+                    <span id="progress-text">0 of 8 steps</span>
+                    <span id="progress-pct">0%</span>
+                </div>
+                <div class="progress-bar-wrap">
+                    <div class="progress-bar-fill" id="progress-bar" style="width: 0%"></div>
+                </div>
+
+                <div id="setup-steps">
+                    <div class="setup-step" data-step="0">
+                        <button class="step-check" onclick="toggleStep(0)">✓</button>
+                        <div class="step-content">
+                            <div class="step-number">Step 1</div>
+                            <div class="step-title">Install Go</div>
+                            <div class="step-desc">Go is required to build LND from source. Install via Homebrew.</div>
+                            <div class="step-cmd">brew install go</div>
+                        </div>
+                    </div>
+                    <div class="setup-step" data-step="1">
+                        <button class="step-check" onclick="toggleStep(1)">✓</button>
+                        <div class="step-content">
+                            <div class="step-number">Step 2</div>
+                            <div class="step-title">Install LND</div>
+                            <div class="step-desc">Lightning Network Daemon — the node software. Install from Homebrew or build from source.</div>
+                            <div class="step-cmd">brew install lnd
+# OR from source:
+git clone https://github.com/lightningnetwork/lnd
+cd lnd && make install</div>
+                        </div>
+                    </div>
+                    <div class="setup-step" data-step="2">
+                        <button class="step-check" onclick="toggleStep(2)">✓</button>
+                        <div class="step-content">
+                            <div class="step-number">Step 3</div>
+                            <div class="step-title">Configure Neutrino (Light Client)</div>
+                            <div class="step-desc">Neutrino mode — no need to download the full 600GB blockchain. Syncs in minutes.</div>
+                            <div class="step-cmd">mkdir -p ~/.lnd
+cat > ~/.lnd/lnd.conf << 'EOF'
+[Application Options]
+alias=nova-node
+listen=0.0.0.0:9735
+
+[Bitcoin]
+bitcoin.active=true
+bitcoin.mainnet=true
+bitcoin.node=neutrino
+
+[Neutrino]
+neutrino.connect=btcd-mainnet.lightning.computer
+neutrino.feeurl=https://nodes.lightning.computer/fees/v1/btc-fee-estimates.json
+EOF</div>
+                        </div>
+                    </div>
+                    <div class="setup-step" data-step="3">
+                        <button class="step-check" onclick="toggleStep(3)">✓</button>
+                        <div class="step-content">
+                            <div class="step-number">Step 4</div>
+                            <div class="step-title">Start LND & Create Wallet</div>
+                            <div class="step-desc">Start the daemon, then create a new wallet. Save the seed phrase safely!</div>
+                            <div class="step-cmd"># Terminal 1: Start LND
+lnd
+
+# Terminal 2: Create wallet
+lncli create
+# → Choose password, save 24-word seed phrase</div>
+                        </div>
+                    </div>
+                    <div class="setup-step" data-step="4">
+                        <button class="step-check" onclick="toggleStep(4)">✓</button>
+                        <div class="step-content">
+                            <div class="step-number">Step 5</div>
+                            <div class="step-title">Fund the Wallet</div>
+                            <div class="step-desc">Generate a new address and send 50-100K sats. Confirm with <code>lncli walletbalance</code>.</div>
+                            <div class="step-cmd"># Get a new Bitcoin address
+lncli newaddress p2wkh
+
+# Send 50-100K sats from your wallet
+# Wait for confirmation, then check:
+lncli walletbalance</div>
+                        </div>
+                    </div>
+                    <div class="setup-step" data-step="5">
+                        <button class="step-check" onclick="toggleStep(5)">✓</button>
+                        <div class="step-content">
+                            <div class="step-number">Step 6</div>
+                            <div class="step-title">Open a Channel</div>
+                            <div class="step-desc">Connect to a well-connected node and open a channel for routing payments.</div>
+                            <div class="step-cmd"># Connect to a node (e.g., ACINQ)
+lncli connect 03864ef025fde8fb587d989186ce6a4a186895ee44a926bfc370e2c366597a3f8f@3.33.236.230:9735
+
+# Open channel (amount in sats)
+lncli openchannel --node_key 03864ef... --local_amt 50000
+
+# Check channels
+lncli listchannels</div>
+                        </div>
+                    </div>
+                    <div class="setup-step" data-step="6">
+                        <button class="step-check" onclick="toggleStep(6)">✓</button>
+                        <div class="step-content">
+                            <div class="step-number">Step 7</div>
+                            <div class="step-title">Create Scoped Macaroon for Nova</div>
+                            <div class="step-desc">A macaroon is a credential token. Create one with limited permissions for Nova (read + invoice only).</div>
+                            <div class="step-cmd"># Create read-only + invoice macaroon for Nova
+lncli bakemacaroon info:read invoices:read invoices:write offchain:read offchain:write --save_to ~/.lnd/nova.macaroon
+
+# Verify it works
+lncli --macaroonpath ~/.lnd/nova.macaroon getinfo</div>
+                        </div>
+                    </div>
+                    <div class="setup-step" data-step="7">
+                        <button class="step-check" onclick="toggleStep(7)">✓</button>
+                        <div class="step-content">
+                            <div class="step-number">Step 8</div>
+                            <div class="step-title">Install Lightning Agent Tools</div>
+                            <div class="step-desc">Lightning Labs' open-source toolkit for AI agents — includes lnget (L402 payments), MCP integration, and more.</div>
+                            <div class="step-cmd">git clone https://github.com/lightninglabs/lightning-agent-tools
+cd lightning-agent-tools
+# Follow setup in README</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="border-color: rgba(247, 147, 26, 0.2);">
+                <div class="card-header">
+                    <div class="card-icon" style="background: var(--yellow-dim);">💡</div>
+                    <div>
+                        <div class="card-title">Quick Reference</div>
+                        <div class="card-subtitle">Common commands after setup</div>
+                    </div>
+                </div>
+                <div class="step-cmd">lncli getinfo                  # Node status
+lncli walletbalance            # On-chain balance
+lncli channelbalance           # Lightning balance
+lncli listchannels             # Active channels
+lncli addinvoice --amt 1000    # Create invoice (1000 sats)
+lncli payinvoice INVOICE       # Pay an invoice
+lncli listpayments             # Payment history
+lncli listinvoices             # Received payments</div>
+            </div>
+        </div>
+
+        <!-- THESIS TAB -->
+        <div class="tab-content" id="tab-thesis">
+            <div class="card" style="border-color: rgba(247, 147, 26, 0.15); margin-bottom: 24px;">
+                <div class="card-header">
+                    <div class="card-icon" style="background: var(--btc-dim);">₿</div>
+                    <div>
+                        <div class="card-title">Bitcoin = Post-AI Trust Layer</div>
+                        <div class="card-subtitle">The core thesis • Feb 12, 2026</div>
+                    </div>
+                </div>
+                <p style="font-size: 0.92rem; color: var(--text); line-height: 1.7;">
+                    In a world dominated by AI, logic-based security collapses. AI can find every bug, generate perfect deepfakes, and create infinite zero-cost attacks. <strong style="color: var(--btc);">Bitcoin is the only protocol that moves security from a logic problem to a physics problem.</strong> This makes BTC the foundational trust layer for everything — identity, code integrity, content authenticity, communication.
+                </p>
+            </div>
+
+            <div class="section-title">The 6 Protection Layers</div>
+            <div class="thesis-tower">
+                <div class="thesis-layer" onclick="toggleLayer(this)">
+                    <div class="layer-num">1</div>
+                    <div class="layer-main">
+                        <div class="layer-title">Economic Walls</div>
+                        <div class="layer-tagline">Lightning micropayments per attempt. Free attacks become expensive.</div>
+                        <div class="layer-details">
+                            <ul>
+                                <li>Every auth attempt costs sats via Lightning</li>
+                                <li>Spam email? 1 sat per send. Bots go bankrupt.</li>
+                                <li>API calls require micropayment channels. DDoS = economically impossible.</li>
+                                <li>Attack cost scales linearly. Defense cost stays flat.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="layer-expand">▼</div>
+                </div>
+                <div class="thesis-layer" onclick="toggleLayer(this)">
+                    <div class="layer-num">2</div>
+                    <div class="layer-main">
+                        <div class="layer-title">Identity = Private Key</div>
+                        <div class="layer-tagline">No passwords to phish. Cryptographic signatures can't be deepfaked.</div>
+                        <div class="layer-details">
+                            <ul>
+                                <li>Your identity IS your private key — not username/password</li>
+                                <li>No central database of credentials to breach</li>
+                                <li>Deepfake your face? Doesn't matter — can you sign with the key?</li>
+                                <li>Identity moves from "something you know" to "something you possess"</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="layer-expand">▼</div>
+                </div>
+                <div class="thesis-layer" onclick="toggleLayer(this)">
+                    <div class="layer-num">3</div>
+                    <div class="layer-main">
+                        <div class="layer-title">Proof of Authenticity</div>
+                        <div class="layer-tagline">Timestamp content on Bitcoin. Deepfakes can't match the hash.</div>
+                        <div class="layer-details">
+                            <ul>
+                                <li>Hash content (photo, video, doc) and anchor to Bitcoin's timechain</li>
+                                <li>"This photo existed at block 900,000" — verifiable provenance</li>
+                                <li>Deepfakes exist but can't produce a matching pre-creation hash</li>
+                                <li>Truth becomes timestamped and immutable</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="layer-expand">▼</div>
+                </div>
+                <div class="thesis-layer" onclick="toggleLayer(this)">
+                    <div class="layer-num">4</div>
+                    <div class="layer-main">
+                        <div class="layer-title">Code Integrity</div>
+                        <div class="layer-tagline">Every commit hashed to Bitcoin. Tampered code won't match.</div>
+                        <div class="layer-details">
+                            <ul>
+                                <li>Software releases get their hash anchored to Bitcoin</li>
+                                <li>Verify hash against blockchain before running code</li>
+                                <li>Supply chain attacks (SolarWinds) detectable instantly</li>
+                                <li>Trust moves from "trust the developer" to "verify the hash"</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="layer-expand">▼</div>
+                </div>
+                <div class="thesis-layer" onclick="toggleLayer(this)">
+                    <div class="layer-num">5</div>
+                    <div class="layer-main">
+                        <div class="layer-title">Multi-sig Critical Systems</div>
+                        <div class="layer-tagline">Hardware wallets in separate locations. AI can't access physical vaults.</div>
+                        <div class="layer-details">
+                            <ul>
+                                <li>Critical infrastructure protected by multi-signature schemes</li>
+                                <li>Hardware signing devices in physically separate locations</li>
+                                <li>AI can hack software but can't walk into a vault in Zurich</li>
+                                <li>Security moves from cyberspace to physical space — AI's weakness</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="layer-expand">▼</div>
+                </div>
+                <div class="thesis-layer" onclick="toggleLayer(this)">
+                    <div class="layer-num">6</div>
+                    <div class="layer-main">
+                        <div class="layer-title">Lightning as Immune System</div>
+                        <div class="layer-tagline">Every machine-to-machine interaction costs a micropayment.</div>
+                        <div class="layer-details">
+                            <ul>
+                                <li>IoT devices pay each other fractions of sats for data</li>
+                                <li>AI agents need economic stake to interact</li>
+                                <li>Sybil attacks become prohibitively expensive at scale</li>
+                                <li>The internet's free-rider problem gets solved</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="layer-expand">▼</div>
+                </div>
+            </div>
+
+            <div class="section-title">The Meta-Insight</div>
+            <div class="meta-insight">
+                <div class="insight-box old">
+                    <div class="insight-label">Logic Security (Today)</div>
+                    <div class="insight-question">"Do you know the right answer?"</div>
+                    <div class="insight-answer">AI wins — it can guess, compute, and brute-force</div>
+                </div>
+                <div class="insight-box new">
+                    <div class="insight-label">Bitcoin Security (Future)</div>
+                    <div class="insight-question">"Can you pay the price?"</div>
+                    <div class="insight-answer">Physics wins — AI can't manufacture energy</div>
+                </div>
+            </div>
+
+            <div class="price-target">
+                <div class="price-label">If BTC becomes the trust layer</div>
+                <div class="price-value">$100M / coin</div>
+                <div class="price-note">Not "digital gold" — foundational protocol of all digital trust</div>
+            </div>
+
+            <div class="section-title">Investment Plays</div>
+            <div class="invest-grid">
+                <div class="invest-card">
+                    <div class="invest-title">⚡ Lightning Infrastructure</div>
+                    <div class="invest-desc">The toll booth of the machine-payable web</div>
+                    <div class="invest-plays">
+                        <div class="invest-play">Lightning Labs — protocol builders</div>
+                        <div class="invest-play">Lightspark — David Marcus (ex-Meta) 🐉</div>
+                        <div class="invest-play">Strike — consumer payments</div>
+                    </div>
+                </div>
+                <div class="invest-card">
+                    <div class="invest-title">🔐 Hardware Security</div>
+                    <div class="invest-desc">Multi-sig = the new vault system</div>
+                    <div class="invest-plays">
+                        <div class="invest-play">Ledger — market leader 🐉</div>
+                        <div class="invest-play">Casa — multi-sig made simple</div>
+                    </div>
+                </div>
+                <div class="invest-card">
+                    <div class="invest-title">🆔 Bitcoin Identity</div>
+                    <div class="invest-desc">The password killer — massive whitespace</div>
+                    <div class="invest-plays">
+                        <div class="invest-play">Block (Dorsey) — decentralized ID</div>
+                        <div class="invest-play">Blockstream — Liquid credentials 🐉</div>
+                    </div>
+                </div>
+                <div class="invest-card">
+                    <div class="invest-title">📸 Timestamping</div>
+                    <div class="invest-desc">The deepfake killer — waiting for the trigger</div>
+                    <div class="invest-plays">
+                        <div class="invest-play">OpenTimestamps — exists, tiny</div>
+                        <div class="invest-play">Trigger: first major deepfake crisis</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ECOSYSTEM TAB -->
+        <div class="tab-content" id="tab-ecosystem">
+            <div class="section-title">Lightning Infrastructure</div>
+            <div class="ecosystem-grid">
+                <div class="eco-card">
+                    <div class="eco-header">
+                        <div class="eco-name">Lightning Labs</div>
+                        <span class="eco-badge infra">INFRA</span>
+                    </div>
+                    <div class="eco-desc">Builds LND, the protocol itself. Open-sourced AI agent tools (Feb 11): lnget, MCP, remote signing, scoped credentials.</div>
+                    <div class="eco-stats">
+                        <span class="eco-stat"><strong>lnget</strong> auto L402</span>
+                        <span class="eco-stat"><strong>MCP</strong> node ops</span>
+                    </div>
+                    <a href="https://github.com/lightninglabs/lightning-agent-tools" class="eco-link" target="_blank">GitHub →</a>
+                </div>
+                <div class="eco-card">
+                    <div class="eco-header">
+                        <div class="eco-name">Lightspark</div>
+                        <span class="eco-badge infra">INFRA</span>
+                        <span class="eco-badge draper">🐉 DRAPER</span>
+                    </div>
+                    <div class="eco-desc">David Marcus (ex-Meta/Libra). Building Spark + LRC-20. Enterprise Lightning infrastructure.</div>
+                    <div class="eco-stats">
+                        <span class="eco-stat"><strong>Spark</strong> L2 protocol</span>
+                        <span class="eco-stat"><strong>Watch</strong> Series B/token</span>
+                    </div>
+                </div>
+                <div class="eco-card">
+                    <div class="eco-header">
+                        <div class="eco-name">Blockstream</div>
+                        <span class="eco-badge infra">INFRA</span>
+                        <span class="eco-badge draper">🐉 DRAPER</span>
+                    </div>
+                    <div class="eco-desc">Liquid Network: $3.27B TVL, #3 RWA chain globally. Adam Back (Hashcash inventor) is CEO.</div>
+                    <div class="eco-stats">
+                        <span class="eco-stat"><strong>$3.27B</strong> TVL</span>
+                        <span class="eco-stat"><strong>#3</strong> RWA chain</span>
+                        <span class="eco-stat"><strong>Watch</strong> IPO/token</span>
+                    </div>
+                </div>
+                <div class="eco-card">
+                    <div class="eco-header">
+                        <div class="eco-name">Strike</div>
+                        <span class="eco-badge consumer">CONSUMER</span>
+                    </div>
+                    <div class="eco-desc">Consumer payments app built on Lightning. Send money anywhere, instantly, near-zero fees.</div>
+                    <div class="eco-stats">
+                        <span class="eco-stat"><strong>Jack Mallers</strong> CEO</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-title">Lightning DeFi & Trading</div>
+            <div class="ecosystem-grid">
+                <div class="eco-card">
+                    <div class="eco-header">
+                        <div class="eco-name">Amboss / RailsX</div>
+                        <span class="eco-badge defi">DEFI</span>
+                    </div>
+                    <div class="eco-desc">5 years building Lightning analytics. RailsX = Lightning-native DEX with atomic swaps. Trustless, no custodian.</div>
+                    <div class="eco-stats">
+                        <span class="eco-stat"><strong>0.29%</strong> fee</span>
+                        <span class="eco-stat"><strong>Atomic</strong> swaps</span>
+                    </div>
+                </div>
+                <div class="eco-card">
+                    <div class="eco-header">
+                        <div class="eco-name">Speed</div>
+                        <span class="eco-badge consumer">CONSUMER</span>
+                    </div>
+                    <div class="eco-desc">$2.5B volume, 1.2M users. Tether invested $8M. Lightning payments for businesses.</div>
+                    <div class="eco-stats">
+                        <span class="eco-stat"><strong>$2.5B</strong> volume</span>
+                        <span class="eco-stat"><strong>1.2M</strong> users</span>
+                        <span class="eco-stat"><strong>$8M</strong> Tether</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-title">Multi-Asset Lightning</div>
+            <div class="ecosystem-grid">
+                <div class="eco-card">
+                    <div class="eco-header">
+                        <div class="eco-name">Taproot Assets</div>
+                        <span class="eco-badge infra">PROTOCOL</span>
+                    </div>
+                    <div class="eco-desc">Issue tokens on Bitcoin, route over Lightning. USDT on Lightning is live. Multi-asset Lightning Network.</div>
+                    <div class="eco-stats">
+                        <span class="eco-stat"><strong>USDT</strong> on Lightning</span>
+                        <span class="eco-stat"><strong>By</strong> Lightning Labs</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-title">Alternative Approaches</div>
+            <div class="ecosystem-grid">
+                <div class="eco-card">
+                    <div class="eco-header">
+                        <div class="eco-name">Coinbase</div>
+                        <span class="eco-badge competitor">COMPETITOR</span>
+                    </div>
+                    <div class="eco-desc">Launched "Agentic Wallets" — agents transact on Base (Ethereum L2) in USDC. Corporate, regulated, custodial.</div>
+                    <div class="eco-stats">
+                        <span class="eco-stat">Visa for AI</span>
+                        <span class="eco-stat">Custodial</span>
+                        <span class="eco-stat">USDC only</span>
+                    </div>
+                </div>
+                <div class="eco-card">
+                    <div class="eco-header">
+                        <div class="eco-name">THORChain</div>
+                        <span class="eco-badge defi">DEFI</span>
+                    </div>
+                    <div class="eco-desc">Cross-chain DEX with native BTC swaps. Not Lightning-specific but competing for BTC DeFi.</div>
+                    <div class="eco-stats">
+                        <span class="eco-stat">Cross-chain</span>
+                        <span class="eco-stat">Native BTC</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONCEPTS TAB -->
+        <div class="tab-content" id="tab-concepts">
+            <div class="section-title">Core Concepts</div>
+
+            <div class="concept" onclick="toggleConcept(this)">
+                <div class="concept-header">
+                    <span class="concept-term">⚡ Lightning Network</span>
+                    <span class="concept-toggle">▼</span>
+                </div>
+                <div class="concept-body">
+                    <div class="concept-text">
+                        A Layer 2 payment protocol on top of Bitcoin. Enables instant, near-zero-fee transactions by opening <strong>payment channels</strong> between nodes. Payments route through the network without touching the blockchain until channels close. Think of it as Bitcoin's "pocket cash" — the blockchain is the vault, Lightning is the wallet you carry around.
+                    </div>
+                </div>
+            </div>
+
+            <div class="concept" onclick="toggleConcept(this)">
+                <div class="concept-header">
+                    <span class="concept-term">🔄 Atomic Swap (HTLC)</span>
+                    <span class="concept-toggle">▼</span>
+                </div>
+                <div class="concept-body">
+                    <div class="concept-text">
+                        <strong>Hash Time-Locked Contract</strong> — a cryptographic mechanism that makes trustless exchanges possible. Both parties lock funds with a shared secret hash. Either both get paid, or neither does. No custodian, no trust needed. This is how RailsX/Amboss does Lightning-native DEX trading. The "atomic" part means it's all-or-nothing — no partial execution.
+                    </div>
+                </div>
+            </div>
+
+            <div class="concept" onclick="toggleConcept(this)">
+                <div class="concept-header">
+                    <span class="concept-term">🍪 Macaroons</span>
+                    <span class="concept-toggle">▼</span>
+                </div>
+                <div class="concept-body">
+                    <div class="concept-text">
+                        LND's credential system — like API keys but better. You can <strong>bake</strong> macaroons with specific permissions (read-only, invoice-only, etc.) and time limits. For Nova's agent setup, we use a scoped macaroon: <code>info:read</code> + <code>invoices:read/write</code> + <code>offchain:read/write</code>. The node owner keeps the admin macaroon; agents get limited ones.
+                    </div>
+                </div>
+            </div>
+
+            <div class="concept" onclick="toggleConcept(this)">
+                <div class="concept-header">
+                    <span class="concept-term">💳 L402 (Lightning HTTP 402)</span>
+                    <span class="concept-toggle">▼</span>
+                </div>
+                <div class="concept-body">
+                    <div class="concept-text">
+                        HTTP status code 402 = "Payment Required." L402 is a standard for machine-to-machine payments over the web. When an AI agent hits an API that returns 402, <code>lnget</code> (by Lightning Labs) automatically pays the Lightning invoice and retries the request. This is how the <strong>machine-payable web</strong> works — APIs charge per request, agents pay automatically.
+                    </div>
+                </div>
+            </div>
+
+            <div class="concept" onclick="toggleConcept(this)">
+                <div class="concept-header">
+                    <span class="concept-term">🌿 Taproot Assets</span>
+                    <span class="concept-toggle">▼</span>
+                </div>
+                <div class="concept-body">
+                    <div class="concept-text">
+                        A protocol by Lightning Labs for issuing tokens (stablecoins, NFTs, etc.) on Bitcoin and routing them over Lightning. USDT on Lightning is already live via Taproot Assets. This turns Lightning from a "BTC-only" network into a <strong>multi-asset payment rail</strong>. Agents can pay in USDT, receive in BTC, all over Lightning.
+                    </div>
+                </div>
+            </div>
+
+            <div class="concept" onclick="toggleConcept(this)">
+                <div class="concept-header">
+                    <span class="concept-term">🪶 Neutrino</span>
+                    <span class="concept-toggle">▼</span>
+                </div>
+                <div class="concept-body">
+                    <div class="concept-text">
+                        A light client mode for LND. Instead of downloading the entire Bitcoin blockchain (~600GB), Neutrino only fetches block headers and relevant data. Syncs in minutes instead of days. Perfect for personal nodes. Trade-off: slightly less privacy (you ask full nodes for your transactions), but for a dev/agent setup, it's ideal.
+                    </div>
+                </div>
+            </div>
+
+            <div class="concept" onclick="toggleConcept(this)">
+                <div class="concept-header">
+                    <span class="concept-term">🔑 Multi-sig (Multi-Signature)</span>
+                    <span class="concept-toggle">▼</span>
+                </div>
+                <div class="concept-body">
+                    <div class="concept-text">
+                        Requires multiple private keys to authorize a transaction (e.g., 2-of-3). Keys can be stored in physically separate locations. This is Layer 5 of the thesis — AI can hack any single point of failure, but it can't simultaneously access hardware in Zurich, Singapore, and a home safe. Critical systems (nuclear codes, power grids, big treasuries) will all move to multi-sig.
+                    </div>
+                </div>
+            </div>
+
+            <div class="concept" onclick="toggleConcept(this)">
+                <div class="concept-header">
+                    <span class="concept-term">🏷️ Liquid Network (Blockstream)</span>
+                    <span class="concept-toggle">▼</span>
+                </div>
+                <div class="concept-body">
+                    <div class="concept-text">
+                        A Bitcoin sidechain by Blockstream. Enables faster settlement (2 min vs 10 min), confidential transactions, and token issuance (L-BTC, security tokens, stablecoins). $3.27B TVL, #3 RWA chain globally. Different from Lightning: Liquid is for <strong>settlement</strong> (traders, institutions), Lightning is for <strong>payments</strong> (consumers, agents).
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-title">Security Concepts</div>
+
+            <div class="concept" onclick="toggleConcept(this)">
+                <div class="concept-header">
+                    <span class="concept-term">🔥 Hot Wallet vs Cold Storage</span>
+                    <span class="concept-toggle">▼</span>
+                </div>
+                <div class="concept-body">
+                    <div class="concept-text">
+                        <strong>Hot wallet</strong> = connected to internet (Lightning node). Convenient but vulnerable. <strong>Cold storage</strong> = offline (hardware wallet, paper). Secure but slow. Rule: Lightning = pocket cash (small amounts, accept the risk). Cold storage = vault (serious money). Never hold life savings on a Lightning node.
+                    </div>
+                </div>
+            </div>
+
+            <div class="concept" onclick="toggleConcept(this)">
+                <div class="concept-header">
+                    <span class="concept-term">🧅 Sybil Attack</span>
+                    <span class="concept-toggle">▼</span>
+                </div>
+                <div class="concept-body">
+                    <div class="concept-text">
+                        Creating many fake identities to overwhelm a network. Free on most platforms (create infinite email accounts). On Lightning, each identity needs <strong>economic stake</strong> (sats). This is why Layer 6 works — the internet gets an immune system. Creating 1M fake accounts costs 1M × N sats. Spam becomes a financial decision, not a technical one.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RESOURCES TAB -->
+        <div class="tab-content" id="tab-resources">
+            <div class="resource-group">
+                <div class="resource-group-title">GitHub Repositories</div>
+                <div class="resource-list">
+                    <a href="https://github.com/lightninglabs/lightning-agent-tools" class="resource-item" target="_blank">
+                        <span class="resource-icon">🤖</span>
+                        <div>
+                            <div class="resource-name">lightning-agent-tools</div>
+                            <div class="resource-url">Lightning Labs — AI agent toolkit (lnget, MCP, signing)</div>
+                        </div>
+                        <span class="resource-arrow">→</span>
+                    </a>
+                    <a href="https://github.com/lightningnetwork/lnd" class="resource-item" target="_blank">
+                        <span class="resource-icon">⚡</span>
+                        <div>
+                            <div class="resource-name">LND</div>
+                            <div class="resource-url">Lightning Network Daemon — the node software</div>
+                        </div>
+                        <span class="resource-arrow">→</span>
+                    </a>
+                    <a href="https://github.com/lightninglabs/taproot-assets" class="resource-item" target="_blank">
+                        <span class="resource-icon">🌿</span>
+                        <div>
+                            <div class="resource-name">Taproot Assets</div>
+                            <div class="resource-url">Multi-asset issuance on Bitcoin + Lightning routing</div>
+                        </div>
+                        <span class="resource-arrow">→</span>
+                    </a>
+                    <a href="https://github.com/ElementsProject/lightning" class="resource-item" target="_blank">
+                        <span class="resource-icon">🔌</span>
+                        <div>
+                            <div class="resource-name">Core Lightning (CLN)</div>
+                            <div class="resource-url">Blockstream's Lightning implementation (alternative to LND)</div>
+                        </div>
+                        <span class="resource-arrow">→</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="resource-group">
+                <div class="resource-group-title">Documentation</div>
+                <div class="resource-list">
+                    <a href="https://docs.lightning.engineering/" class="resource-item" target="_blank">
+                        <span class="resource-icon">📖</span>
+                        <div>
+                            <div class="resource-name">Lightning Labs Docs</div>
+                            <div class="resource-url">Official LND + Lightning Loop + Pool documentation</div>
+                        </div>
+                        <span class="resource-arrow">→</span>
+                    </a>
+                    <a href="https://lightning.engineering/api-docs/api/lnd/" class="resource-item" target="_blank">
+                        <span class="resource-icon">🔧</span>
+                        <div>
+                            <div class="resource-name">LND API Reference</div>
+                            <div class="resource-url">Full REST + gRPC API for programmatic node control</div>
+                        </div>
+                        <span class="resource-arrow">→</span>
+                    </a>
+                    <a href="https://github.com/lnbook/lnbook" class="resource-item" target="_blank">
+                        <span class="resource-icon">📚</span>
+                        <div>
+                            <div class="resource-name">Mastering the Lightning Network</div>
+                            <div class="resource-url">Free book by Antonopoulos, Osuntokun, Pickhardt</div>
+                        </div>
+                        <span class="resource-arrow">→</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="resource-group">
+                <div class="resource-group-title">Network Tools</div>
+                <div class="resource-list">
+                    <a href="https://amboss.space/" class="resource-item" target="_blank">
+                        <span class="resource-icon">🔍</span>
+                        <div>
+                            <div class="resource-name">Amboss</div>
+                            <div class="resource-url">Lightning Network explorer + node analytics + RailsX DEX</div>
+                        </div>
+                        <span class="resource-arrow">→</span>
+                    </a>
+                    <a href="https://1ml.com/" class="resource-item" target="_blank">
+                        <span class="resource-icon">📊</span>
+                        <div>
+                            <div class="resource-name">1ML</div>
+                            <div class="resource-url">Lightning Network search and analysis engine</div>
+                        </div>
+                        <span class="resource-arrow">→</span>
+                    </a>
+                    <a href="https://mempool.space/lightning" class="resource-item" target="_blank">
+                        <span class="resource-icon">⛓️</span>
+                        <div>
+                            <div class="resource-name">Mempool.space Lightning</div>
+                            <div class="resource-url">Lightning Network dashboard — nodes, channels, capacity</div>
+                        </div>
+                        <span class="resource-arrow">→</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="resource-group">
+                <div class="resource-group-title">Our Files</div>
+                <div class="resource-list">
+                    <a href="#" class="resource-item" onclick="event.preventDefault()">
+                        <span class="resource-icon">📝</span>
+                        <div>
+                            <div class="resource-name">BTC Thesis</div>
+                            <div class="resource-url">life/areas/investments/core-theses/btc-post-ai-trust-layer.md</div>
+                        </div>
+                    </a>
+                    <a href="radar.html#core-theses-section" class="resource-item">
+                        <span class="resource-icon">👁️</span>
+                        <div>
+                            <div class="resource-name">Core Theses (Radar)</div>
+                            <div class="resource-url">Opportunity Radar — thesis visualization</div>
+                        </div>
+                        <span class="resource-arrow">→</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        // Setup checklist persistence
+        const STORAGE_KEY = 'lightning-lab-setup';
+        let setupState = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+
+        function toggleStep(idx) {
+            setupState[idx] = !setupState[idx];
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(setupState));
+            renderSetup();
+        }
+
+        function renderSetup() {
+            const steps = document.querySelectorAll('.setup-step');
+            let done = 0;
+            steps.forEach((step, i) => {
+                const check = step.querySelector('.step-check');
+                if (setupState[i]) {
+                    check.classList.add('done');
+                    step.style.opacity = '0.6';
+                    done++;
+                } else {
+                    check.classList.remove('done');
+                    step.style.opacity = '1';
+                }
+            });
+            const total = steps.length;
+            const pct = Math.round((done / total) * 100);
+            document.getElementById('progress-text').textContent = `${done} of ${total} steps`;
+            document.getElementById('progress-pct').textContent = `${pct}%`;
+            document.getElementById('progress-bar').style.width = `${pct}%`;
+        }
+        renderSetup();
+
+        // Thesis layer expand
+        function toggleLayer(el) {
+            el.classList.toggle('expanded');
+        }
+
+        // Concept expand
+        function toggleConcept(el) {
+            el.classList.toggle('expanded');
+        }
+    </script>
+</body>
+</html>

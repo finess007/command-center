@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>V11c Band Selector — Surpass W/M</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0f;
+    --bg-card: #111118;
+    --bg-card-hover: #16161f;
+    --border: #1e1e2e;
+    --border-glow: rgba(0, 200, 83, 0.15);
+    --green: #00c853;
+    --green-dim: rgba(0, 200, 83, 0.12);
+    --red: #ff1744;
+    --red-dim: rgba(255, 23, 68, 0.12);
+    --text: #e4e4e7;
+    --text-dim: #71717a;
+    --text-muted: #a1a1aa;
+    --accent: #00c853;
+    --gold: #fbbf24;
+    --blue: #3b82f6;
+    --purple: #a855f7;
+    --purple-dim: rgba(168, 85, 247, 0.12);
+    --cyan: #22d3ee;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, sans-serif;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,200,83,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,200,83,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px 16px 60px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ─── HEADER ─── */
+  .header {
+    text-align: center;
+    padding: 48px 20px 40px;
+    margin-bottom: 40px;
+    position: relative;
+  }
+
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--green), transparent);
+  }
+
+  .header-badge {
+    display: inline-block;
+    background: var(--green-dim);
+    color: var(--green);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    border: 1px solid rgba(0,200,83,0.2);
+  }
+
+  .header h1 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, var(--text) 0%, var(--green) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .header p {
+    color: var(--text-muted);
+    font-size: 1rem;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .header .subtitle-mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-top: 12px;
+  }
+
+  /* ─── HERO STATS ─── */
+  .hero-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 40px;
+  }
+
+  .hero-stat {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 16px;
+    text-align: center;
+    transition: border-color 0.3s;
+  }
+
+  .hero-stat:hover { border-color: var(--border-glow); }
+
+  .hero-stat .label {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+  }
+
+  .hero-stat .value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--green);
+  }
+
+  .hero-stat .value.gold { color: var(--gold); }
+  .hero-stat .value.blue { color: var(--blue); }
+  .hero-stat .value.purple { color: var(--purple); }
+  .hero-stat .value.cyan { color: var(--cyan); }
+
+  .hero-stat .sub {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  /* ─── SECTIONS ─── */
+  .section {
+    margin-bottom: 40px;
+  }
+
+  .section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-title .icon { font-size: 1.2rem; }
+
+  /* ─── BAND CARDS ─── */
+  .band-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+
+  .band-card {
+    background: var(--bg-card);
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .band-card:hover {
+    border-color: rgba(0,200,83,0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+  }
+
+  .band-card.selected {
+    border-color: var(--green);
+    box-shadow: 0 0 20px rgba(0,200,83,0.15);
+  }
+
+  .band-card.recommended::before {
+    content: '⭐ RECOMMENDED';
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: linear-gradient(135deg, var(--gold), #f59e0b);
+    color: #000;
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 0 12px 0 8px;
+    letter-spacing: 0.05em;
+  }
+
+  .band-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--green);
+    margin-bottom: 12px;
+  }
+
+  .band-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .band-metric {
+    background: rgba(255,255,255,0.02);
+    border-radius: 8px;
+    padding: 8px 10px;
+  }
+
+  .band-metric .m-label {
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .band-metric .m-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .band-metric .m-value.green { color: var(--green); }
+  .band-metric .m-value.gold { color: var(--gold); }
+  .band-metric .m-value.blue { color: var(--blue); }
+
+  .band-bar-wrap {
+    margin-top: 12px;
+    height: 6px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .band-bar {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--green), var(--blue));
+    transition: width 0.8s ease;
+  }
+
+  /* ─── CHARTS ─── */
+  .chart-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .chart-box {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+  }
+
+  .chart-box h3 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--text-muted);
+  }
+
+  canvas {
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  /* ─── PAIR BREAKDOWN ─── */
+  .pair-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .pair-tab {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 20px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    transition: all 0.2s;
+  }
+
+  .pair-tab:hover { color: var(--text); border-color: var(--border-glow); }
+  .pair-tab.active { color: var(--green); border-color: var(--green); background: var(--green-dim); }
+
+  .pair-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+
+  .pair-table th {
+    text-align: left;
+    padding: 10px 12px;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .pair-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+  }
+
+  .pair-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .pair-table .highlight { color: var(--green); font-weight: 600; }
+  .pair-table .gold-text { color: var(--gold); font-weight: 600; }
+
+  /* ─── COMPOUND SECTION ─── */
+  .compound-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .compound-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+  }
+
+  .compound-card .c-band {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--green);
+    margin-bottom: 4px;
+  }
+
+  .compound-card .c-result {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.3rem;
+    font-weight: 700;
+  }
+
+  .compound-card .c-detail {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+
+  /* ─── RECOMMENDATION ─── */
+  .reco-box {
+    background: linear-gradient(135deg, rgba(0,200,83,0.06), rgba(59,130,246,0.06));
+    border: 1px solid rgba(0,200,83,0.2);
+    border-radius: 14px;
+    padding: 28px;
+  }
+
+  .reco-box h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--gold);
+  }
+
+  .reco-box p {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    line-height: 1.7;
+    margin-bottom: 12px;
+  }
+
+  .reco-box .reco-highlight {
+    display: inline-block;
+    background: var(--green-dim);
+    color: var(--green);
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  .reco-comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .reco-col {
+    background: rgba(0,0,0,0.2);
+    border-radius: 10px;
+    padding: 14px;
+  }
+
+  .reco-col h4 {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+
+  .reco-col .reco-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  /* ─── SCATTER PLOT ─── */
+  .scatter-wrap {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 14px;
+  }
+
+  .scatter-wrap h3 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--text-muted);
+  }
+
+  /* ─── VS V5.2 ─── */
+  .vs-box {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 14px;
+  }
+
+  .vs-box h3 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--text-muted);
+  }
+
+  .vs-row {
+    display: grid;
+    grid-template-columns: 120px 1fr 80px 1fr 80px;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    font-size: 0.82rem;
+  }
+
+  .vs-label {
+    color: var(--text-dim);
+    font-size: 0.75rem;
+  }
+
+  .vs-bar-wrap {
+    height: 20px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .vs-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 1s ease;
+  }
+
+  .vs-bar.v5 { background: var(--purple); }
+  .vs-bar.v11 { background: var(--green); }
+
+  .vs-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-align: right;
+  }
+
+  .vs-val.purple { color: var(--purple); }
+  .vs-val.green { color: var(--green); }
+
+  /* ─── FOOTER ─── */
+  .footer {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-dim);
+    font-size: 0.75rem;
+  }
+
+  .footer a { color: var(--green); text-decoration: none; }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 768px) {
+    .hero-stats { grid-template-columns: repeat(2, 1fr); }
+    .band-grid { grid-template-columns: 1fr; }
+    .chart-row { grid-template-columns: 1fr; }
+    .compound-grid { grid-template-columns: 1fr 1fr; }
+    .reco-comparison { grid-template-columns: 1fr; }
+    .header h1 { font-size: 1.6rem; }
+    .vs-row { grid-template-columns: 80px 1fr 60px 1fr 60px; font-size: 0.75rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-badge">V11c Surpass W/M — Full History Backtest</div>
+    <h1>Band Selector</h1>
+    <p>Pick your band. All 6 tested across 11M candles, 8 years of data, 3 pairs (BTC/ETH/SOL).</p>
+    <div class="subtitle-mono">Last updated: Feb 15, 2026 · Data: 2017–2026 · Source: Binance spot</div>
+  </div>
+
+  <!-- HERO STATS (best band) -->
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="label">Best Total R</div>
+      <div class="value">+7,435R</div>
+      <div class="sub">2.0% band</div>
+    </div>
+    <div class="hero-stat">
+      <div class="label">Best Profit Factor</div>
+      <div class="value gold">4.88</div>
+      <div class="sub">1.5% band</div>
+    </div>
+    <div class="hero-stat">
+      <div class="label">Best Win Rate</div>
+      <div class="value blue">62.8%</div>
+      <div class="sub">1.5% band</div>
+    </div>
+    <div class="hero-stat">
+      <div class="label">Best R/Trade</div>
+      <div class="value purple">+1.44</div>
+      <div class="sub">1.5% band</div>
+    </div>
+  </div>
+
+  <!-- VS V5.2 BASELINE -->
+  <div class="section">
+    <div class="section-title"><span class="icon">⚔️</span> V11c (1.5%) vs V5.2 Baseline</div>
+    <div class="vs-box">
+      <h3>How V11c crushes the old system across every metric</h3>
+      <div class="vs-row">
+        <div class="vs-label">Win Rate</div>
+        <div class="vs-bar-wrap"><div class="vs-bar v11" style="width:100%"></div></div>
+        <div class="vs-val green">62.8%</div>
+        <div class="vs-bar-wrap"><div class="vs-bar v5" style="width:84%"></div></div>
+        <div class="vs-val purple">53.0%</div>
+      </div>
+      <div class="vs-row">
+        <div class="vs-label">Profit Factor</div>
+        <div class="vs-bar-wrap"><div class="vs-bar v11" style="width:100%"></div></div>
+        <div class="vs-val green">4.88</div>
+        <div class="vs-bar-wrap"><div class="vs-bar v5" style="width:41%"></div></div>
+        <div class="vs-val purple">2.00</div>
+      </div>
+      <div class="vs-row">
+        <div class="vs-label">R per Trade</div>
+        <div class="vs-bar-wrap"><div class="vs-bar v11" style="width:100%"></div></div>
+        <div class="vs-val green">+1.44</div>
+        <div class="vs-bar-wrap"><div class="vs-bar v5" style="width:52%"></div></div>
+        <div class="vs-val purple">+0.75</div>
+      </div>
+      <div class="vs-row">
+        <div class="vs-label">Total R</div>
+        <div class="vs-bar-wrap"><div class="vs-bar v11" style="width:100%"></div></div>
+        <div class="vs-val green">+6,845</div>
+        <div class="vs-bar-wrap"><div class="vs-bar v5" style="width:9%"></div></div>
+        <div class="vs-val purple">+625</div>
+      </div>
+      <div class="vs-row">
+        <div class="vs-label">Trades/Day</div>
+        <div class="vs-bar-wrap"><div class="vs-bar v11" style="width:100%"></div></div>
+        <div class="vs-val green">1.54</div>
+        <div class="vs-bar-wrap"><div class="vs-bar v5" style="width:74%"></div></div>
+        <div class="vs-val purple">1.14</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BAND CARDS -->
+  <div class="section">
+    <div class="section-title"><span class="icon">🎯</span> All Bands — Click to Compare</div>
+    <div class="band-grid" id="bandGrid"></div>
+  </div>
+
+  <!-- CHARTS -->
+  <div class="section">
+    <div class="section-title"><span class="icon">📊</span> Visual Comparison</div>
+    <div class="chart-row">
+      <div class="chart-box">
+        <h3>Total R by Band</h3>
+        <canvas id="chartTotalR" height="220"></canvas>
+      </div>
+      <div class="chart-box">
+        <h3>Profit Factor by Band</h3>
+        <canvas id="chartPF" height="220"></canvas>
+      </div>
+    </div>
+    <div class="chart-row">
+      <div class="chart-box">
+        <h3>Win Rate by Band</h3>
+        <canvas id="chartWR" height="220"></canvas>
+      </div>
+      <div class="chart-box">
+        <h3>Trades per Day</h3>
+        <canvas id="chartTPD" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- EFFICIENCY FRONTIER -->
+  <div class="section">
+    <div class="section-title"><span class="icon">🎯</span> Efficiency Frontier — R/Trade vs Trades/Day</div>
+    <div class="scatter-wrap">
+      <h3>Finding the sweet spot: quality vs quantity</h3>
+      <canvas id="chartScatter" height="300"></canvas>
+    </div>
+  </div>
+
+  <!-- PAIR BREAKDOWN -->
+  <div class="section">
+    <div class="section-title"><span class="icon">🪙</span> Per-Pair Breakdown</div>
+    <div class="pair-tabs">
+      <div class="pair-tab active" data-pair="ALL">All Pairs</div>
+      <div class="pair-tab" data-pair="BTC">₿ BTC</div>
+      <div class="pair-tab" data-pair="ETH">Ξ ETH</div>
+      <div class="pair-tab" data-pair="SOL">◎ SOL</div>
+    </div>
+    <div class="chart-box">
+      <table class="pair-table" id="pairTable">
+        <thead>
+          <tr>
+            <th>Band</th>
+            <th>Trades</th>
+            <th>Win Rate</th>
+            <th>Total R</th>
+            <th>PF</th>
+            <th>Avg Win</th>
+            <th>R/Trade</th>
+            <th>Trades/Day</th>
+          </tr>
+        </thead>
+        <tbody id="pairBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- COMPOUND PROJECTIONS -->
+  <div class="section">
+    <div class="section-title"><span class="icon">🚀</span> Compound Projections @ 2% Risk</div>
+    <p style="color: var(--text-dim); font-size: 0.82rem; margin-bottom: 16px;">
+      Starting balance: $500 → compounded at 2% risk per trade over ~8.5 years of backtest trades.
+      <span style="color:var(--gold)">Theoretical max</span> — real results will differ (slippage, fees, psychology).
+    </p>
+    <div class="compound-grid" id="compoundGrid"></div>
+  </div>
+
+  <!-- RECOMMENDATION -->
+  <div class="section">
+    <div class="section-title"><span class="icon">💡</span> Nova's Analysis</div>
+    <div class="reco-box">
+      <h3>⭐ Recommendation: 1.5% Band</h3>
+      <p>
+        The <span class="reco-highlight">1.5%</span> band hits the sweet spot across every dimension:
+      </p>
+      <p>
+        <strong>Highest PF (4.88)</strong> — this is the most efficient band. Every R of risk generates the most return here.<br>
+        <strong>Highest WR (62.8%)</strong> — best win rate of all bands. 2 out of 3 trades win.<br>
+        <strong>Best R/Trade (+1.44)</strong> — highest per-trade expectancy. Quality > quantity.<br>
+        <strong>Good frequency (1.54/day)</strong> — ~11 trades/week. Enough to compound, not so few you wait forever.
+      </p>
+      <p style="color: var(--text);">
+        The 2.0% band gets more total R (+7,435 vs +6,845) because it takes more trades — but the PER-TRADE quality is slightly lower.
+        The 0.3% band is the sharpest sniper (PF 4.33 still elite) but only 0.55 trades/day = 4/week.
+      </p>
+      <div class="reco-comparison">
+        <div class="reco-col">
+          <h4>If you want MAX frequency</h4>
+          <div class="reco-val">→ 2.0% band: 1.69/day, +7,435R</div>
+          <div class="reco-val" style="color:var(--text-dim)">Slightly lower PF (4.81) and WR (62.6%)</div>
+        </div>
+        <div class="reco-col">
+          <h4>If you want MAX precision</h4>
+          <div class="reco-val">→ 0.3% band: 60.3% WR, PF 4.33</div>
+          <div class="reco-val" style="color:var(--text-dim)">Only 4 trades/week — slow compounding</div>
+        </div>
+      </div>
+      <p style="margin-top:16px; color: var(--gold); font-weight:600; font-size:0.85rem;">
+        All bands are elite (PF > 4.0). There's no bad choice. The difference is frequency vs precision.
+      </p>
+    </div>
+  </div>
+
+  <div class="footer">
+    Built by Nova ✨ · <a href="trading-rules.html">Trading Rules</a> · <a href="trade-review-v11c.html">Trade Review</a> · <a href="trading-simulator.html">Simulator</a>
+  </div>
+
+</div>
+
+<script>
+// ─── DATA ───
+const BANDS = [
+  {
+    band: 0.3,
+    total: 1694, wr: 60.3, totalR: 2227.6, pf: 4.33, avgWin: 2.84, rPerTrade: 1.31, tpd: 0.55,
+    pairs: {
+      BTC: { total: 920, wr: 59.8, totalR: 1091.46, pf: 3.97, avgWin: 2.65, rPerTrade: 1.19 },
+      ETH: { total: 476, wr: 62.4, totalR: 695.11, pf: 4.92, avgWin: 2.94, rPerTrade: 1.46 },
+      SOL: { total: 298, wr: 58.4, totalR: 441.03, pf: 4.56, avgWin: 3.25, rPerTrade: 1.48 }
+    }
+  },
+  {
+    band: 0.5,
+    total: 2590, wr: 61.2, totalR: 3502.77, pf: 4.50, avgWin: 2.84, rPerTrade: 1.35, tpd: 0.84,
+    pairs: {
+      BTC: { total: 1395, wr: 60.6, totalR: 1750.91, pf: 4.21, avgWin: 2.72, rPerTrade: 1.26 },
+      ETH: { total: 742, wr: 62.7, totalR: 1020.61, pf: 4.71, avgWin: 2.79, rPerTrade: 1.38 },
+      SOL: { total: 453, wr: 60.5, totalR: 731.25, pf: 5.09, avgWin: 3.32, rPerTrade: 1.61 }
+    }
+  },
+  {
+    band: 0.8,
+    total: 3521, wr: 62.2, totalR: 5014.55, pf: 4.80, avgWin: 2.89, rPerTrade: 1.42, tpd: 1.13,
+    pairs: {
+      BTC: { total: 1842, wr: 61.7, totalR: 2434.04, pf: 4.48, avgWin: 2.76, rPerTrade: 1.32 },
+      ETH: { total: 1019, wr: 62.6, totalR: 1431.84, pf: 4.79, avgWin: 2.84, rPerTrade: 1.41 },
+      SOL: { total: 660, wr: 63.2, totalR: 1148.67, pf: 5.73, avgWin: 3.34, rPerTrade: 1.74 }
+    }
+  },
+  {
+    band: 1.0,
+    total: 4005, wr: 62.2, totalR: 5719.62, pf: 4.80, avgWin: 2.90, rPerTrade: 1.43, tpd: 1.29,
+    pairs: {
+      BTC: { total: 2037, wr: 62.0, totalR: 2770.10, pf: 4.60, avgWin: 2.80, rPerTrade: 1.36 },
+      ETH: { total: 1193, wr: 62.4, totalR: 1632.83, pf: 4.66, avgWin: 2.79, rPerTrade: 1.37 },
+      SOL: { total: 775, wr: 62.6, totalR: 1316.69, pf: 5.54, avgWin: 3.31, rPerTrade: 1.70 }
+    }
+  },
+  {
+    band: 1.5,
+    total: 4768, wr: 62.8, totalR: 6845.11, pf: 4.88, avgWin: 2.88, rPerTrade: 1.44, tpd: 1.54,
+    pairs: {
+      BTC: { total: 2336, wr: 62.5, totalR: 3167.20, pf: 4.64, avgWin: 2.76, rPerTrade: 1.36 },
+      ETH: { total: 1461, wr: 61.9, totalR: 2018.81, pf: 4.65, avgWin: 2.84, rPerTrade: 1.38 },
+      SOL: { total: 971, wr: 64.8, totalR: 1659.10, pf: 5.85, avgWin: 3.18, rPerTrade: 1.71 }
+    }
+  },
+  {
+    band: 2.0,
+    total: 5245, wr: 62.6, totalR: 7434.57, pf: 4.81, avgWin: 2.86, rPerTrade: 1.42, tpd: 1.69,
+    pairs: {
+      BTC: { total: 2499, wr: 61.8, totalR: 3309.80, pf: 4.49, avgWin: 2.76, rPerTrade: 1.32 },
+      ETH: { total: 1638, wr: 62.2, totalR: 2293.89, pf: 4.74, avgWin: 2.85, rPerTrade: 1.40 },
+      SOL: { total: 1108, wr: 64.9, totalR: 1830.88, pf: 5.71, avgWin: 3.09, rPerTrade: 1.65 }
+    }
+  }
+];
+
+const RECOMMENDED_BAND = 1.5;
+const maxR = Math.max(...BANDS.map(b => b.totalR));
+
+// ─── BAND CARDS ───
+function renderBandCards() {
+  const grid = document.getElementById('bandGrid');
+  grid.innerHTML = BANDS.map(b => `
+    <div class="band-card ${b.band === RECOMMENDED_BAND ? 'recommended' : ''}" data-band="${b.band}" onclick="selectBand(${b.band})">
+      <div class="band-label">${b.band}%</div>
+      <div class="band-metrics">
+        <div class="band-metric"><div class="m-label">Trades</div><div class="m-value">${b.total.toLocaleString()}</div></div>
+        <div class="band-metric"><div class="m-label">Win Rate</div><div class="m-value green">${b.wr}%</div></div>
+        <div class="band-metric"><div class="m-label">Total R</div><div class="m-value gold">+${b.totalR.toLocaleString()}</div></div>
+        <div class="band-metric"><div class="m-label">PF</div><div class="m-value blue">${b.pf.toFixed(2)}</div></div>
+        <div class="band-metric"><div class="m-label">R/Trade</div><div class="m-value">+${b.rPerTrade.toFixed(2)}</div></div>
+        <div class="band-metric"><div class="m-label">Trades/Day</div><div class="m-value">${b.tpd.toFixed(2)}</div></div>
+      </div>
+      <div class="band-bar-wrap"><div class="band-bar" style="width:${(b.totalR / maxR * 100).toFixed(1)}%"></div></div>
+    </div>
+  `).join('');
+}
+
+function selectBand(band) {
+  document.querySelectorAll('.band-card').forEach(c => c.classList.remove('selected'));
+  document.querySelector(`.band-card[data-band="${band}"]`)?.classList.add('selected');
+}
+
+// ─── BAR CHARTS (pure canvas) ───
+function drawBarChart(canvasId, values, labels, color, unit='', decimals=0) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+
+  canvas.width = canvas.offsetWidth * dpr;
+  canvas.height = 220 * dpr;
+  ctx.scale(dpr, dpr);
+
+  const w = canvas.offsetWidth;
+  const h = 220;
+  const pad = { top: 30, right: 20, bottom: 35, left: 60 };
+  const chartW = w - pad.left - pad.right;
+  const chartH = h - pad.top - pad.bottom;
+
+  const maxVal = Math.max(...values) * 1.15;
+  const barW = chartW / values.length * 0.55;
+  const gap = chartW / values.length;
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + (chartH / 4) * i;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, y);
+    ctx.lineTo(w - pad.right, y);
+    ctx.stroke();
+
+    const val = maxVal - (maxVal / 4) * i;
+    ctx.fillStyle = '#71717a';
+    ctx.font = '10px JetBrains Mono';
+    ctx.textAlign = 'right';
+    ctx.fillText(decimals > 0 ? val.toFixed(decimals) : Math.round(val).toLocaleString(), pad.left - 8, y + 3);
+  }
+
+  // Bars
+  values.forEach((v, i) => {
+    const x = pad.left + gap * i + (gap - barW) / 2;
+    const barH = (v / maxVal) * chartH;
+    const y = pad.top + chartH - barH;
+
+    // Bar gradient
+    const grad = ctx.createLinearGradient(x, y, x, y + barH);
+    grad.addColorStop(0, color);
+    grad.addColorStop(1, color + '44');
+    ctx.fillStyle = grad;
+
+    // Rounded rect
+    const r = 4;
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + barW - r, y);
+    ctx.quadraticCurveTo(x + barW, y, x + barW, y + r);
+    ctx.lineTo(x + barW, y + barH);
+    ctx.lineTo(x, y + barH);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.fill();
+
+    // Value label on top
+    ctx.fillStyle = '#e4e4e7';
+    ctx.font = 'bold 11px JetBrains Mono';
+    ctx.textAlign = 'center';
+    const displayVal = decimals > 0 ? v.toFixed(decimals) : (v >= 1000 ? (v/1000).toFixed(1)+'K' : v.toString());
+    ctx.fillText(displayVal + unit, x + barW/2, y - 8);
+
+    // Band label
+    ctx.fillStyle = '#a1a1aa';
+    ctx.font = '11px Inter';
+    ctx.fillText(labels[i], x + barW/2, h - pad.bottom + 18);
+  });
+
+  // Highlight recommended
+  const ri = BANDS.findIndex(b => b.band === RECOMMENDED_BAND);
+  if (ri >= 0) {
+    const x = pad.left + gap * ri + (gap - barW) / 2;
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 3]);
+    ctx.strokeRect(x - 3, pad.top - 5, barW + 6, chartH + 10);
+    ctx.setLineDash([]);
+  }
+}
+
+// ─── SCATTER PLOT ───
+function drawScatter() {
+  const canvas = document.getElementById('chartScatter');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+
+  canvas.width = canvas.offsetWidth * dpr;
+  canvas.height = 300 * dpr;
+  ctx.scale(dpr, dpr);
+
+  const w = canvas.offsetWidth;
+  const h = 300;
+  const pad = { top: 30, right: 40, bottom: 50, left: 70 };
+  const chartW = w - pad.left - pad.right;
+  const chartH = h - pad.top - pad.bottom;
+
+  const xMin = 0.3, xMax = 2.0;
+  const yMin = 1.2, yMax = 1.55;
+
+  function toX(v) { return pad.left + ((v - xMin) / (xMax - xMin)) * chartW; }
+  function toY(v) { return pad.top + chartH - ((v - yMin) / (yMax - yMin)) * chartH; }
+
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let y = yMin; y <= yMax; y += 0.05) {
+    const py = toY(y);
+    ctx.beginPath(); ctx.moveTo(pad.left, py); ctx.lineTo(w - pad.right, py); ctx.stroke();
+    ctx.fillStyle = '#71717a'; ctx.font = '10px JetBrains Mono'; ctx.textAlign = 'right';
+    ctx.fillText(y.toFixed(2), pad.left - 8, py + 3);
+  }
+
+  // Axis labels
+  ctx.fillStyle = '#a1a1aa';
+  ctx.font = '11px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('Trades/Day →', w/2, h - 5);
+
+  ctx.save();
+  ctx.translate(12, h/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('R per Trade →', 0, 0);
+  ctx.restore();
+
+  // Points
+  const colors = ['#ff1744', '#ff6d00', '#fbbf24', '#22d3ee', '#00c853', '#a855f7'];
+  const sizes = [14, 16, 18, 20, 24, 22];
+
+  BANDS.forEach((b, i) => {
+    const x = toX(b.tpd);
+    const y = toY(b.rPerTrade);
+    const sz = sizes[i];
+
+    // Glow
+    ctx.beginPath();
+    ctx.arc(x, y, sz + 6, 0, Math.PI * 2);
+    ctx.fillStyle = colors[i] + '22';
+    ctx.fill();
+
+    // Circle
+    ctx.beginPath();
+    ctx.arc(x, y, sz, 0, Math.PI * 2);
+    ctx.fillStyle = colors[i] + 'cc';
+    ctx.fill();
+    ctx.strokeStyle = colors[i];
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Label
+    ctx.fillStyle = '#e4e4e7';
+    ctx.font = 'bold 11px JetBrains Mono';
+    ctx.textAlign = 'center';
+    ctx.fillText(b.band + '%', x, y + 4);
+
+    // TPD below
+    ctx.fillStyle = '#71717a';
+    ctx.font = '9px JetBrains Mono';
+    ctx.fillText(b.tpd.toFixed(2) + '/d', x, y + sz + 14);
+  });
+
+  // Highlight recommended
+  const rec = BANDS.find(b => b.band === RECOMMENDED_BAND);
+  const rx = toX(rec.tpd), ry = toY(rec.rPerTrade);
+  ctx.strokeStyle = '#fbbf24';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5, 3]);
+  ctx.beginPath();
+  ctx.arc(rx, ry, 32, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#fbbf24';
+  ctx.font = 'bold 10px Inter';
+  ctx.fillText('⭐ SWEET SPOT', rx, ry - 34);
+}
+
+// ─── PAIR TABLE ───
+let currentPair = 'ALL';
+
+function renderPairTable(pair) {
+  currentPair = pair;
+  document.querySelectorAll('.pair-tab').forEach(t => t.classList.toggle('active', t.dataset.pair === pair));
+
+  const body = document.getElementById('pairBody');
+  body.innerHTML = BANDS.map(b => {
+    const d = pair === 'ALL' ? b : b.pairs[pair];
+    const days = 3100;
+    const tpd = pair === 'ALL' ? b.tpd : (d.total / days).toFixed(2);
+    const isRec = b.band === RECOMMENDED_BAND;
+    return `<tr style="${isRec ? 'background:rgba(251,191,36,0.04)' : ''}">
+      <td style="color:${isRec ? 'var(--gold)' : 'var(--green)'}; font-weight:700;">${b.band}%${isRec ? ' ⭐' : ''}</td>
+      <td>${d.total.toLocaleString()}</td>
+      <td class="highlight">${d.wr}%</td>
+      <td class="gold-text">+${d.totalR.toLocaleString()}</td>
+      <td>${d.pf.toFixed(2)}</td>
+      <td>+${d.avgWin.toFixed(2)}</td>
+      <td>+${d.rPerTrade.toFixed(2)}</td>
+      <td>${tpd}</td>
+    </tr>`;
+  }).join('');
+}
+
+document.querySelectorAll('.pair-tab').forEach(tab => {
+  tab.addEventListener('click', () => renderPairTable(tab.dataset.pair));
+});
+
+// ─── COMPOUND PROJECTIONS ───
+function compoundGrowth(startBalance, riskPct, trades, rValues) {
+  // Simple compound: for each trade, balance * (1 + riskPct * R)
+  // Use the band's avg R/trade to compute
+  let balance = startBalance;
+  for (let i = 0; i < trades; i++) {
+    const r = rValues;
+    balance *= (1 + riskPct * r);
+    if (balance < 0) return 0;
+  }
+  return balance;
+}
+
+function formatMoney(v) {
+  if (v >= 1e12) return '$' + (v/1e12).toFixed(1) + 'T';
+  if (v >= 1e9) return '$' + (v/1e9).toFixed(1) + 'B';
+  if (v >= 1e6) return '$' + (v/1e6).toFixed(1) + 'M';
+  if (v >= 1e3) return '$' + (v/1e3).toFixed(1) + 'K';
+  return '$' + v.toFixed(0);
+}
+
+function renderCompound() {
+  const grid = document.getElementById('compoundGrid');
+  const start = 500;
+  const risk = 0.02;
+
+  grid.innerHTML = BANDS.map(b => {
+    const final = compoundGrowth(start, risk, b.total, b.rPerTrade);
+    const isRec = b.band === RECOMMENDED_BAND;
+    return `
+      <div class="compound-card" style="${isRec ? 'border-color: var(--gold); background: rgba(251,191,36,0.04)' : ''}">
+        <div class="c-band">${b.band}%${isRec ? ' ⭐' : ''}</div>
+        <div class="c-result" style="color: ${final >= 1e9 ? 'var(--gold)' : final >= 1e6 ? 'var(--green)' : 'var(--text)'}">${formatMoney(final)}</div>
+        <div class="c-detail">${b.total.toLocaleString()} trades @ +${b.rPerTrade}R avg</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ─── INIT ───
+function init() {
+  renderBandCards();
+  renderPairTable('ALL');
+  renderCompound();
+
+  const labels = BANDS.map(b => b.band + '%');
+
+  setTimeout(() => {
+    drawBarChart('chartTotalR', BANDS.map(b => b.totalR), labels, '#00c853', '', 0);
+    drawBarChart('chartPF', BANDS.map(b => b.pf), labels, '#3b82f6', '', 2);
+    drawBarChart('chartWR', BANDS.map(b => b.wr), labels, '#22d3ee', '%', 1);
+    drawBarChart('chartTPD', BANDS.map(b => b.tpd), labels, '#a855f7', '', 2);
+    drawScatter();
+  }, 100);
+}
+
+// Resize handler
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    const labels = BANDS.map(b => b.band + '%');
+    drawBarChart('chartTotalR', BANDS.map(b => b.totalR), labels, '#00c853', '', 0);
+    drawBarChart('chartPF', BANDS.map(b => b.pf), labels, '#3b82f6', '', 2);
+    drawBarChart('chartWR', BANDS.map(b => b.wr), labels, '#22d3ee', '%', 1);
+    drawBarChart('chartTPD', BANDS.map(b => b.tpd), labels, '#a855f7', '', 2);
+    drawScatter();
+  }, 200);
+});
+
+init();
+</script>
+
+</body>
+</html>

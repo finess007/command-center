@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3-Box Equal Measured Move Tool</title>
+<script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+:root {
+  --bg: #0a0a0f; --surface: #12121a; --surface2: #1a1a28;
+  --border: #2a2a3a; --text: #e0e0e0; --dim: #888;
+  --accent: #00bcd4; --green: #00c853; --red: #ff1744;
+  --gold: #ffd700; --blue: #448aff; --purple: #b388ff;
+  --box1: #448aff; --box2: #ffd700; --box3: #ff1744;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:var(--bg); color:var(--text); overflow:hidden; }
+
+.header { padding:12px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+.header h1 { font-size:1.15rem; font-weight:700; color:var(--accent); }
+.home-link { color:var(--dim); text-decoration:none; font-size:0.85rem; }
+.home-link:hover { color:var(--accent); }
+
+.toolbar { padding:10px 20px; border-bottom:1px solid var(--border); display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+.tool-group { display:flex; align-items:center; gap:6px; }
+.tool-group label { font-size:0.75rem; color:var(--dim); text-transform:uppercase; letter-spacing:0.5px; }
+.tool-group select, .tool-group input { background:var(--surface); border:1px solid var(--border); color:var(--text); padding:5px 10px; border-radius:4px; font-size:0.85rem; }
+.tool-group input[type=number] { width:100px; }
+.btn { padding:6px 16px; border:1px solid var(--border); border-radius:4px; background:var(--surface); color:var(--text); font-size:0.85rem; cursor:pointer; transition:all 0.15s; }
+.btn:hover { border-color:var(--accent); color:var(--accent); }
+.btn.active { background:var(--accent); color:#000; border-color:var(--accent); font-weight:600; }
+.btn.danger { border-color:var(--red); color:var(--red); }
+.btn.danger:hover { background:var(--red); color:#fff; }
+
+.chart-wrap { position:relative; height:calc(100vh - 140px); }
+.chart-container { width:100%; height:100%; }
+
+/* Status bar */
+.status { position:absolute; bottom:10px; left:10px; right:10px; display:flex; justify-content:space-between; pointer-events:none; z-index:10; }
+.status-left, .status-right { background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:6px 12px; font-size:0.78rem; pointer-events:auto; }
+.status .label { color:var(--dim); }
+.status .val { font-weight:600; }
+.status .val.green { color:var(--green); }
+.status .val.red { color:var(--red); }
+.status .val.gold { color:var(--gold); }
+
+/* Info panel */
+.info-panel { position:absolute; top:10px; right:10px; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px 16px; z-index:10; min-width:200px; font-size:0.8rem; }
+.info-panel h3 { color:var(--accent); font-size:0.85rem; margin-bottom:6px; }
+.info-row { display:flex; justify-content:space-between; margin-bottom:3px; }
+.info-row .k { color:var(--dim); }
+.info-row .v { font-weight:600; }
+.info-row .v.b1 { color:var(--box1); }
+.info-row .v.b2 { color:var(--box2); }
+.info-row .v.b3 { color:var(--box3); }
+.info-panel .help { color:var(--dim); font-size:0.72rem; margin-top:8px; border-top:1px solid var(--border); padding-top:6px; }
+
+/* Mode indicator */
+.mode-badge { position:absolute; top:10px; left:10px; z-index:10; padding:6px 14px; border-radius:6px; font-size:0.85rem; font-weight:700; }
+.mode-badge.pick-origin { background:#448aff33; border:1px solid var(--box1); color:var(--box1); }
+.mode-badge.pick-l1 { background:#ffd70033; border:1px solid var(--box2); color:var(--box2); }
+.mode-badge.done { background:#00c85333; border:1px solid var(--green); color:var(--green); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📦 3-Box Equal Measured Move</h1>
+  <a href="index.html" class="home-link">← Command Center</a>
+</div>
+
+<div class="toolbar">
+  <div class="tool-group">
+    <label>Symbol:</label>
+    <select id="symbolSelect">
+      <option value="BTCUSDT">BTC/USDT</option>
+      <option value="ETHUSDT">ETH/USDT</option>
+      <option value="SOLUSDT">SOL/USDT</option>
+    </select>
+  </div>
+  <div class="tool-group">
+    <label>Timeframe:</label>
+    <select id="tfSelect">
+      <option value="1m">1m</option>
+      <option value="15m" selected>15m</option>
+      <option value="1H">1H</option>
+    </select>
+  </div>
+  <div class="tool-group">
+    <label>Direction:</label>
+    <button class="btn active" id="btnBear" onclick="setDirection('bear')">Bear ↓</button>
+    <button class="btn" id="btnBull" onclick="setDirection('bull')">Bull ↑</button>
+  </div>
+  <div class="tool-group">
+    <label>Manual:</label>
+    <input type="number" id="originPrice" placeholder="Origin price" step="any">
+    <input type="number" id="l1Price" placeholder="L1 price" step="any">
+    <button class="btn" onclick="drawManual()">Draw</button>
+  </div>
+  <button class="btn danger" onclick="clearBoxes()">✕ Clear</button>
+</div>
+
+<div class="chart-wrap">
+  <div class="chart-container" id="chartContainer"></div>
+  <div class="mode-badge pick-origin" id="modeBadge">Click chart: Pick Origin</div>
+  <div class="info-panel" id="infoPanel" style="display:none">
+    <h3>📦 3-Box Projection</h3>
+    <div id="infoContent"></div>
+    <div class="help">
+      Click chart to set Origin → L1<br>
+      Or type prices manually above
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STATE ───
+let chart, candleSeries, volumeSeries;
+let direction = 'bear';
+let mode = 'pick-origin'; // pick-origin → pick-l1 → done
+let originPrice = null, originTime = null;
+let l1Price = null, l1Time = null;
+let boxLines = []; // price lines to clean up
+let allCandles = [];
+
+// ─── CHART INIT ───
+function initChart() {
+  const container = document.getElementById('chartContainer');
+  chart = LightweightCharts.createChart(container, {
+    layout: { background: { color: '#0a0a0f' }, textColor: '#888' },
+    grid: { vertLines: { color: '#1a1a2800' }, horzLines: { color: '#1a1a28' } },
+    crosshair: { mode: 0 },
+    timeScale: { timeVisible: true, secondsVisible: false },
+    rightPriceScale: { borderColor: '#2a2a3a' },
+  });
+
+  candleSeries = chart.addCandlestickSeries({
+    upColor: '#00c853', downColor: '#ff1744',
+    borderUpColor: '#00c853', borderDownColor: '#ff1744',
+    wickUpColor: '#00c85388', wickDownColor: '#ff174488',
+  });
+
+  volumeSeries = chart.addHistogramSeries({
+    priceFormat: { type: 'volume' },
+    priceScaleId: 'vol',
+  });
+  chart.priceScale('vol').applyOptions({
+    scaleMargins: { top: 0.8, bottom: 0 },
+  });
+
+  // Click handler for picking points
+  chart.subscribeClick(param => {
+    if (!param.point || !param.time) return;
+    const price = candleSeries.coordinateToPrice(param.point.y);
+    if (!price || price <= 0) return;
+    handleChartClick(price, param.time);
+  });
+
+  window.addEventListener('resize', () => {
+    chart.resize(container.clientWidth, container.clientHeight);
+  });
+}
+
+// ─── LOAD DATA ───
+async function loadData() {
+  const symbol = document.getElementById('symbolSelect').value;
+  const tf = document.getElementById('tfSelect').value;
+
+  // Try loading from local candle files
+  const filename = `v2-candles-${symbol}-${tf}.json`;
+  try {
+    const resp = await fetch(filename);
+    if (resp.ok) {
+      const raw = await resp.json();
+      if (raw.t) {
+        allCandles = raw.t.map((ts, i) => ({
+          time: ts, open: raw.o[i], high: raw.h[i], low: raw.l[i], close: raw.c[i],
+          volume: raw.v ? raw.v[i] : 0
+        }));
+      } else {
+        allCandles = raw;
+      }
+    } else {
+      throw new Error('No file');
+    }
+  } catch {
+    // Fallback: try full candle file
+    try {
+      const resp2 = await fetch(`candles-${symbol}-${tf}.json`);
+      if (resp2.ok) {
+        const raw2 = await resp2.json();
+        allCandles = raw2.t ? raw2.t.map((ts, i) => ({
+          time: ts, open: raw2.o[i], high: raw2.h[i], low: raw2.l[i], close: raw2.c[i],
+          volume: raw2.v ? raw2.v[i] : 0
+        })) : raw2;
+      } else {
+        allCandles = [];
+      }
+    } catch {
+      allCandles = [];
+    }
+  }
+
+  if (allCandles.length) {
+    candleSeries.setData(allCandles);
+    volumeSeries.setData(allCandles.map(c => ({
+      time: c.time, value: c.volume || 0,
+      color: c.close >= c.open ? '#00c85333' : '#ff174433',
+    })));
+    chart.timeScale().fitContent();
+    console.log(`Loaded ${allCandles.length} candles for ${symbol} ${tf}`);
+  } else {
+    console.warn(`No candle data for ${symbol} ${tf}`);
+  }
+}
+
+// ─── DIRECTION ───
+function setDirection(dir) {
+  direction = dir;
+  document.getElementById('btnBear').classList.toggle('active', dir === 'bear');
+  document.getElementById('btnBull').classList.toggle('active', dir === 'bull');
+  if (originPrice && l1Price) drawBoxes();
+}
+
+// ─── CLICK HANDLER ───
+function handleChartClick(price, time) {
+  if (mode === 'pick-origin') {
+    originPrice = price;
+    originTime = time;
+    mode = 'pick-l1';
+    updateModeBadge();
+
+    // Mark origin on chart
+    candleSeries.setMarkers([{
+      time: time,
+      position: 'belowBar',
+      color: '#448aff',
+      shape: 'circle',
+      text: `Origin $${price.toFixed(2)}`,
+    }]);
+
+  } else if (mode === 'pick-l1') {
+    l1Price = price;
+    l1Time = time;
+    mode = 'done';
+    updateModeBadge();
+
+    // Auto-detect direction from points
+    if (l1Price > originPrice) {
+      direction = 'bull';
+    } else {
+      direction = 'bear';
+    }
+    document.getElementById('btnBear').classList.toggle('active', direction === 'bear');
+    document.getElementById('btnBull').classList.toggle('active', direction === 'bull');
+
+    // Update manual inputs
+    document.getElementById('originPrice').value = originPrice.toFixed(2);
+    document.getElementById('l1Price').value = l1Price.toFixed(2);
+
+    drawBoxes();
+  } else {
+    // Reset — start over
+    clearBoxes();
+    originPrice = price;
+    originTime = time;
+    mode = 'pick-l1';
+    updateModeBadge();
+    candleSeries.setMarkers([{
+      time: time,
+      position: 'belowBar',
+      color: '#448aff',
+      shape: 'circle',
+      text: `Origin $${price.toFixed(2)}`,
+    }]);
+  }
+}
+
+// ─── DRAW BOXES ───
+function drawBoxes() {
+  clearPriceLines();
+
+  const range = Math.abs(l1Price - originPrice);
+  if (range === 0) return;
+
+  let levels;
+  if (direction === 'bull') {
+    levels = {
+      origin: originPrice,
+      l1: originPrice + range,
+      l2: originPrice + 2 * range,
+      l3: originPrice + 3 * range,
+      l4: originPrice + 4 * range,
+    };
+  } else {
+    levels = {
+      origin: originPrice,
+      l1: originPrice - range,
+      l2: originPrice - 2 * range,
+      l3: originPrice - 3 * range,
+      l4: originPrice - 4 * range,
+    };
+  }
+
+  // Draw level lines
+  const lineConfigs = [
+    { price: levels.origin, title: 'Origin', color: '#888888', width: 1, style: 2 },
+    { price: levels.l1, title: 'L1', color: '#448aff', width: 2, style: 0 },
+    { price: levels.l2, title: 'L2', color: '#ffd700', width: 2, style: 0 },
+    { price: levels.l3, title: 'L3 ★', color: '#ff1744', width: 2, style: 0 },
+    { price: levels.l4, title: 'L4', color: '#ff174466', width: 1, style: 2 },
+  ];
+
+  for (const lc of lineConfigs) {
+    const line = candleSeries.createPriceLine({
+      price: lc.price,
+      color: lc.color,
+      lineWidth: lc.width,
+      lineStyle: lc.style,
+      axisLabelVisible: true,
+      title: lc.title,
+    });
+    boxLines.push(line);
+  }
+
+  // Markers
+  const markers = [];
+  if (originTime) {
+    markers.push({
+      time: originTime,
+      position: direction === 'bear' ? 'aboveBar' : 'belowBar',
+      color: '#888',
+      shape: 'circle',
+      text: `Origin $${levels.origin.toFixed(0)}`,
+    });
+  }
+  if (l1Time) {
+    markers.push({
+      time: l1Time,
+      position: direction === 'bear' ? 'belowBar' : 'aboveBar',
+      color: '#448aff',
+      shape: 'arrowDown',
+      text: `L1 $${levels.l1.toFixed(0)}`,
+    });
+  }
+  candleSeries.setMarkers(markers);
+
+  // Info panel
+  const rangePct = (range / originPrice * 100).toFixed(3);
+  document.getElementById('infoPanel').style.display = 'block';
+  document.getElementById('infoContent').innerHTML = `
+    <div class="info-row"><span class="k">Direction</span><span class="v">${direction === 'bear' ? '🔴 Bear ↓' : '🟢 Bull ↑'}</span></div>
+    <div class="info-row"><span class="k">Range</span><span class="v">$${range.toFixed(2)} (${rangePct}%)</span></div>
+    <div class="info-row"><span class="k">Origin</span><span class="v">$${levels.origin.toFixed(2)}</span></div>
+    <div class="info-row"><span class="k">L1</span><span class="v b1">$${levels.l1.toFixed(2)}</span></div>
+    <div class="info-row"><span class="k">L2</span><span class="v b2">$${levels.l2.toFixed(2)}</span></div>
+    <div class="info-row"><span class="k">L3 ★</span><span class="v b3">$${levels.l3.toFixed(2)}</span></div>
+    <div class="info-row"><span class="k">L4</span><span class="v" style="color:var(--dim)">$${levels.l4.toFixed(2)}</span></div>
+  `;
+}
+
+// ─── MANUAL DRAW ───
+function drawManual() {
+  const op = parseFloat(document.getElementById('originPrice').value);
+  const lp = parseFloat(document.getElementById('l1Price').value);
+  if (isNaN(op) || isNaN(lp) || op === lp) return;
+
+  originPrice = op;
+  l1Price = lp;
+  originTime = null;
+  l1Time = null;
+
+  if (l1Price > originPrice) direction = 'bull';
+  else direction = 'bear';
+  document.getElementById('btnBear').classList.toggle('active', direction === 'bear');
+  document.getElementById('btnBull').classList.toggle('active', direction === 'bull');
+
+  mode = 'done';
+  updateModeBadge();
+  drawBoxes();
+}
+
+// ─── CLEAR ───
+function clearBoxes() {
+  clearPriceLines();
+  candleSeries.setMarkers([]);
+  originPrice = null; l1Price = null;
+  originTime = null; l1Time = null;
+  mode = 'pick-origin';
+  updateModeBadge();
+  document.getElementById('infoPanel').style.display = 'none';
+  document.getElementById('originPrice').value = '';
+  document.getElementById('l1Price').value = '';
+}
+
+function clearPriceLines() {
+  for (const line of boxLines) {
+    try { candleSeries.removePriceLine(line); } catch {}
+  }
+  boxLines = [];
+}
+
+// ─── MODE BADGE ───
+function updateModeBadge() {
+  const badge = document.getElementById('modeBadge');
+  if (mode === 'pick-origin') {
+    badge.className = 'mode-badge pick-origin';
+    badge.textContent = 'Click chart: Pick Origin';
+  } else if (mode === 'pick-l1') {
+    badge.className = 'mode-badge pick-l1';
+    badge.textContent = 'Click chart: Pick L1';
+  } else {
+    badge.className = 'mode-badge done';
+    badge.textContent = '✓ Boxes drawn — click to redraw';
+  }
+}
+
+// ─── EVENTS ───
+document.getElementById('symbolSelect').addEventListener('change', () => { clearBoxes(); loadData(); });
+document.getElementById('tfSelect').addEventListener('change', () => { clearBoxes(); loadData(); });
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') clearBoxes();
+  if (e.key === 'b') setDirection(direction === 'bear' ? 'bull' : 'bear');
+});
+
+// ─── INIT ───
+initChart();
+loadData();
+</script>
+</body>
+</html>

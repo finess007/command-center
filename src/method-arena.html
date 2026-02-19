@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>V11c Method Arena — Efficiency Frontier</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0e17;color:#e0e0e0;font-family:'Segoe UI',system-ui,sans-serif;padding:20px;max-width:1400px;margin:0 auto}
+h1{font-size:1.8em;margin-bottom:4px;color:#fff}
+.subtitle{color:#888;font-size:0.95em;margin-bottom:24px}
+.hero-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:28px}
+.hero-stat{background:#141a2a;border-radius:12px;padding:16px;text-align:center}
+.hero-stat .val{font-size:1.8em;font-weight:700;margin-bottom:2px}
+.hero-stat .lbl{font-size:0.78em;color:#888;text-transform:uppercase;letter-spacing:1px}
+.hero-stat.gold .val{color:#ffd93d}
+.hero-stat.green .val{color:#6bff8e}
+.hero-stat.red .val{color:#ff6b6b}
+.hero-stat.blue .val{color:#4a9eff}
+
+.chart-container{position:relative;background:#141a2a;border-radius:12px;padding:20px;margin-bottom:28px}
+.chart-title{font-size:1.1em;font-weight:600;margin-bottom:4px;color:#fff}
+.chart-subtitle{font-size:0.82em;color:#888;margin-bottom:16px}
+canvas{display:block;width:100%;cursor:crosshair}
+.tooltip{position:absolute;display:none;background:#1a2235;border:1px solid #333;border-radius:8px;padding:10px 14px;font-size:0.82em;pointer-events:none;z-index:10;box-shadow:0 4px 12px rgba(0,0,0,0.5);max-width:280px}
+.tooltip .tt-name{font-weight:700;color:#fff;margin-bottom:4px;font-size:0.95em}
+.tooltip .tt-method{font-size:0.78em;color:#888;margin-bottom:6px}
+.tooltip .tt-row{display:flex;justify-content:space-between;gap:12px;padding:2px 0}
+.tooltip .tt-k{color:#888}
+.tooltip .tt-v{font-weight:600}
+
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:0.82em;cursor:pointer;opacity:1;transition:opacity 0.2s}
+.legend-item.dimmed{opacity:0.3}
+.legend-dot{width:12px;height:12px;border-radius:50%}
+
+.section-title{font-size:1.2em;color:#fff;margin:32px 0 12px;padding-bottom:8px;border-bottom:1px solid #1a2235}
+
+.leaderboard{width:100%;border-collapse:collapse;margin-bottom:28px;font-size:0.88em}
+.leaderboard th{background:#141a2a;padding:10px 12px;text-align:left;font-size:0.78em;color:#888;text-transform:uppercase;letter-spacing:0.5px}
+.leaderboard td{padding:10px 12px;border-bottom:1px solid #1a2235}
+.leaderboard tr:hover td{background:#141a2a}
+.leaderboard .rank{font-weight:700;color:#ffd93d;width:30px}
+.leaderboard .method-badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:0.75em;font-weight:600}
+.pf-bar{display:inline-block;height:18px;border-radius:4px;min-width:4px;vertical-align:middle;margin-right:6px}
+
+.insight-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;margin-bottom:28px}
+.insight-card{background:#141a2a;border-radius:12px;padding:20px;border-left:4px solid #333}
+.insight-card.key{border-left-color:#ffd93d}
+.insight-card h4{font-size:0.95em;margin-bottom:8px;color:#fff}
+.insight-card p{font-size:0.85em;line-height:1.6;color:#bbb}
+.insight-card .evidence{margin-top:8px;font-size:0.78em;color:#888;font-style:italic}
+
+.spread-section{background:#141a2a;border-radius:12px;padding:20px;margin-bottom:28px}
+.spread-section h3{margin-bottom:12px;color:#fff;font-size:1em}
+.spread-bars{display:flex;align-items:flex-end;gap:6px;height:180px;margin-bottom:8px}
+.spread-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+.spread-bar{width:100%;border-radius:4px 4px 0 0;transition:height 0.4s}
+.spread-lbl{font-size:0.65em;color:#888;text-align:center}
+.spread-val{font-size:0.72em;font-weight:600;color:#fff}
+.spread-pf{font-size:0.65em;color:#ffd93d}
+
+.combo-matrix{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:28px}
+.combo-cell{background:#141a2a;border-radius:8px;padding:12px;text-align:center;transition:transform 0.2s}
+.combo-cell:hover{transform:scale(1.03)}
+.combo-cell .combo-pf{font-size:1.3em;font-weight:700}
+.combo-cell .combo-trades{font-size:0.75em;color:#888;margin-top:2px}
+.combo-cell .combo-label{font-size:0.7em;color:#888;margin-bottom:4px}
+.combo-cell.hot{border:1px solid #ffd93d}
+.combo-cell.cold{opacity:0.5}
+
+.updated{text-align:center;color:#555;font-size:0.78em;margin-top:32px;padding-top:16px;border-top:1px solid #1a2235}
+
+@media (max-width:768px) {
+  body{padding:12px}
+  h1{font-size:1.3em}
+  .hero-stats{grid-template-columns:repeat(2,1fr)}
+  .combo-matrix{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<h1>⚔️ V11c Method Arena</h1>
+<div class="subtitle">99 configs tested across 10 approaches. 8.5 years of BTC data. Here's the efficiency frontier.</div>
+
+<div class="hero-stats">
+  <div class="hero-stat gold"><div class="val">1.58</div><div class="lbl">Highest PF</div></div>
+  <div class="hero-stat green"><div class="val">1.31</div><div class="lbl">Champion PF</div></div>
+  <div class="hero-stat blue"><div class="val">2,607</div><div class="lbl">Champion Trades</div></div>
+  <div class="hero-stat" style="border-top:3px solid #ff6b6b"><div class="val">4</div><div class="lbl">Dead Ends</div></div>
+  <div class="hero-stat" style="border-top:3px solid #ffd93d"><div class="val">1.23</div><div class="lbl">"The Wall"</div></div>
+</div>
+
+<!-- ═══════ SCATTER CHART ═══════ -->
+<div class="chart-container" id="chart-wrap">
+  <div class="chart-title">Efficiency Frontier — PF vs Trade Count</div>
+  <div class="chart-subtitle">Each dot = one tested config. Size = Total R generated. The "Wall of 1.23" is visible across most methods.</div>
+  <div class="legend" id="legend"></div>
+  <canvas id="scatter" height="480"></canvas>
+  <div class="tooltip" id="tooltip"></div>
+</div>
+
+<!-- ═══════ LEADERBOARD ═══════ -->
+<div class="section-title">🏆 Top 15 Configs — Ranked by PF</div>
+<table class="leaderboard" id="leaderboard"></table>
+
+<!-- ═══════ SPREAD STANDALONE (NEW) ═══════ -->
+<div class="section-title">🆕 Test #9: Spread Standalone (Tonight's Results)</div>
+<div class="spread-section">
+  <h3>Level Spread = (L3 − L1) / Total Move — How much of the move is covered by the 3 levels?</h3>
+  <p style="font-size:0.85em;color:#888;margin-bottom:16px">
+    Standalone test on 4,647 champion trades (BTC, all TFs). Unlike spacing (ATR-based gap), spread measures the ratio of level range to total move. <strong>Verdict: Weak standalone filter (max PF 1.24 at volume), but 1H shows strong edge (PF 1.86 at ≥0.6).</strong>
+  </p>
+  <div class="spread-bars" id="spread-chart"></div>
+  <div style="font-size:0.78em;color:#888;text-align:center;margin-top:4px">Min Spread Threshold →</div>
+</div>
+
+<!-- ═══════ COMBO MATRIX ═══════ -->
+<div class="section-title">🧪 Filter Combo Matrix — Spacing × 3-Box</div>
+<p style="font-size:0.85em;color:#888;margin-bottom:16px">The two breakthrough filters combined. Green = above champion (1.23). Gold border = best combos.</p>
+<div class="combo-matrix" id="combo-grid"></div>
+
+<!-- ═══════ INSIGHTS ═══════ -->
+<div class="section-title">💡 Key Findings</div>
+<div class="insight-grid" id="insights"></div>
+
+<!-- ═══════ METHOD SUMMARY ═══════ -->
+<div class="section-title">📋 Method Status Summary</div>
+<table class="leaderboard" id="method-summary"></table>
+
+<div class="updated">Built: Feb 19, 2026 2:30 AM (Nova nightly) · Data: 8.5 years BTC · Engine: V11c Honest (zero look-ahead)</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// DATA: All tested configs as [name, trades, pf, totalR, method]
+// ═══════════════════════════════════════════════════
+const METHODS = {
+  'ATR Norm': '#4a9eff',
+  'Stop Hunt (Wick)': '#ff6b9d',
+  'Stop Hunt (Any)': '#ff9f43',
+  'Bars After Surpass': '#a55eea',
+  'Leg1 Fix': '#ff6b6b',
+  'AI Council': '#778ca3',
+  'Teacher Method': '#26de81',
+  'Level Spacing': '#ffd93d',
+  '3-Box Filter': '#2bcbba',
+  'Combo (Spacing+3Box)': '#fc5c65',
+  'Spread Standalone': '#45aaf2'
+};
+
+const configs = [
+  // ATR Norm (all pairs)
+  ['Baseline 2%', 3362, 1.20, 336, 'ATR Norm'],
+  ['ATR 1.0×', 4223, 1.19, 386, 'ATR Norm'],
+  ['ATR 1.5×', 6011, 1.18, 530, 'ATR Norm'],
+  ['ATR 2.0×', 7595, 1.19, 688, 'ATR Norm'],
+  ['ATR 2.5×', 9047, 1.17, 732, 'ATR Norm'],
+  ['ATR 3.0×', 10138, 1.17, 843, 'ATR Norm'],
+
+  // Stop Hunt Wick-Only (BTC) — best per ATR
+  ['Wick ATR1.0× rw7', 3379, 1.20, 380, 'Stop Hunt (Wick)'],
+  ['Wick ATR1.5× rw7', 4658, 1.20, 534, 'Stop Hunt (Wick)'],
+  ['Wick ATR2.0× rw0', 3409, 1.12, 241, 'Stop Hunt (Wick)'],
+  ['Wick ATR2.0× rw7', 5579, 1.16, 496, 'Stop Hunt (Wick)'],
+  ['Wick ATR3.0× rw7', 6621, 1.16, 598, 'Stop Hunt (Wick)'],
+
+  // Stop Hunt Any-Surpass (BTC) — best per ATR
+  ['Any ATR1.0× rw0', 3725, 1.19, 396, 'Stop Hunt (Any)'],
+  ['Any ATR1.5× rw0', 5129, 1.22, 644, 'Stop Hunt (Any)'],
+  ['Any ATR2.0× rw0', 6126, 1.17, 604, 'Stop Hunt (Any)'],
+  ['Any ATR2.5× rw0', 6771, 1.18, 677, 'Stop Hunt (Any)'],
+  ['Any ATR3.0× rw0', 7248, 1.18, 718, 'Stop Hunt (Any)'],
+
+  // Bars After Surpass (BTC) — key configs
+  ['BAS ATR1.5× bas0', 2567, 1.17, null, 'Bars After Surpass'],
+  ['BAS ATR1.5× bas1', 3642, 1.22, null, 'Bars After Surpass'],
+  ['BAS ATR1.5× bas5 ⭐', 4661, 1.23, 600, 'Bars After Surpass'],
+  ['BAS ATR2.0× bas1', 4372, 1.17, 438, 'Bars After Surpass'],
+  ['BAS ATR2.0× bas5', 5576, 1.17, 562, 'Bars After Surpass'],
+
+  // Leg1 Fix (BTC)
+  ['Leg1 Fix v1', 8733, 1.08, null, 'Leg1 Fix'],
+  ['Leg1 Fix v2', 8074, 1.09, null, 'Leg1 Fix'],
+
+  // AI Council (BTC)
+  ['Council best', 5929, 1.13, 427, 'AI Council'],
+  ['Council strict', 3500, 1.09, null, 'AI Council'],
+  ['Council relaxed', 7200, 1.11, null, 'AI Council'],
+
+  // Teacher Method (BTC)
+  ['Teacher no-reset', 46, 0.82, -5.4, 'Teacher Method'],
+  ['Teacher daily h7 g0.25', 3210, 1.13, 251, 'Teacher Method'],
+  ['Teacher ATR2.0× bas7', 3462, 1.15, 313, 'Teacher Method'],
+
+  // 3-Box Filter (BTC, ATR 1.5×)
+  ['3-Box 5%', 69, 1.03, 1.3, '3-Box Filter'],
+  ['3-Box 10%', 142, 1.21, 17, '3-Box Filter'],
+  ['3-Box 15%', 205, 1.47, 50.7, '3-Box Filter'],
+  ['3-Box 20%', 288, 1.46, 70.9, '3-Box Filter'],
+  ['3-Box 30%', 437, 1.37, 88.1, '3-Box Filter'],
+
+  // Level Spacing (BTC)
+  ['Spacing ≥0.3×', 3724, 1.24, 519, 'Level Spacing'],
+  ['Spacing ≥0.5×', 3199, 1.27, 486, 'Level Spacing'],
+  ['Spacing ≥0.75× 🏆', 2607, 1.31, 451, 'Level Spacing'],
+  ['Spacing ≥1.0×', 2107, 1.28, 336, 'Level Spacing'],
+  ['Spacing ≥2.0×', 795, 1.34, 158, 'Level Spacing'],
+
+  // Combos
+  ['Spacing≥0.5+3Box≤20%', 237, 1.50, 64, 'Combo (Spacing+3Box)'],
+  ['Spacing≥0.75+3Box≤30%', 330, 1.45, 80, 'Combo (Spacing+3Box)'],
+  ['Spacing≥1.0+3Box≤20%', 191, 1.58, 59, 'Combo (Spacing+3Box)'],
+
+  // Spread Standalone (NEW — tonight)
+  ['Spread ≥0.2', 4218, 1.24, 573, 'Spread Standalone'],
+  ['Spread ≥0.4', 2958, 1.23, 397, 'Spread Standalone'],
+  ['Spread ≥0.6', 1371, 1.28, 225, 'Spread Standalone'],
+  ['Spread ≥0.8', 271, 1.32, 55, 'Spread Standalone']
+];
+
+// ═══════════════════════════════════════════════════
+// SCATTER CHART
+// ═══════════════════════════════════════════════════
+const canvas = document.getElementById('scatter');
+const ctx = canvas.getContext('2d');
+const tooltip = document.getElementById('tooltip');
+let activeMethod = null;
+let points = [];
+
+function initChart() {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const w = rect.width - 40;
+  canvas.style.width = w + 'px';
+  canvas.style.height = '480px';
+  canvas.width = w * dpr;
+  canvas.height = 480 * dpr;
+  ctx.scale(dpr, dpr);
+  return { w, h: 480 };
+}
+
+function drawChart() {
+  const { w, h } = initChart();
+  const pad = { top: 30, right: 30, bottom: 50, left: 60 };
+  const pw = w - pad.left - pad.right;
+  const ph = h - pad.top - pad.bottom;
+
+  ctx.clearRect(0, 0, w, h);
+
+  // Axes ranges
+  const xMin = 0, xMax = 11000;
+  const yMin = 0.80, yMax = 1.65;
+
+  const toX = v => pad.left + (v - xMin) / (xMax - xMin) * pw;
+  const toY = v => pad.top + (1 - (v - yMin) / (yMax - yMin)) * ph;
+
+  // Grid
+  ctx.strokeStyle = '#1a2235';
+  ctx.lineWidth = 1;
+  for (let pf = 0.9; pf <= 1.6; pf += 0.1) {
+    const y = toY(pf);
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(w - pad.right, y); ctx.stroke();
+    ctx.fillStyle = '#555'; ctx.font = '11px system-ui';
+    ctx.textAlign = 'right'; ctx.fillText(pf.toFixed(1), pad.left - 8, y + 4);
+  }
+  for (let t = 0; t <= 10000; t += 2000) {
+    const x = toX(t);
+    ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, h - pad.bottom); ctx.stroke();
+    ctx.fillStyle = '#555'; ctx.font = '11px system-ui';
+    ctx.textAlign = 'center'; ctx.fillText(t.toLocaleString(), x, h - pad.bottom + 20);
+  }
+
+  // "Wall of 1.23" line
+  ctx.save();
+  ctx.strokeStyle = '#ffd93d44';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 4]);
+  const wallY = toY(1.23);
+  ctx.beginPath(); ctx.moveTo(pad.left, wallY); ctx.lineTo(w - pad.right, wallY); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#ffd93d88'; ctx.font = 'bold 11px system-ui'; ctx.textAlign = 'left';
+  ctx.fillText('← The Wall of 1.23', pad.left + 4, wallY - 6);
+  ctx.restore();
+
+  // "Minimum viable" line at 200 trades
+  ctx.save();
+  ctx.strokeStyle = '#ff6b6b33';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  const mvX = toX(200);
+  ctx.beginPath(); ctx.moveTo(mvX, pad.top); ctx.lineTo(mvX, h - pad.bottom); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#ff6b6b66'; ctx.font = '10px system-ui'; ctx.textAlign = 'left';
+  ctx.fillText('Min viable', mvX + 3, pad.top + 12);
+  ctx.restore();
+
+  // Axes labels
+  ctx.fillStyle = '#888'; ctx.font = '12px system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText('Trade Count (8.5 years) →', w / 2, h - 8);
+  ctx.save();
+  ctx.translate(16, h / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('Profit Factor →', 0, 0);
+  ctx.restore();
+
+  // Plot points
+  points = [];
+  configs.forEach(([name, trades, pf, totalR, method]) => {
+    if (pf < yMin || trades > xMax) return;
+    const dim = activeMethod && activeMethod !== method;
+    const x = toX(trades);
+    const y = toY(pf);
+    const r = totalR ? Math.max(4, Math.min(18, Math.sqrt(Math.abs(totalR)) * 0.8)) : 5;
+    const color = METHODS[method] || '#888';
+
+    ctx.globalAlpha = dim ? 0.12 : 0.85;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Labels for key configs
+    if (!dim && (name.includes('⭐') || name.includes('🏆') || pf >= 1.40 || (pf >= 1.30 && trades > 500))) {
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 10px system-ui';
+      ctx.textAlign = 'left';
+      const label = name.replace(/[⭐🏆]/g, '').trim();
+      ctx.fillText(label, x + r + 4, y + 3);
+    }
+
+    points.push({ x, y, r, name, trades, pf, totalR, method, color });
+  });
+  ctx.globalAlpha = 1;
+}
+
+// Legend
+const legendEl = document.getElementById('legend');
+Object.entries(METHODS).forEach(([name, color]) => {
+  const count = configs.filter(c => c[4] === name).length;
+  if (count === 0) return;
+  const item = document.createElement('div');
+  item.className = 'legend-item';
+  item.innerHTML = `<div class="legend-dot" style="background:${color}"></div>${name} (${count})`;
+  item.onclick = () => {
+    if (activeMethod === name) {
+      activeMethod = null;
+      document.querySelectorAll('.legend-item').forEach(i => i.classList.remove('dimmed'));
+    } else {
+      activeMethod = name;
+      document.querySelectorAll('.legend-item').forEach(i => i.classList.add('dimmed'));
+      item.classList.remove('dimmed');
+    }
+    drawChart();
+  };
+  legendEl.appendChild(item);
+});
+
+// Tooltip
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  let hit = null;
+  for (const p of points) {
+    const dx = mx - p.x, dy = my - p.y;
+    if (dx*dx + dy*dy < (p.r+4)*(p.r+4)) { hit = p; break; }
+  }
+  if (hit) {
+    tooltip.style.display = 'block';
+    tooltip.style.left = (hit.x + 20) + 'px';
+    tooltip.style.top = (hit.y - 10) + 'px';
+    // Keep tooltip in view
+    const tr = tooltip.getBoundingClientRect();
+    const wr = canvas.parentElement.getBoundingClientRect();
+    if (tr.right > wr.right - 10) tooltip.style.left = (hit.x - tr.width - 10) + 'px';
+
+    tooltip.innerHTML = `
+      <div class="tt-name">${hit.name}</div>
+      <div class="tt-method" style="color:${hit.color}">${hit.method}</div>
+      <div class="tt-row"><span class="tt-k">PF</span><span class="tt-v" style="color:${hit.pf>=1.23?'#6bff8e':'#ff6b6b'}">${hit.pf.toFixed(2)}</span></div>
+      <div class="tt-row"><span class="tt-k">Trades</span><span class="tt-v">${hit.trades.toLocaleString()}</span></div>
+      ${hit.totalR!=null?`<div class="tt-row"><span class="tt-k">Total R</span><span class="tt-v">${hit.totalR>0?'+':''}${hit.totalR.toFixed(1)}</span></div>`:''}
+      ${hit.totalR && hit.trades ? `<div class="tt-row"><span class="tt-k">R/Trade</span><span class="tt-v">+${(hit.totalR/hit.trades).toFixed(3)}</span></div>` : ''}
+    `;
+  } else {
+    tooltip.style.display = 'none';
+  }
+});
+canvas.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+
+drawChart();
+window.addEventListener('resize', drawChart);
+
+// ═══════════════════════════════════════════════════
+// LEADERBOARD — Top 15 by PF (min 100 trades)
+// ═══════════════════════════════════════════════════
+const sorted = configs
+  .filter(c => c[2] >= 1.0 && c[1] >= 100)
+  .sort((a, b) => b[2] - a[2])
+  .slice(0, 15);
+
+const lb = document.getElementById('leaderboard');
+let lbHtml = '<thead><tr><th>#</th><th>Config</th><th>Method</th><th>PF</th><th style="width:220px">PF Bar</th><th>Trades</th><th>Total R</th><th>R/Trade</th></tr></thead><tbody>';
+sorted.forEach(([name, trades, pf, totalR, method], i) => {
+  const color = METHODS[method];
+  const barW = ((pf - 1.0) / 0.6) * 200;
+  const rpt = totalR ? (totalR / trades).toFixed(3) : '—';
+  const pfColor = pf >= 1.40 ? '#ffd93d' : pf >= 1.23 ? '#6bff8e' : '#e0e0e0';
+  lbHtml += `<tr>
+    <td class="rank">${i + 1}</td>
+    <td>${name}</td>
+    <td><span class="method-badge" style="background:${color}22;color:${color}">${method}</span></td>
+    <td style="font-weight:700;color:${pfColor}">${pf.toFixed(2)}</td>
+    <td><div class="pf-bar" style="width:${Math.max(4, barW)}px;background:${color};border-radius:4px">&nbsp;</div></td>
+    <td>${trades.toLocaleString()}</td>
+    <td>${totalR != null ? (totalR > 0 ? '+' : '') + totalR.toFixed(1) : '—'}</td>
+    <td>${rpt}</td>
+  </tr>`;
+});
+lbHtml += '</tbody>';
+lb.innerHTML = lbHtml;
+
+// ═══════════════════════════════════════════════════
+// SPREAD STANDALONE CHART
+// ═══════════════════════════════════════════════════
+const spreadData = [
+  { thr: 'Base', pf: 1.21, trades: 4647, totalR: 570 },
+  { thr: '≥0.05', pf: 1.22, trades: 4629, totalR: 574 },
+  { thr: '≥0.1', pf: 1.22, trades: 4550, totalR: 571 },
+  { thr: '≥0.15', pf: 1.22, trades: 4426, totalR: 548 },
+  { thr: '≥0.2', pf: 1.24, trades: 4218, totalR: 573 },
+  { thr: '≥0.25', pf: 1.23, trades: 3982, totalR: 529 },
+  { thr: '≥0.3', pf: 1.22, trades: 3666, totalR: 468 },
+  { thr: '≥0.4', pf: 1.23, trades: 2958, totalR: 397 },
+  { thr: '≥0.5', pf: 1.20, trades: 2154, totalR: 255 },
+  { thr: '≥0.6', pf: 1.28, trades: 1371, totalR: 225 },
+  { thr: '≥0.7', pf: 1.18, trades: 709, totalR: 81 },
+  { thr: '≥0.8', pf: 1.32, trades: 271, totalR: 55 }
+];
+
+const spreadEl = document.getElementById('spread-chart');
+const maxSpreadR = Math.max(...spreadData.map(s => s.totalR));
+spreadData.forEach(s => {
+  const col = document.createElement('div');
+  col.className = 'spread-col';
+  const h = Math.max(4, (s.totalR / maxSpreadR) * 150);
+  const isHigh = s.pf >= 1.28;
+  const bg = isHigh ? 'linear-gradient(180deg,#ffd93d,#aa8800)' : 'linear-gradient(180deg,#45aaf2,#2255aa)';
+  col.innerHTML = `
+    <div class="spread-val">+${s.totalR}R</div>
+    <div class="spread-pf">PF ${s.pf}</div>
+    <div class="spread-bar" style="height:${h}px;background:${bg}"></div>
+    <div class="spread-lbl">${s.thr}</div>
+    <div class="spread-lbl">${s.trades.toLocaleString()}t</div>
+  `;
+  spreadEl.appendChild(col);
+});
+
+// ═══════════════════════════════════════════════════
+// COMBO MATRIX
+// ═══════════════════════════════════════════════════
+const combos = [
+  { label: 'No Filter', spacing: 'None', box: 'None', pf: 1.21, trades: 4647 },
+  { label: 'Spacing ≥0.5×', spacing: '0.5×', box: 'None', pf: 1.27, trades: 3199 },
+  { label: 'Spacing ≥0.75×', spacing: '0.75×', box: 'None', pf: 1.31, trades: 2607 },
+  { label: 'Spacing ≥1.0×', spacing: '1.0×', box: 'None', pf: 1.28, trades: 2107 },
+  { label: '3-Box ≤30%', spacing: 'None', box: '30%', pf: 1.37, trades: 437 },
+  { label: 'Spacing≥0.5+3Box≤20%', spacing: '0.5×', box: '20%', pf: 1.50, trades: 237 },
+  { label: 'Spacing≥0.75+3Box≤30%', spacing: '0.75×', box: '30%', pf: 1.45, trades: 330 },
+  { label: 'Spacing≥1.0+3Box≤20%', spacing: '1.0×', box: '20%', pf: 1.58, trades: 191 },
+  { label: '3-Box ≤15%', spacing: 'None', box: '15%', pf: 1.47, trades: 205 },
+  { label: '3-Box ≤20%', spacing: 'None', box: '20%', pf: 1.46, trades: 288 },
+  { label: 'Spacing ≥2.0×', spacing: '2.0×', box: 'None', pf: 1.34, trades: 795 },
+  { label: 'Spread ≥0.6', spacing: 'Spread', box: 'None', pf: 1.28, trades: 1371 }
+];
+
+const comboGrid = document.getElementById('combo-grid');
+combos.sort((a, b) => b.pf - a.pf);
+combos.forEach(c => {
+  const cell = document.createElement('div');
+  const hot = c.pf >= 1.45;
+  const cold = c.pf < 1.20;
+  cell.className = 'combo-cell' + (hot ? ' hot' : '') + (cold ? ' cold' : '');
+  const pfColor = c.pf >= 1.40 ? '#ffd93d' : c.pf >= 1.23 ? '#6bff8e' : '#e0e0e0';
+  cell.innerHTML = `
+    <div class="combo-label">${c.label}</div>
+    <div class="combo-pf" style="color:${pfColor}">${c.pf.toFixed(2)}</div>
+    <div class="combo-trades">${c.trades.toLocaleString()} trades</div>
+  `;
+  comboGrid.appendChild(cell);
+});
+
+// ═══════════════════════════════════════════════════
+// INSIGHTS
+// ═══════════════════════════════════════════════════
+const insightsData = [
+  {
+    title: '🧱 The Wall of 1.23',
+    text: 'Every method — ATR normalization, stop hunt variants, council filters, Teacher Method — converges to PF 1.20-1.23 at full trade volume. This appears to be the natural ceiling of the V11c swing detection engine without additional quality filters.',
+    evidence: 'ATR: 1.19 · Stop Hunt: 1.22 · Council: 1.13 · Teacher: 1.15 · Champion: 1.23',
+    key: true
+  },
+  {
+    title: '🏆 Two Breakthrough Paths',
+    text: 'Only Level Spacing and 3-Box Filter break through the wall. Spacing (PF 1.31, 2,607t) trades frequency for quality. 3-Box (PF 1.47, 288t) trades even more frequency for much higher quality. Combined: PF 1.58 with 191 trades.',
+    evidence: 'Spacing: +0.08 PF above wall · 3-Box: +0.24 above wall · Combo: +0.35 above wall',
+    key: true
+  },
+  {
+    title: '📐 3-Box = The Market Maker Fingerprint',
+    text: 'When the equal measured move prediction is accurate (L3 within 15-20% of projected box boundary), reversals are dramatically more reliable. This validates Steve Mauro\'s core theory. The tradeoff: only 2-3 trades/month.',
+    evidence: '3-Box 15%: PF 1.47 · 20%: PF 1.46 · Without: PF 1.23',
+    key: true
+  },
+  {
+    title: '📊 Spread is Weak Standalone',
+    text: 'Level spread (L3−L1 / total move) barely moves PF when tested alone: 1.21→1.24 at best (≥0.2). Only at extreme thresholds (≥0.6, ≥0.8) does it reach 1.28-1.32, but with drastically fewer trades. 1H timeframe shows strongest spread effect (PF 1.86 at ≥0.6).',
+    evidence: 'Spread ≥0.2: PF 1.24, 4,218t · ≥0.6: PF 1.28, 1,371t · ≥0.8: PF 1.32, 271t',
+    key: false
+  },
+  {
+    title: '🤖 AI Council Failed',
+    text: 'All 4 AI models (Opus, Grok 4.20, Gemini, ChatGPT) unanimously recommended 5 filters. All 15 configs performed WORSE than the unfiltered champion. Consensus ≠ correctness. Ivo\'s domain expertise outperformed 4 frontier models.',
+    evidence: 'Council best: PF 1.13 · Champion: PF 1.23 · Ivo\'s spacing filter: PF 1.31',
+    key: false
+  },
+  {
+    title: '⚡ Shorts > Longs (Everywhere)',
+    text: 'Across every method tested, SHORT trades consistently outperform LONG trades. This is likely due to the violent nature of selloffs (fear > greed) creating sharper reversal signals that the Market Maker Method catches more cleanly.',
+    evidence: 'Champion: Short PF ~1.35 vs Long PF ~1.15 · Teacher: Short 1.25 vs Long 1.06',
+    key: false
+  }
+];
+
+const insEl = document.getElementById('insights');
+insightsData.forEach(ins => {
+  const card = document.createElement('div');
+  card.className = 'insight-card' + (ins.key ? ' key' : '');
+  card.innerHTML = `
+    <h4>${ins.title}</h4>
+    <p>${ins.text}</p>
+    <div class="evidence">📊 ${ins.evidence}</div>
+  `;
+  insEl.appendChild(card);
+});
+
+// ═══════════════════════════════════════════════════
+// METHOD SUMMARY TABLE
+// ═══════════════════════════════════════════════════
+const methodSummary = [
+  { method: 'Level Spacing', best: 1.31, trades: '2,607', status: '🏆 Champion', color: '#ffd93d', note: 'First filter to improve PF without killing trade count' },
+  { method: '3-Box Filter', best: 1.47, trades: '288', status: '⭐ Breakthrough', color: '#2bcbba', note: 'Highest PF solo; validates equal measured move theory' },
+  { method: 'Spacing + 3-Box', best: 1.58, trades: '191', status: '🔥 Ultimate', color: '#fc5c65', note: 'Highest PF ever; too few trades for reliable live trading' },
+  { method: 'Bars After Surpass', best: 1.23, trades: '4,661', status: '✅ Foundation', color: '#a55eea', note: 'Established the champion baseline (ATR 1.5× bas=5)' },
+  { method: 'Spread Standalone', best: 1.24, trades: '4,218', status: '🆕 Tested', color: '#45aaf2', note: 'Weak standalone; 1H shows promise (PF 1.86 at ≥0.6)' },
+  { method: 'Stop Hunt (Any)', best: 1.22, trades: '5,129', status: '✅ Done', color: '#ff9f43', note: 'Removing wick requirement was key insight' },
+  { method: 'ATR Normalization', best: 1.19, trades: '7,595', status: '✅ Foundation', color: '#4a9eff', note: 'Doubled Total R vs baseline; PF unchanged' },
+  { method: 'Stop Hunt (Wick)', best: 1.20, trades: '3,379', status: '✅ Superseded', color: '#ff6b9d', note: 'Matched baseline, then Any-Surpass beat it' },
+  { method: 'Teacher Method', best: 1.15, trades: '3,462', status: '❌ Exhausted', color: '#26de81', note: 'Daily reset was key unlock; still below champion' },
+  { method: 'AI Council', best: 1.13, trades: '~5,929', status: '❌ Failed', color: '#778ca3', note: 'All 4 AI models were unanimously wrong' },
+  { method: 'Leg1 Fix', best: 1.09, trades: '8,074', status: '❌ Dead End', color: '#ff6b6b', note: 'Flooded with weak patterns' },
+  { method: 'Pivot Detection', best: 1.17, trades: '~7,571', status: '❌ Dead End', color: '#ff6b6b', note: 'All 4 variants failed; swing detection not the bottleneck' }
+];
+
+const msEl = document.getElementById('method-summary');
+let msHtml = '<thead><tr><th>Method</th><th>Best PF</th><th>Trades</th><th>Status</th><th>Key Insight</th></tr></thead><tbody>';
+methodSummary.forEach(m => {
+  const pfColor = m.best >= 1.40 ? '#ffd93d' : m.best >= 1.23 ? '#6bff8e' : m.best >= 1.15 ? '#e0e0e0' : '#ff6b6b';
+  msHtml += `<tr>
+    <td><span class="method-badge" style="background:${m.color}22;color:${m.color}">${m.method}</span></td>
+    <td style="font-weight:700;color:${pfColor}">${m.best.toFixed(2)}</td>
+    <td>${m.trades}</td>
+    <td>${m.status}</td>
+    <td style="font-size:0.82em;color:#aaa">${m.note}</td>
+  </tr>`;
+});
+msHtml += '</tbody>';
+msEl.innerHTML = msHtml;
+</script>
+</body>
+</html>

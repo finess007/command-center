@@ -1,0 +1,2125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>👁️ Opportunity Radar</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --bg-primary: #0a0e17;
+  --bg-secondary: #111827;
+  --bg-card: #161f32;
+  --bg-card-hover: #1a2540;
+  --border: #1e2d4a;
+  --border-bright: #2563eb;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --accent-blue: #3b82f6;
+  --accent-cyan: #22d3ee;
+  --accent-green: #10b981;
+  --accent-amber: #f59e0b;
+  --accent-red: #ef4444;
+  --accent-purple: #a855f7;
+  --glow-blue: rgba(59, 130, 246, 0.15);
+  --glow-cyan: rgba(34, 211, 238, 0.1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Subtle grid background */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: 
+    linear-gradient(rgba(34, 211, 238, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── HEADER ── */
+.header {
+  text-align: center;
+  padding: 30px 0 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+
+.header h1 {
+  font-size: 2.2rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue), var(--accent-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.5px;
+}
+
+.header .subtitle {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  margin-top: 6px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* ── STATS BAR ── */
+.stats-bar {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  padding: 16px 0;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-top: 2px;
+}
+
+/* ── AXIOMS ── */
+.axioms {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.axiom {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.08), rgba(59, 130, 246, 0.08));
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  border-radius: 8px;
+  color: var(--accent-cyan);
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.axiom::before {
+  content: '◈ ';
+  opacity: 0.6;
+}
+
+/* ── SECTION HEADERS ── */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 32px 0 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.section-header h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+}
+
+.section-header .tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  padding: 3px 8px;
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent-blue);
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ── PATH CARDS ── */
+.paths-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 16px;
+}
+
+.path-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.path-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-bright);
+  transform: translateY(-1px);
+}
+
+.path-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue));
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.path-card:hover::before { opacity: 1; }
+
+.path-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.path-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.path-emoji {
+  font-size: 1.4rem;
+}
+
+.path-title {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.path-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Opportunity Score Ring */
+.score-ring {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+}
+
+.score-ring svg {
+  width: 52px;
+  height: 52px;
+  transform: rotate(-90deg);
+}
+
+.score-ring .bg {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 3;
+}
+
+.score-ring .progress {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.6s ease;
+}
+
+.score-ring .score-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.score-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.55rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.path-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.path-status {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.78rem;
+  color: var(--accent-green);
+  line-height: 1.5;
+  margin-bottom: 12px;
+  cursor: pointer;
+  min-height: 40px;
+  transition: border-color 0.2s;
+}
+
+.path-status:hover {
+  border-color: var(--accent-green);
+}
+
+.path-status:focus {
+  outline: none;
+  border-color: var(--accent-green);
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+.path-status[contenteditable="true"]:empty::before {
+  content: 'Click to add status notes...';
+  color: var(--text-muted);
+}
+
+.path-signals {
+  margin-top: 10px;
+}
+
+.path-signals .signal-item {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(30, 45, 74, 0.5);
+  line-height: 1.4;
+}
+
+.path-signals .signal-item::before {
+  content: '▸ ';
+  color: var(--accent-blue);
+}
+
+.path-signals .signal-item:last-child {
+  border-bottom: none;
+}
+
+/* ── SIGNALS FEED ── */
+.signals-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  padding: 6px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.filter-btn:hover, .filter-btn.active {
+  background: var(--accent-blue);
+  color: white;
+  border-color: var(--accent-blue);
+}
+
+.signal-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.signal-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: start;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  transition: all 0.15s;
+}
+
+.signal-card:hover {
+  border-color: var(--border-bright);
+}
+
+.signal-importance {
+  font-size: 1.1rem;
+  padding-top: 2px;
+}
+
+.signal-body {
+  min-width: 0;
+}
+
+.signal-text {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.signal-meta {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.signal-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.signal-path-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(168, 85, 247, 0.15);
+  color: var(--accent-purple);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.signal-source {
+  font-size: 0.65rem;
+  color: var(--accent-blue);
+  text-decoration: none;
+}
+
+.signal-source:hover {
+  text-decoration: underline;
+}
+
+.signal-arrow {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  padding-top: 4px;
+}
+
+/* ── DEEP DIVES ── */
+.deepdive-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.deepdive-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.deepdive-card:hover {
+  border-color: var(--border-bright);
+}
+
+.deepdive-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 20px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.deepdive-header:hover {
+  background: var(--bg-card-hover);
+}
+
+.deepdive-title-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.deepdive-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.deepdive-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.deepdive-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.deepdive-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  padding: 4px 10px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.deepdive-badge.critical { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
+.deepdive-badge.high { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); }
+.deepdive-badge.medium { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
+
+.deepdive-toggle {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  transition: transform 0.3s;
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+
+.deepdive-card.open .deepdive-toggle {
+  transform: rotate(180deg);
+}
+
+.deepdive-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease;
+}
+
+.deepdive-card.open .deepdive-body {
+  max-height: 5000px;
+}
+
+.deepdive-content {
+  padding: 0 20px 20px;
+  border-top: 1px solid var(--border);
+}
+
+.deepdive-section {
+  margin-top: 20px;
+}
+
+.deepdive-section-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--accent-cyan);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(34, 211, 238, 0.15);
+}
+
+.deepdive-layer {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px 14px;
+  align-items: start;
+  padding: 12px 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.deepdive-layer-status {
+  font-size: 1.1rem;
+  padding-top: 1px;
+}
+
+.deepdive-layer-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.deepdive-layer-desc {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.deepdive-layer-players {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.deepdive-entry {
+  padding: 14px 16px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.deepdive-entry.easy {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.deepdive-entry.medium {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.deepdive-entry.hard {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.deepdive-entry-title {
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+}
+
+.deepdive-entry.easy .deepdive-entry-title { color: var(--accent-green); }
+.deepdive-entry.medium .deepdive-entry-title { color: var(--accent-amber); }
+.deepdive-entry.hard .deepdive-entry-title { color: var(--accent-red); }
+
+.deepdive-entry-desc {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.deepdive-entry-ideas {
+  margin-top: 8px;
+  padding-left: 16px;
+}
+
+.deepdive-entry-ideas li {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  list-style: none;
+  position: relative;
+  padding-left: 4px;
+}
+
+.deepdive-entry-ideas li::before {
+  content: '▸';
+  position: absolute;
+  left: -12px;
+  color: var(--accent-cyan);
+}
+
+.deepdive-callout {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: rgba(59, 130, 246, 0.08);
+  border-left: 3px solid var(--accent-blue);
+  border-radius: 0 8px 8px 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.deepdive-callout strong {
+  color: var(--accent-cyan);
+}
+
+@media (max-width: 768px) {
+  .deepdive-header { padding: 14px 16px; }
+  .deepdive-content { padding: 0 16px 16px; }
+  .deepdive-title { font-size: 0.9rem; }
+}
+
+/* ── CORE THESES ── */
+.theses-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.thesis-card {
+  background: linear-gradient(135deg, rgba(247, 147, 26, 0.06), rgba(168, 85, 247, 0.06));
+  border: 1px solid rgba(247, 147, 26, 0.25);
+  border-radius: 12px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.thesis-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #f7931a, #a855f7, #22d3ee);
+}
+
+.thesis-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.thesis-title-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.thesis-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.thesis-title {
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: #f7931a;
+  letter-spacing: -0.3px;
+}
+
+.thesis-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+.thesis-conviction {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  padding: 4px 12px;
+  border-radius: 12px;
+  background: rgba(247, 147, 26, 0.15);
+  color: #f7931a;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.thesis-summary {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.thesis-layers {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.thesis-layer {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.thesis-layer-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #f7931a;
+  background: rgba(247, 147, 26, 0.15);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.thesis-layer-name {
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.thesis-layer-desc {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.thesis-insight {
+  padding: 14px 18px;
+  background: rgba(34, 211, 238, 0.06);
+  border-left: 3px solid var(--accent-cyan);
+  border-radius: 0 8px 8px 0;
+  margin-bottom: 12px;
+}
+
+.thesis-insight-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--accent-cyan);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.thesis-insight-text {
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.thesis-price {
+  padding: 12px 18px;
+  background: rgba(247, 147, 26, 0.08);
+  border: 1px solid rgba(247, 147, 26, 0.2);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.thesis-price-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #f7931a;
+}
+
+.thesis-price-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ── INVESTMENT FILTER ── */
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.filter-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.filter-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+}
+
+.filter-card.tier-1::before { background: linear-gradient(90deg, var(--accent-amber), var(--accent-red)); }
+.filter-card.tier-2::before { background: linear-gradient(90deg, var(--accent-green), var(--accent-cyan)); }
+.filter-card.tier-3::before { background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple)); }
+.filter-card.tier-4::before { background: linear-gradient(90deg, #f59e0b, #10b981); }
+
+.filter-card-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+}
+
+.filter-card-name {
+  font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 6px;
+  color: var(--text-primary);
+}
+
+.filter-card-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.filter-card-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.filter-example {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  padding: 3px 8px;
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--accent-blue);
+  border-radius: 4px;
+}
+
+.filter-card-verdict {
+  font-size: 0.75rem;
+  color: var(--accent-cyan);
+  font-style: italic;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  margin-top: 4px;
+}
+
+.filter-killzone {
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 8px;
+  padding: 14px 20px;
+  font-size: 0.8rem;
+  color: var(--accent-red);
+  font-weight: 500;
+  text-align: center;
+}
+
+.filter-killzone::before {
+  content: '⛔ ';
+}
+
+.filter-subtitle {
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  color: var(--accent-cyan);
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+/* ── DUAL OUTPUT ── */
+.dual-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 768px) {
+  .dual-grid { grid-template-columns: 1fr; }
+}
+
+.dual-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.dual-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+}
+
+.dual-card.invest::before { background: linear-gradient(90deg, var(--accent-amber), #f97316); }
+.dual-card.act::before { background: linear-gradient(90deg, var(--accent-green), var(--accent-cyan)); }
+
+.act-types {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 12px 0 6px;
+}
+
+.act-type {
+  font-size: 0.7rem;
+  padding: 4px 10px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 6px;
+  color: var(--accent-green);
+}
+
+.dual-icon { font-size: 2.5rem; margin-bottom: 10px; }
+
+.dual-name {
+  font-weight: 800;
+  font-size: 1.2rem;
+  margin-bottom: 6px;
+}
+
+.dual-card.invest .dual-name { color: var(--accent-amber); }
+.dual-card.build .dual-name { color: var(--accent-green); }
+
+.dual-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.dual-question {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  color: var(--accent-cyan);
+  font-weight: 500;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  background: rgba(34, 211, 238, 0.06);
+  border-radius: 6px;
+  border-left: 3px solid var(--accent-cyan);
+}
+
+.dual-example {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-style: italic;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.dual-insight {
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  font-weight: 600;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.06), rgba(168, 85, 247, 0.06));
+  border: 1px solid rgba(34, 211, 238, 0.15);
+  border-radius: 8px;
+}
+
+/* ── BLIND SPOTS ── */
+.blindspot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 16px;
+}
+
+.blindspot-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent-amber);
+  border-radius: 8px;
+  padding: 18px;
+}
+
+.blindspot-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--accent-amber);
+  margin-bottom: 8px;
+}
+
+.blindspot-text {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+
+.blindspot-pattern {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--accent-purple);
+  padding: 6px 10px;
+  background: rgba(168, 85, 247, 0.1);
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.blindspot-pattern::before {
+  content: '⟁ Pattern: ';
+  opacity: 0.7;
+}
+
+/* ── PLATFORM WATCH ── */
+.platform-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 16px;
+}
+
+.platform-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px;
+  position: relative;
+}
+
+.platform-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.platform-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.heat-bar {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.heat-dot {
+  width: 6px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--border);
+}
+
+.heat-dot.active { background: var(--accent-green); }
+.heat-dot.active.medium { background: var(--accent-amber); }
+.heat-dot.active.hot { background: var(--accent-red); }
+
+.platform-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.platform-opp {
+  font-size: 0.78rem;
+  color: var(--accent-cyan);
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.platform-opp::before {
+  content: '→ ';
+}
+
+.platform-examples {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.platform-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  padding: 3px 8px;
+  background: rgba(34, 211, 238, 0.1);
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  border-radius: 4px;
+  color: var(--accent-cyan);
+}
+
+/* ── BACK LINK ── */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.8rem;
+  margin-bottom: 10px;
+  transition: color 0.2s;
+}
+
+.back-link:hover {
+  color: var(--accent-cyan);
+}
+
+/* ── MOBILE ── */
+@media (max-width: 768px) {
+  .container { padding: 12px; }
+  .header h1 { font-size: 1.6rem; }
+  .stats-bar { gap: 20px; flex-wrap: wrap; }
+  .stat-value { font-size: 1.3rem; }
+  .axioms { flex-direction: column; }
+  .axiom { font-size: 0.72rem; padding: 8px 14px; text-align: center; }
+  .paths-grid { grid-template-columns: 1fr; }
+  .blindspot-grid { grid-template-columns: 1fr; }
+  .platform-grid { grid-template-columns: 1fr; }
+  .signal-card { grid-template-columns: auto 1fr; }
+  .signal-arrow { display: none; }
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-blue); }
+
+/* ── ANIMATIONS ── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.path-card, .signal-card, .blindspot-card, .platform-card {
+  animation: fadeIn 0.4s ease forwards;
+}
+
+/* Add signal form */
+.add-signal-form {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  display: none;
+}
+
+.add-signal-form.visible { display: block; }
+
+.form-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.form-input {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.82rem;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  flex: 1;
+  min-width: 150px;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+}
+
+.form-select {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.form-btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  padding: 8px 20px;
+  background: var(--accent-blue);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: background 0.2s;
+}
+
+.form-btn:hover { background: #2563eb; }
+
+.form-btn.secondary {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.form-btn.secondary:hover {
+  border-color: var(--text-secondary);
+}
+
+.toggle-form-btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  padding: 6px 14px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 6px;
+  color: var(--accent-green);
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.2s;
+}
+
+.toggle-form-btn:hover {
+  background: rgba(16, 185, 129, 0.25);
+}
+
+/* Toast notification */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 12px 20px;
+  background: var(--accent-green);
+  color: white;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  transform: translateY(80px);
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 1000;
+}
+
+.toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Last updated */
+.last-updated {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 20px 0;
+  border-top: 1px solid var(--border);
+  margin-top: 40px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <a href="index.html" class="back-link">← Command Center</a>
+  
+  <!-- HEADER -->
+  <header class="header">
+    <h1>👁️ Opportunity Radar</h1>
+    <div class="subtitle">Scanning for alpha · Ivo's wealth intelligence system</div>
+  </header>
+
+  <!-- STATS BAR -->
+  <div class="stats-bar">
+    <div class="stat-item">
+      <div class="stat-value" id="stat-days">0</div>
+      <div class="stat-label">Days Tracking</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="stat-signals">0</div>
+      <div class="stat-label">Signals Logged</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="stat-acted">0</div>
+      <div class="stat-label">Acted On</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="stat-paths">5</div>
+      <div class="stat-label">Active Paths</div>
+    </div>
+  </div>
+
+  <!-- AXIOMS -->
+  <div class="axioms" id="axioms-container"></div>
+
+  <!-- CORE THESES -->
+  <div id="core-theses-section">
+    <div class="section-header">
+      <h2>🔐 Core Theses</h2>
+      <span class="tag">High Conviction</span>
+    </div>
+    <div class="theses-grid">
+      <div class="thesis-card">
+        <div class="thesis-header">
+          <div class="thesis-title-area">
+            <div class="thesis-icon">₿</div>
+            <div>
+              <div class="thesis-title">Bitcoin = Post-AI Trust Layer</div>
+              <div class="thesis-meta">GMONEY (Bullion, Bitcoin & Bullshit) + Ivo's analysis · Feb 12, 2026</div>
+            </div>
+          </div>
+          <div class="thesis-conviction">🔥 Max Conviction</div>
+        </div>
+        <div class="thesis-summary">
+          In a world dominated by AI, logic-based security collapses. AI can find every bug, generate perfect deepfakes, and create infinite zero-cost attacks. Bitcoin is the only protocol that moves security from a <strong style="color:var(--accent-cyan)">logic problem</strong> to a <strong style="color:#f7931a">physics problem</strong>. This makes BTC the foundational trust layer for everything — identity, code integrity, content authenticity, communication.
+        </div>
+        <div class="thesis-layers">
+          <div class="thesis-layer">
+            <div class="thesis-layer-num">1</div>
+            <div>
+              <div class="thesis-layer-name">Economic Walls</div>
+              <div class="thesis-layer-desc">Lightning micropayments per attempt (login, email, API call). Free attacks become expensive.</div>
+            </div>
+          </div>
+          <div class="thesis-layer">
+            <div class="thesis-layer-num">2</div>
+            <div>
+              <div class="thesis-layer-name">Identity = Private Key</div>
+              <div class="thesis-layer-desc">No passwords to phish. Cryptographic signatures can't be deepfaked.</div>
+            </div>
+          </div>
+          <div class="thesis-layer">
+            <div class="thesis-layer-num">3</div>
+            <div>
+              <div class="thesis-layer-name">Proof of Authenticity</div>
+              <div class="thesis-layer-desc">Timestamp content on Bitcoin. Deepfakes can't match the hash.</div>
+            </div>
+          </div>
+          <div class="thesis-layer">
+            <div class="thesis-layer-num">4</div>
+            <div>
+              <div class="thesis-layer-name">Code Integrity</div>
+              <div class="thesis-layer-desc">Every commit hashed to Bitcoin. Tampered code won't match. Software verifies against chain before running.</div>
+            </div>
+          </div>
+          <div class="thesis-layer">
+            <div class="thesis-layer-num">5</div>
+            <div>
+              <div class="thesis-layer-name">Multi-sig for Critical Systems</div>
+              <div class="thesis-layer-desc">Physical hardware wallets in separate locations. AI can't access physical vaults.</div>
+            </div>
+          </div>
+          <div class="thesis-layer">
+            <div class="thesis-layer-num">6</div>
+            <div>
+              <div class="thesis-layer-name">Lightning as Immune System</div>
+              <div class="thesis-layer-desc">Every machine-to-machine interaction costs a micropayment. Bot armies become economically impossible.</div>
+            </div>
+          </div>
+        </div>
+        <div class="thesis-insight">
+          <div class="thesis-insight-label">Core Insight</div>
+          <div class="thesis-insight-text">Logic security asks <em>"Do you know the right answer?"</em> → AI wins. Bitcoin security asks <em>"Can you pay the price?"</em> → Physics wins.</div>
+        </div>
+        <div class="thesis-price">
+          <div class="thesis-price-value">$100M / coin</div>
+          <div class="thesis-price-label">If Bitcoin becomes the trust layer under all digital infrastructure</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INVESTMENT FILTER -->
+  <div id="investment-filter-section" style="display:none;">
+    <div class="section-header">
+      <h2>🎯 The Filter</h2>
+      <span class="tag">Decision Framework</span>
+    </div>
+    <div id="investment-filter-container"></div>
+  </div>
+
+  <!-- DUAL OUTPUT -->
+  <div id="dual-output-section" style="display:none;">
+    <div class="section-header">
+      <h2>🔀 Dual Output</h2>
+      <span class="tag">Every Signal → Two Questions</span>
+    </div>
+    <div id="dual-output-container"></div>
+  </div>
+
+  <!-- WEALTH PATHS -->
+  <div class="section-header">
+    <h2>🛤️ Wealth Paths</h2>
+    <span class="tag">5 Active</span>
+  </div>
+  <div class="paths-grid" id="paths-container"></div>
+
+  <!-- DAILY SIGNALS -->
+  <div class="section-header">
+    <h2>📡 Signal Feed</h2>
+    <span class="tag">Live</span>
+    <div style="margin-left: auto;">
+      <button class="toggle-form-btn" onclick="toggleSignalForm()">+ Add Signal</button>
+    </div>
+  </div>
+
+  <!-- Add Signal Form -->
+  <div class="add-signal-form" id="signal-form">
+    <div class="form-row">
+      <input type="text" class="form-input" id="new-signal-text" placeholder="Signal text...">
+    </div>
+    <div class="form-row">
+      <select class="form-select" id="new-signal-path">
+        <option value="A">Path A: Alessa</option>
+        <option value="D">Path D: Trading</option>
+        <option value="E" selected>Path E: Crypto</option>
+        <option value="F">Path F: X Fame</option>
+        <option value="NEW">New Venture: AI Co</option>
+      </select>
+      <select class="form-select" id="new-signal-importance">
+        <option value="high">🔴 High</option>
+        <option value="medium">🟡 Medium</option>
+        <option value="low">🟢 Low</option>
+      </select>
+      <input type="text" class="form-input" id="new-signal-source" placeholder="Source URL (optional)" style="min-width: 200px;">
+    </div>
+    <div class="form-row">
+      <button class="form-btn" onclick="addSignal()">Add Signal</button>
+      <button class="form-btn secondary" onclick="toggleSignalForm()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Filter Buttons -->
+  <div class="signals-controls" id="signal-filters"></div>
+  <div class="signal-feed" id="signals-container"></div>
+
+  <!-- DEEP DIVES -->
+  <div class="section-header">
+    <h2>🔬 Deep Dives</h2>
+    <span class="tag">Thesis & Strategy</span>
+  </div>
+  <div class="deepdive-grid" id="deepdives-container"></div>
+
+  <!-- BLIND SPOTS -->
+  <div class="section-header">
+    <h2>🔮 Sitting On Something</h2>
+    <span class="tag">Blind Spot Detector</span>
+  </div>
+  <div class="blindspot-grid" id="blindspots-container"></div>
+
+  <!-- PLATFORM WATCH -->
+  <div class="section-header">
+    <h2>🌐 Platform Economy Watch</h2>
+    <span class="tag">Emerging</span>
+  </div>
+  <div class="platform-grid" id="platforms-container"></div>
+
+  <!-- REAL EXAMPLES -->
+  <div class="section-header">
+    <h2>📖 Real Examples</h2>
+    <span class="tag">Lessons from the Field</span>
+  </div>
+  <div class="blindspot-grid" id="examples-container"></div>
+
+  <!-- DRAPER BLUEPRINT -->
+  <div class="section-header">
+    <h2>🐉 The Draper Blueprint</h2>
+    <span class="tag">Role Model</span>
+  </div>
+  <div id="draper-container" style="margin-bottom:32px"></div>
+
+  <!-- RESEARCH METHODOLOGY -->
+  <div class="section-header">
+    <h2>🔬 Nightly Research Methodology</h2>
+    <span class="tag">How Nova Scans</span>
+  </div>
+  <div id="methodology-container" style="margin-bottom:32px"></div>
+
+  <!-- LAST UPDATED -->
+  <div class="last-updated" id="last-updated"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG ──
+const DATA_URL = 'data/radar-data.json';
+const LS_PREFIX = 'radar_';
+
+let radarData = null;
+let activeFilter = 'ALL';
+
+// ── INIT ──
+async function init() {
+  try {
+    const resp = await fetch(DATA_URL + '?t=' + Date.now());
+    radarData = await resp.json();
+  } catch (e) {
+    console.error('Failed to load radar data:', e);
+    radarData = { axioms: [], paths: {}, signals: [], blindSpots: [], platformWatch: [], stats: {}, meta: {} };
+  }
+
+  // Merge localStorage signals
+  const localSignals = JSON.parse(localStorage.getItem(LS_PREFIX + 'signals') || '[]');
+  radarData.signals = [...localSignals, ...radarData.signals];
+
+  // Merge localStorage statuses
+  const localStatuses = JSON.parse(localStorage.getItem(LS_PREFIX + 'statuses') || '{}');
+  Object.keys(localStatuses).forEach(key => {
+    if (radarData.paths[key]) {
+      radarData.paths[key].status = localStatuses[key];
+    }
+  });
+
+  // Merge localStorage scores
+  const localScores = JSON.parse(localStorage.getItem(LS_PREFIX + 'scores') || '{}');
+  Object.keys(localScores).forEach(key => {
+    if (radarData.paths[key]) {
+      radarData.paths[key].score = localScores[key];
+    }
+  });
+
+  renderAll();
+}
+
+function renderAll() {
+  renderStats();
+  renderAxioms();
+  renderInvestmentFilter();
+  renderDualOutput();
+  renderPaths();
+  renderFilters();
+  renderSignals();
+  renderDeepDives();
+  renderBlindSpots();
+  renderPlatforms();
+  renderExamples();
+  renderDraper();
+  renderMethodology();
+  renderLastUpdated();
+}
+
+// ── STATS ──
+function renderStats() {
+  const startDate = new Date(radarData.meta.startDate || '2025-06-08');
+  const today = new Date();
+  const days = Math.max(1, Math.floor((today - startDate) / (1000 * 60 * 60 * 24)));
+  
+  document.getElementById('stat-days').textContent = days;
+  document.getElementById('stat-signals').textContent = radarData.signals.length;
+  document.getElementById('stat-acted').textContent = radarData.stats.opportunitiesActedOn || 0;
+  document.getElementById('stat-paths').textContent = Object.keys(radarData.paths).length;
+}
+
+// ── AXIOMS ──
+function renderAxioms() {
+  const container = document.getElementById('axioms-container');
+  container.innerHTML = radarData.axioms.map(a => `<div class="axiom">${a}</div>`).join('');
+}
+
+// ── INVESTMENT FILTER ──
+function renderInvestmentFilter() {
+  const f = radarData.investmentFilter;
+  if (!f) return;
+  document.getElementById('investment-filter-section').style.display = 'block';
+  const container = document.getElementById('investment-filter-container');
+  const cards = f.categories.map(c => `
+    <div class="filter-card tier-${c.tier}">
+      <div class="filter-card-icon">${c.icon}</div>
+      <div class="filter-card-name">${c.name}</div>
+      <div class="filter-card-desc">${c.description}</div>
+      <div class="filter-card-examples">${c.examples.map(e => `<span class="filter-example">${e}</span>`).join('')}</div>
+      <div class="filter-card-verdict">${c.verdict}</div>
+    </div>
+  `).join('');
+  container.innerHTML = `
+    <div class="filter-subtitle">${f.subtitle}</div>
+    <div class="filter-grid">${cards}</div>
+    <div class="filter-killzone">${f.killZone}</div>
+  `;
+}
+
+// ── DUAL OUTPUT ──
+function renderDualOutput() {
+  const d = radarData.dualOutput;
+  if (!d) return;
+  document.getElementById('dual-output-section').style.display = 'block';
+  const container = document.getElementById('dual-output-container');
+  const actTypes = d.actTypes ? `<div class="act-types">${d.actTypes.map(a => 
+    `<span class="act-type">${a.icon} ${a.type}: ${a.desc}</span>`
+  ).join('')}</div>` : '';
+  const cards = d.outputs.map(o => `
+    <div class="dual-card ${o.name.toLowerCase()}">
+      <div class="dual-icon">${o.icon}</div>
+      <div class="dual-name">${o.name}</div>
+      <div class="dual-desc">${o.description}</div>
+      ${o.name === 'ACT' ? actTypes : ''}
+      <div class="dual-question">${o.question}</div>
+      <div class="dual-example">${o.example}</div>
+    </div>
+  `).join('');
+  container.innerHTML = `
+    <div class="dual-grid">${cards}</div>
+    <div class="dual-insight">${d.insight}</div>
+  `;
+}
+
+// ── PATHS ──
+function renderPaths() {
+  const container = document.getElementById('paths-container');
+  const pathOrder = ['E', 'NEW', 'A', 'D', 'F'];
+  
+  container.innerHTML = pathOrder.map(key => {
+    const p = radarData.paths[key];
+    if (!p) return '';
+    
+    const score = p.score;
+    const circumference = 2 * Math.PI * 20;
+    const offset = circumference - (score / 10) * circumference;
+    const color = score >= 8 ? 'var(--accent-red)' : score >= 6 ? 'var(--accent-amber)' : 'var(--accent-green)';
+    
+    const signals = p.signals.map(s => `<div class="signal-item">${s}</div>`).join('');
+    
+    return `
+      <div class="path-card" style="animation-delay: ${pathOrder.indexOf(key) * 0.08}s">
+        <div class="path-header">
+          <div class="path-name">
+            <span class="path-emoji">${p.emoji}</span>
+            <div>
+              <div class="path-title">${p.name}</div>
+              <div class="path-label">Path ${key === 'NEW' ? '★' : key}</div>
+            </div>
+          </div>
+          <div>
+            <div class="score-ring">
+              <svg viewBox="0 0 44 44">
+                <circle class="bg" cx="22" cy="22" r="20"/>
+                <circle class="progress" cx="22" cy="22" r="20"
+                  stroke="${color}"
+                  stroke-dasharray="${circumference}"
+                  stroke-dashoffset="${offset}"/>
+              </svg>
+              <span class="score-text" style="color: ${color}">${score}</span>
+            </div>
+            <div class="score-label">Score</div>
+          </div>
+        </div>
+        <div class="path-desc">${p.description}</div>
+        <div class="path-status" contenteditable="true" 
+          data-path="${key}"
+          onblur="saveStatus('${key}', this.textContent)">${p.status}</div>
+        <div class="path-signals">${signals}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function saveStatus(key, text) {
+  const statuses = JSON.parse(localStorage.getItem(LS_PREFIX + 'statuses') || '{}');
+  statuses[key] = text.trim();
+  localStorage.setItem(LS_PREFIX + 'statuses', JSON.stringify(statuses));
+  showToast('Status saved');
+}
+
+// ── SIGNALS ──
+function renderFilters() {
+  const container = document.getElementById('signal-filters');
+  const paths = { ALL: 'All', ...Object.fromEntries(Object.entries(radarData.paths).map(([k, v]) => [k, v.name])) };
+  
+  container.innerHTML = Object.entries(paths).map(([key, name]) => 
+    `<button class="filter-btn ${activeFilter === key ? 'active' : ''}" onclick="setFilter('${key}')">${name}</button>`
+  ).join('');
+}
+
+function setFilter(filter) {
+  activeFilter = filter;
+  renderFilters();
+  renderSignals();
+}
+
+function renderSignals() {
+  const container = document.getElementById('signals-container');
+  const importanceMap = { high: '🔴', medium: '🟡', low: '🟢' };
+  
+  let signals = [...radarData.signals];
+  if (activeFilter !== 'ALL') {
+    signals = signals.filter(s => s.path === activeFilter);
+  }
+  
+  // Sort by date descending
+  signals.sort((a, b) => new Date(b.date) - new Date(a.date));
+  
+  container.innerHTML = signals.map(s => {
+    const pathName = radarData.paths[s.path]?.name || s.path;
+    let sourceLink = '';
+    if (s.source) {
+      try { sourceLink = `<a href="${s.source}" target="_blank" class="signal-source">${new URL(s.source).hostname}</a>`; }
+      catch(e) { sourceLink = `<span class="signal-source">${s.source}</span>`; }
+    }
+    
+    return `
+      <div class="signal-card">
+        <div class="signal-importance">${importanceMap[s.importance] || '🟡'}</div>
+        <div class="signal-body">
+          <div class="signal-text">${s.text}</div>
+          <div class="signal-meta">
+            <span class="signal-date">${s.date}</span>
+            <span class="signal-path-tag">${pathName}</span>
+            ${sourceLink}
+          </div>
+        </div>
+        <div class="signal-arrow">›</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── ADD SIGNAL ──
+function toggleSignalForm() {
+  document.getElementById('signal-form').classList.toggle('visible');
+}
+
+function addSignal() {
+  const text = document.getElementById('new-signal-text').value.trim();
+  if (!text) return;
+  
+  const path = document.getElementById('new-signal-path').value;
+  const importance = document.getElementById('new-signal-importance').value;
+  const source = document.getElementById('new-signal-source').value.trim();
+  
+  const signal = {
+    id: 'sig-local-' + Date.now(),
+    date: new Date().toISOString().split('T')[0],
+    text,
+    path,
+    importance,
+    source: source || null
+  };
+  
+  // Save to localStorage
+  const localSignals = JSON.parse(localStorage.getItem(LS_PREFIX + 'signals') || '[]');
+  localSignals.unshift(signal);
+  localStorage.setItem(LS_PREFIX + 'signals', JSON.stringify(localSignals));
+  
+  // Update in-memory data
+  radarData.signals.unshift(signal);
+  
+  // Reset form
+  document.getElementById('new-signal-text').value = '';
+  document.getElementById('new-signal-source').value = '';
+  toggleSignalForm();
+  
+  renderStats();
+  renderSignals();
+  showToast('Signal added');
+}
+
+// ── DEEP DIVES ──
+function renderDeepDives() {
+  const container = document.getElementById('deepdives-container');
+  const dives = radarData.deepDives || [];
+  if (!dives.length) { container.style.display = 'none'; return; }
+
+  container.innerHTML = dives.map(dd => {
+    const badgeClass = dd.priority === 'critical' ? 'critical' : dd.priority === 'high' ? 'high' : 'medium';
+    
+    const layersHtml = dd.layers.map(l => `
+      <div class="deepdive-layer">
+        <div class="deepdive-layer-status">${l.status}</div>
+        <div>
+          <div class="deepdive-layer-name">${l.name} <span style="font-weight:400;font-size:0.7rem;color:var(--text-muted)">[${l.statusLabel}]</span></div>
+          <div class="deepdive-layer-desc">${l.description}</div>
+          ${l.detail ? `<div class="deepdive-layer-desc" style="margin-top:4px;color:var(--accent-cyan);font-size:0.72rem">${l.detail}</div>` : ''}
+          ${l.players ? `<div class="deepdive-layer-players">Players: ${l.players}</div>` : ''}
+        </div>
+      </div>
+    `).join('');
+
+    const discoveryHtml = (dd.discoveryLayers || []).map(l => `
+      <div class="deepdive-layer">
+        <div class="deepdive-layer-status">${l.status}</div>
+        <div>
+          <div class="deepdive-layer-name">${l.name} <span style="font-weight:400;font-size:0.7rem;color:var(--text-muted)">[${l.statusLabel}]</span></div>
+          <div class="deepdive-layer-desc">${l.description}</div>
+          ${l.detail ? `<div class="deepdive-layer-desc" style="margin-top:4px;color:var(--accent-cyan);font-size:0.72rem">${l.detail}</div>` : ''}
+          ${l.players ? `<div class="deepdive-layer-players">Players: ${l.players}</div>` : ''}
+        </div>
+      </div>
+    `).join('');
+
+    const playbookHtml = dd.playbook ? `
+      <div class="deepdive-section">
+        <div class="deepdive-section-title">🎯 ${dd.playbook.title}</div>
+        <div style="font-size:0.8rem;color:var(--text-secondary);line-height:1.6;margin-bottom:12px;padding:12px 16px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.15);border-radius:8px">
+          ${dd.playbook.intro}
+        </div>
+        <ol style="padding-left:20px;margin:0">${dd.playbook.steps.map(s => `
+          <li style="font-size:0.8rem;color:var(--text-secondary);line-height:1.6;padding:4px 0;margin-bottom:4px"><span style="color:var(--accent-green)">${s}</span></li>
+        `).join('')}</ol>
+      </div>
+    ` : '';
+
+    const entriesHtml = dd.entryPoints.map(ep => `
+      <div class="deepdive-entry ${ep.level}">
+        <div class="deepdive-entry-title">${ep.label}</div>
+        <div class="deepdive-entry-desc">${ep.description}</div>
+        ${ep.ideas ? `<ul class="deepdive-entry-ideas">${ep.ideas.map(i => `<li>${i}</li>`).join('')}</ul>` : ''}
+      </div>
+    `).join('');
+
+    const insightsHtml = (dd.keyInsights || []).map(ins => `
+      <div style="padding:10px 14px;background:var(--bg-secondary);border-radius:8px;margin-bottom:8px;border-left:3px solid var(--accent-purple)">
+        <div style="font-weight:600;font-size:0.8rem;color:var(--accent-purple);margin-bottom:4px">💡 ${ins.label}</div>
+        <div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.5">${ins.text}</div>
+      </div>
+    `).join('');
+
+    return `
+      <div class="deepdive-card" id="${dd.id}">
+        <div class="deepdive-header" onclick="toggleDeepDive('${dd.id}')">
+          <div class="deepdive-title-area">
+            <div class="deepdive-icon">${dd.icon}</div>
+            <div>
+              <div class="deepdive-title">${dd.title}</div>
+              <div class="deepdive-subtitle">${dd.subtitle} · ${dd.date}</div>
+            </div>
+          </div>
+          <span class="deepdive-badge ${badgeClass}">${dd.priority}</span>
+          <div class="deepdive-toggle">▼</div>
+        </div>
+        <div class="deepdive-body">
+          <div class="deepdive-content">
+            <div class="deepdive-section">
+              <div class="deepdive-section-title">📊 ${dd.layersTitle || 'Key Layers'}</div>
+              ${layersHtml}
+            </div>
+            ${discoveryHtml ? `
+            <div class="deepdive-section">
+              <div class="deepdive-section-title">${dd.discoveryTitle || '🔍 How Agents Discover & Choose APIs'}</div>
+              ${discoveryHtml}
+            </div>` : ''}
+            ${dd.comparison ? `
+            <div class="deepdive-section">
+              <div class="deepdive-section-title">⚖️ ${dd.comparison.title}</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;border-radius:10px;overflow:hidden;margin-top:8px">
+                <div style="padding:10px 14px;background:var(--accent-red);color:white;font-weight:700;font-size:0.75rem;text-align:center">TODAY</div>
+                <div style="padding:10px 14px;background:var(--accent-green);color:white;font-weight:700;font-size:0.75rem;text-align:center">BITCOIN STANDARD</div>
+                ${dd.comparison.rows.map(r => `
+                  <div style="padding:10px 14px;background:rgba(239,68,68,0.08);font-size:0.78rem;color:var(--text-secondary);border-bottom:1px solid var(--border)">${r.today}</div>
+                  <div style="padding:10px 14px;background:rgba(16,185,129,0.08);font-size:0.78rem;color:var(--accent-green);border-bottom:1px solid var(--border)">${r.future}</div>
+                `).join('')}
+              </div>
+            </div>` : ''}
+            ${playbookHtml}
+            <div class="deepdive-section">
+              <div class="deepdive-section-title">🚀 Entry Points — How to Participate</div>
+              ${entriesHtml}
+            </div>
+            <div class="deepdive-section">
+              <div class="deepdive-section-title">🧠 Key Insights</div>
+              ${insightsHtml}
+            </div>
+            ${dd.recommendation ? `
+              <div class="deepdive-callout">
+                <strong>📌 Recommendation:</strong> ${dd.recommendation}
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleDeepDive(id) {
+  const card = document.getElementById(id);
+  card.classList.toggle('open');
+}
+
+// ── BLIND SPOTS ──
+function renderBlindSpots() {
+  const container = document.getElementById('blindspots-container');
+  container.innerHTML = radarData.blindSpots.map(bs => `
+    <div class="blindspot-card">
+      <div class="blindspot-title">${bs.title}</div>
+      <div class="blindspot-text">${bs.text}</div>
+      <div class="blindspot-pattern">${bs.pattern}</div>
+    </div>
+  `).join('');
+}
+
+// ── PLATFORMS ──
+function renderPlatforms() {
+  const container = document.getElementById('platforms-container');
+  
+  container.innerHTML = radarData.platformWatch.map(pw => {
+    const dots = Array.from({length: 10}, (_, i) => {
+      const isActive = i < pw.heat;
+      const heatClass = pw.heat >= 8 ? 'hot' : pw.heat >= 6 ? 'medium' : '';
+      return `<div class="heat-dot ${isActive ? 'active ' + heatClass : ''}"></div>`;
+    }).join('');
+    
+    const tags = pw.examples.map(ex => `<span class="platform-tag">${ex}</span>`).join('');
+    
+    return `
+      <div class="platform-card">
+        <div class="platform-header">
+          <div class="platform-name">${pw.platform}</div>
+          <div class="heat-bar">${dots}</div>
+        </div>
+        <div class="platform-desc">${pw.description}</div>
+        <div class="platform-opp">${pw.opportunity}</div>
+        <div class="platform-examples">${tags}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── REAL EXAMPLES ──
+function renderExamples() {
+  const container = document.getElementById('examples-container');
+  const examples = radarData.realExamples || [];
+  container.innerHTML = examples.map(ex => `
+    <div class="blindspot-card">
+      <div class="blindspot-title">${ex.title}</div>
+      <div class="blindspot-text">${ex.description}</div>
+      <div style="margin-top:10px;padding:10px;background:rgba(59,130,246,0.1);border-radius:8px;border-left:3px solid var(--accent-blue)">
+        <strong style="color:var(--accent-cyan)">💡 Lesson:</strong> <span style="color:var(--text-secondary)">${ex.lesson}</span>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:var(--text-muted)">
+        🔄 Pattern: ${ex.pattern}
+      </div>
+      ${ex.source ? `<div style="margin-top:6px;font-size:11px"><a href="${ex.source}" target="_blank" style="color:var(--accent-blue)">${ex.source.length > 60 ? ex.source.substring(0,60)+'...' : ex.source}</a></div>` : ''}
+    </div>
+  `).join('');
+}
+
+// ── DRAPER BLUEPRINT ──
+function renderDraper() {
+  const container = document.getElementById('draper-container');
+  const d = radarData.draperModel;
+  if (!d) { container.innerHTML = ''; return; }
+
+  const tierHTML = (label, color, items) => {
+    if (!items || !items.length) return '';
+    return `<div style="margin-bottom:12px">
+      <div style="color:${color};font-weight:600;font-size:13px;margin-bottom:6px">${label}</div>
+      ${items.map(i => `<div style="display:flex;gap:8px;padding:4px 0;font-size:13px">
+        <span style="color:${color};min-width:120px;font-weight:500">${i.name}</span>
+        <span style="color:var(--text-secondary)">${i.role}</span>
+      </div>`).join('')}
+    </div>`;
+  };
+
+  const p = d.portfolioByTier || {};
+  const statsHTML = d.stats ? `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:16px 0">
+      <div style="background:rgba(247,147,26,0.1);border:1px solid rgba(247,147,26,0.25);border-radius:8px;padding:12px;text-align:center">
+        <div style="color:#f7931a;font-size:20px;font-weight:700">${d.stats.btcHoldings.split(' ')[0]}</div>
+        <div style="color:var(--text-muted);font-size:11px">BTC held (never sold)</div>
+      </div>
+      <div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);border-radius:8px;padding:12px;text-align:center">
+        <div style="color:#22c55e;font-size:20px;font-weight:700">${d.stats.costBasis}</div>
+        <div style="color:var(--text-muted);font-size:11px">Cost basis (2014 auction)</div>
+      </div>
+      <div style="background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.25);border-radius:8px;padding:12px;text-align:center">
+        <div style="color:#a78bfa;font-size:20px;font-weight:700">${d.stats.currentValue}</div>
+        <div style="color:var(--text-muted);font-size:11px">Current value</div>
+      </div>
+      <div style="background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.25);border-radius:8px;padding:12px;text-align:center">
+        <div style="color:#38bdf8;font-size:20px;font-weight:700">${d.stats.latestFund}</div>
+        <div style="color:var(--text-muted);font-size:11px">Latest fund</div>
+      </div>
+    </div>` : '';
+
+  container.innerHTML = `
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px">
+      <div style="font-size:15px;color:var(--text-primary);margin-bottom:12px;line-height:1.5">${d.thesis}</div>
+      ${statsHTML}
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <div style="color:var(--accent-amber);font-weight:600;font-size:14px;margin-bottom:12px">Portfolio by Tier</div>
+        ${tierHTML('🌊 BTC-Native', '#38bdf8', p.btcNative)}
+        ${tierHTML('⚡ BTC Infrastructure', '#f7931a', p.btcInfra)}
+        ${tierHTML('🌐 Ecosystem', '#a78bfa', p.ecosystem)}
+      </div>
+      <div style="margin-top:16px;padding:14px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:8px">
+        <div style="color:#22c55e;font-weight:600;font-size:13px;margin-bottom:4px">💡 Key Insight</div>
+        <div style="color:var(--text-secondary);font-size:13px">${d.keyInsight}</div>
+      </div>
+      <div style="margin-top:12px;padding:14px;background:rgba(247,147,26,0.08);border:1px solid rgba(247,147,26,0.2);border-radius:8px">
+        <div style="color:#f7931a;font-weight:600;font-size:13px;margin-bottom:4px">🎯 Ivo's Application</div>
+        <div style="color:var(--text-secondary);font-size:13px">${d.ivoApplication}</div>
+      </div>
+    </div>
+  `;
+}
+
+// ── METHODOLOGY ──
+function renderMethodology() {
+  const container = document.getElementById('methodology-container');
+  const m = radarData.researchMethodology;
+  if (!m) { container.innerHTML = '<p style="color:var(--text-muted)">No methodology data.</p>'; return; }
+  
+  const phases = (m.phases || []).map(p => `
+    <div style="margin-bottom:16px">
+      <div style="color:var(--accent-cyan);font-weight:600;font-size:14px;margin-bottom:6px">${p.name}</div>
+      <ul style="list-style:none;padding:0">${p.steps.map(s => `<li style="color:var(--text-secondary);font-size:13px;padding:3px 0;padding-left:16px;position:relative"><span style="position:absolute;left:0;color:var(--accent-blue)">▸</span>${s}</li>`).join('')}</ul>
+    </div>
+  `).join('');
+  
+  const investFilter = (m.investmentFilter || []).map(f => `<li style="color:var(--text-secondary);font-size:13px;padding:3px 0;padding-left:16px;position:relative"><span style="position:absolute;left:0">🎯</span>${f}</li>`).join('');
+  
+  const dualOut = (m.dualOutput || []).map(f => `<li style="color:var(--text-secondary);font-size:13px;padding:3px 0;padding-left:16px;position:relative"><span style="position:absolute;left:0">🔀</span>${f}</li>`).join('');
+  
+  container.innerHTML = `
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <div style="color:var(--accent-green);font-family:'JetBrains Mono',monospace;font-size:13px">⏰ ${m.schedule}</div>
+        <div style="color:var(--accent-purple);font-family:'JetBrains Mono',monospace;font-size:13px">🧠 ${m.thinkingLevel}</div>
+      </div>
+      ${phases}
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <div style="color:var(--accent-amber);font-weight:600;font-size:14px;margin-bottom:8px">Investment Filter</div>
+        <ul style="list-style:none;padding:0">${investFilter}</ul>
+      </div>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+        <div style="color:var(--accent-cyan);font-weight:600;font-size:14px;margin-bottom:8px">Dual Output</div>
+        <ul style="list-style:none;padding:0">${dualOut}</ul>
+      </div>
+      <div style="margin-top:12px;font-size:12px;color:var(--text-muted)">→ ${m.feedsInto}</div>
+    </div>
+  `;
+}
+
+// ── LAST UPDATED ──
+function renderLastUpdated() {
+  const el = document.getElementById('last-updated');
+  const updated = radarData.meta.lastUpdated ? new Date(radarData.meta.lastUpdated).toLocaleString() : 'Unknown';
+  el.textContent = `Last data update: ${updated} · Radar v${radarData.meta.version || '1.0'}`;
+}
+
+// ── TOAST ──
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+// ── BOOT ──
+init();
+</script>
+</body>
+</html>
