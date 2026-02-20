@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multi-Pair Edge Comparison | V11c Spacing Champion</title>
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --surface2: #1a1a28;
+  --border: #2a2a3a;
+  --text: #e0e0e8;
+  --dim: #8888aa;
+  --accent: #6366f1;
+  --green: #22c55e;
+  --red: #ef4444;
+  --gold: #f59e0b;
+  --blue: #3b82f6;
+  --purple: #a855f7;
+  --cyan: #06b6d4;
+  --btc: #f7931a;
+  --eth: #627eea;
+  --sol: #9945ff;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 20px; max-width: 1400px; margin: 0 auto; }
+h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 4px; }
+.subtitle { color: var(--dim); font-size: 0.9rem; margin-bottom: 24px; }
+.hero { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 32px; }
+.hero-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center; }
+.hero-card .value { font-size: 2rem; font-weight: 700; line-height: 1.2; }
+.hero-card .label { font-size: 0.75rem; color: var(--dim); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.hero-card.btc .value { color: var(--btc); }
+.hero-card.eth .value { color: var(--eth); }
+.hero-card.sol .value { color: var(--sol); }
+.hero-card.all .value { color: var(--green); }
+.hero-card.gold .value { color: var(--gold); }
+
+.section { margin-bottom: 32px; }
+.section h2 { font-size: 1.3rem; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.section h2 span { font-size: 1.4rem; }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+.card h3 { font-size: 1rem; margin-bottom: 12px; color: var(--accent); }
+
+/* Comparison Table */
+.comp-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.comp-table th { text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border); color: var(--dim); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; }
+.comp-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.comp-table tr:last-child td { border-bottom: none; }
+.comp-table .pair-btc { color: var(--btc); font-weight: 600; }
+.comp-table .pair-eth { color: var(--eth); font-weight: 600; }
+.comp-table .pair-sol { color: var(--sol); font-weight: 600; }
+.comp-table .pair-all { color: var(--green); font-weight: 700; }
+.comp-table .pf { font-weight: 700; font-size: 1.1rem; }
+.comp-table .good { color: var(--green); }
+.comp-table .warn { color: var(--gold); }
+.comp-table .bad { color: var(--red); }
+.comp-table tr.total { background: var(--surface2); border-radius: 8px; }
+
+/* Bar chart */
+.bar-wrap { margin: 8px 0; }
+.bar-label { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 2px; }
+.bar-track { height: 24px; background: var(--surface2); border-radius: 4px; overflow: hidden; position: relative; }
+.bar-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 8px; font-size: 0.75rem; font-weight: 600; color: white; min-width: 2px; transition: width 0.8s ease; }
+.bar-fill.btc { background: var(--btc); }
+.bar-fill.eth { background: var(--eth); }
+.bar-fill.sol { background: var(--sol); }
+
+/* Heatmap */
+.heatmap { display: grid; gap: 2px; }
+.heat-cell { padding: 8px; text-align: center; border-radius: 4px; font-size: 0.8rem; font-weight: 600; }
+
+/* Spacing curve canvas */
+canvas { width: 100%; height: 300px; display: block; border-radius: 8px; background: var(--surface2); }
+
+/* Year table */
+.year-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+.year-cell { background: var(--surface2); border-radius: 8px; padding: 10px; text-align: center; }
+.year-cell .yr { font-weight: 700; font-size: 0.85rem; color: var(--dim); }
+.year-cell .yr-pf { font-size: 1.4rem; font-weight: 700; margin: 4px 0; }
+.year-cell .yr-detail { font-size: 0.7rem; color: var(--dim); }
+
+/* Tabs */
+.tabs { display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
+.tab { padding: 8px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 0.85rem; color: var(--dim); transition: all 0.2s; }
+.tab:hover { border-color: var(--accent); color: var(--text); }
+.tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* Verdict */
+.verdict { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border: 1px solid var(--accent); border-radius: 12px; padding: 24px; margin-top: 24px; }
+.verdict h3 { color: var(--gold); font-size: 1.1rem; margin-bottom: 12px; }
+.verdict p { color: var(--text); line-height: 1.6; margin-bottom: 8px; }
+.verdict .rec { color: var(--green); font-weight: 600; font-size: 1rem; }
+
+.loading { text-align: center; padding: 60px; color: var(--dim); }
+.loading .spinner { display: inline-block; width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 16px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 768px) {
+  body { padding: 12px; }
+  h1 { font-size: 1.3rem; }
+  .hero { grid-template-columns: repeat(2, 1fr); }
+  .comp-table { font-size: 0.8rem; }
+  .comp-table th, .comp-table td { padding: 6px 8px; }
+}
+</style>
+</head>
+<body>
+
+<h1>🌐 Multi-Pair Edge Comparison</h1>
+<p class="subtitle">V11c Spacing Champion (≥0.75× ATR) — BTC vs ETH vs SOL | 8.5 Years Backtest</p>
+
+<div id="app">
+  <div class="loading">
+    <div class="spinner"></div>
+    <p>Loading backtest results...</p>
+  </div>
+</div>
+
+<script>
+const DATA_URL = 'multipair-spacing-data.json';
+const PAIR_COLORS = { BTC: '#f7931a', ETH: '#627eea', SOL: '#9945ff', ALL: '#22c55e' };
+const PAIR_CLASSES = { BTC: 'btc', ETH: 'eth', SOL: 'sol', ALL: 'all' };
+
+function pfClass(pf) {
+  if (pf >= 1.3) return 'good';
+  if (pf >= 1.1) return 'warn';
+  return 'bad';
+}
+
+function renderApp(data) {
+  const app = document.getElementById('app');
+  const pairs = data.per_pair;
+  const combined = data.combined;
+  const champAll = combined.champion;
+  
+  // Get champion stats per pair
+  const champBTC = pairs.BTC?.champion_config || {};
+  const champETH = pairs.ETH?.champion_config || {};
+  const champSOL = pairs.SOL?.champion_config || {};
+  
+  app.innerHTML = `
+    <!-- HERO STATS -->
+    <div class="hero">
+      <div class="hero-card btc">
+        <div class="value">${champBTC.pf || '—'}</div>
+        <div class="label">BTC PF</div>
+      </div>
+      <div class="hero-card eth">
+        <div class="value">${champETH.pf || '—'}</div>
+        <div class="label">ETH PF</div>
+      </div>
+      <div class="hero-card sol">
+        <div class="value">${champSOL.pf || '—'}</div>
+        <div class="label">SOL PF</div>
+      </div>
+      <div class="hero-card all">
+        <div class="value">${champAll.pf || '—'}</div>
+        <div class="label">Combined PF</div>
+      </div>
+      <div class="hero-card gold">
+        <div class="value">${champAll.trades || '—'}</div>
+        <div class="label">Total Trades</div>
+      </div>
+      <div class="hero-card" style="border-color: var(--cyan)">
+        <div class="value" style="color: var(--cyan)">+${champAll.total_r || '—'}R</div>
+        <div class="label">Total R</div>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <div class="tab active" data-tab="comparison">📊 Comparison</div>
+      <div class="tab" data-tab="spacing">📈 Spacing Curves</div>
+      <div class="tab" data-tab="yearly">📅 Year-by-Year</div>
+      <div class="tab" data-tab="timeframes">⏱️ Timeframes</div>
+      <div class="tab" data-tab="longshort">⚔️ Long vs Short</div>
+      <div class="tab" data-tab="verdict">✅ Verdict</div>
+    </div>
+
+    <!-- TAB 1: COMPARISON -->
+    <div class="tab-content active" id="tab-comparison">
+      <div class="section">
+        <h2><span>📊</span> Champion Config Comparison</h2>
+        <div class="card">
+          <h3>Spacing ≥0.75× ATR | ATR 1.5× Band | BAS=5</h3>
+          <table class="comp-table">
+            <thead>
+              <tr>
+                <th>Pair</th><th>Trades</th><th>Win Rate</th><th>PF</th>
+                <th>Total R</th><th>R/Trade</th><th>Avg Win</th><th>Avg Loss</th>
+                <th>Max Win</th><th>Max Loss</th><th>Max Consec L</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${renderPairRow('BTC', champBTC)}
+              ${renderPairRow('ETH', champETH)}
+              ${renderPairRow('SOL', champSOL)}
+              ${renderPairRow('ALL', champAll, true)}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Trade Distribution Bar Chart -->
+      <div class="section">
+        <h2><span>📦</span> Trade Distribution</h2>
+        <div class="card">
+          ${renderBarChart(champBTC, champETH, champSOL, 'trades', 'Trades')}
+          ${renderBarChart(champBTC, champETH, champSOL, 'total_r', 'Total R')}
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: SPACING CURVES -->
+    <div class="tab-content" id="tab-spacing">
+      <div class="section">
+        <h2><span>📈</span> PF vs Spacing Threshold</h2>
+        <div class="card">
+          <canvas id="spacingChart" width="800" height="300"></canvas>
+        </div>
+        <div class="card">
+          <h3>Spacing Sweep — All Pairs</h3>
+          <table class="comp-table">
+            <thead>
+              <tr><th>Gap</th>
+                ${['BTC','ETH','SOL'].map(p => `<th colspan="2">${p}</th>`).join('')}
+                <th colspan="2">Combined</th>
+              </tr>
+              <tr><th></th>
+                ${['BTC','ETH','SOL','ALL'].map(() => '<th>PF</th><th>Trades</th>').join('')}
+              </tr>
+            </thead>
+            <tbody>
+              ${renderSpacingSweep(data)}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: YEARLY -->
+    <div class="tab-content" id="tab-yearly">
+      <div class="section">
+        <h2><span>📅</span> Year-by-Year Breakdown</h2>
+        ${['BTC','ETH','SOL'].map(p => renderYearlySection(p, pairs[p]?.champion_config?.yearly)).join('')}
+      </div>
+    </div>
+
+    <!-- TAB 4: TIMEFRAMES -->
+    <div class="tab-content" id="tab-timeframes">
+      <div class="section">
+        <h2><span>⏱️</span> Performance by Timeframe</h2>
+        <div class="card">
+          <table class="comp-table">
+            <thead>
+              <tr><th>Pair × TF</th><th>Trades</th><th>WR</th><th>PF</th><th>Total R</th></tr>
+            </thead>
+            <tbody>
+              ${renderTFTable(pairs)}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="section">
+        <h2><span>🔥</span> Pair × Timeframe Heatmap</h2>
+        <div class="card" id="heatmap-container"></div>
+      </div>
+    </div>
+
+    <!-- TAB 5: LONG VS SHORT -->
+    <div class="tab-content" id="tab-longshort">
+      <div class="section">
+        <h2><span>⚔️</span> Long vs Short Performance</h2>
+        <div class="card">
+          <table class="comp-table">
+            <thead>
+              <tr><th>Pair</th><th>Long PF</th><th>Short PF</th><th>Longs</th><th>Shorts</th><th>L/S Ratio</th><th>Edge</th></tr>
+            </thead>
+            <tbody>
+              ${renderLongShort(champBTC, champETH, champSOL, champAll)}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 6: VERDICT -->
+    <div class="tab-content" id="tab-verdict">
+      ${renderVerdict(champBTC, champETH, champSOL, champAll)}
+    </div>
+  `;
+  
+  // Tabs
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+      if (tab.dataset.tab === 'spacing') setTimeout(() => drawSpacingChart(data), 100);
+      if (tab.dataset.tab === 'timeframes') setTimeout(() => drawHeatmap(pairs), 100);
+    });
+  });
+}
+
+function renderPairRow(name, stats, isTotal) {
+  if (!stats || !stats.trades) return '';
+  const cls = isTotal ? 'total' : '';
+  const pairCls = `pair-${name.toLowerCase()}`;
+  return `<tr class="${cls}">
+    <td class="${pairCls}">${name}</td>
+    <td>${stats.trades.toLocaleString()}</td>
+    <td>${stats.wr}%</td>
+    <td class="pf ${pfClass(stats.pf)}">${stats.pf}</td>
+    <td class="${stats.total_r > 0 ? 'good' : 'bad'}">+${stats.total_r}R</td>
+    <td>+${stats.r_per_trade}</td>
+    <td>${stats.avg_win || '—'}</td>
+    <td>${stats.avg_loss || '—'}</td>
+    <td class="good">${stats.max_win || '—'}</td>
+    <td class="bad">${stats.max_loss || '—'}</td>
+    <td>${stats.max_consec_loss || '—'}</td>
+  </tr>`;
+}
+
+function renderBarChart(btc, eth, sol, key, label) {
+  const max = Math.max(btc[key]||0, eth[key]||0, sol[key]||0);
+  if (max === 0) return '';
+  const pct = (v) => Math.max(2, (v / max) * 100);
+  return `
+    <div class="bar-wrap">
+      <div class="bar-label"><span>BTC</span><span>${typeof btc[key] === 'number' ? (key === 'total_r' ? '+' + btc[key] + 'R' : btc[key].toLocaleString()) : '—'}</span></div>
+      <div class="bar-track"><div class="bar-fill btc" style="width:${pct(btc[key]||0)}%"></div></div>
+    </div>
+    <div class="bar-wrap">
+      <div class="bar-label"><span>ETH</span><span>${typeof eth[key] === 'number' ? (key === 'total_r' ? '+' + eth[key] + 'R' : eth[key].toLocaleString()) : '—'}</span></div>
+      <div class="bar-track"><div class="bar-fill eth" style="width:${pct(eth[key]||0)}%"></div></div>
+    </div>
+    <div class="bar-wrap">
+      <div class="bar-label"><span>SOL</span><span>${typeof sol[key] === 'number' ? (key === 'total_r' ? '+' + sol[key] + 'R' : sol[key].toLocaleString()) : '—'}</span></div>
+      <div class="bar-track"><div class="bar-fill sol" style="width:${pct(sol[key]||0)}%"></div></div>
+    </div>
+  `;
+}
+
+function renderSpacingSweep(data) {
+  const thresholds = [0.0, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0];
+  return thresholds.map(thr => {
+    const btc = data.per_pair.BTC?.spacing_tests?.[thr] || {};
+    const eth = data.per_pair.ETH?.spacing_tests?.[thr] || {};
+    const sol = data.per_pair.SOL?.spacing_tests?.[thr] || {};
+    const all = data.combined?.spacing_tests?.[String(thr)] || {};
+    const isChamp = thr === 0.75;
+    return `<tr style="${isChamp ? 'background:rgba(99,102,241,0.15);font-weight:600' : ''}">
+      <td>≥${thr}×</td>
+      <td class="${pfClass(btc.pf||0)}">${btc.pf||'—'}</td><td>${btc.trades||'—'}</td>
+      <td class="${pfClass(eth.pf||0)}">${eth.pf||'—'}</td><td>${eth.trades||'—'}</td>
+      <td class="${pfClass(sol.pf||0)}">${sol.pf||'—'}</td><td>${sol.trades||'—'}</td>
+      <td class="${pfClass(all.pf||0)}">${all.pf||'—'}</td><td>${all.trades||'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderYearlySection(name, yearly) {
+  if (!yearly) return `<div class="card"><h3>${name}</h3><p style="color:var(--dim)">No data</p></div>`;
+  const years = Object.keys(yearly).sort();
+  return `<div class="card">
+    <h3 style="color:${PAIR_COLORS[name]}">${name} — Year by Year</h3>
+    <div class="year-grid">
+      ${years.map(y => {
+        const s = yearly[y];
+        return `<div class="year-cell">
+          <div class="yr">${y}</div>
+          <div class="yr-pf ${pfClass(s.pf)}">${s.pf}</div>
+          <div class="yr-detail">${s.trades}t | ${s.wr}% | +${s.total_r}R</div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+function renderTFTable(pairs) {
+  const rows = [];
+  for (const name of ['BTC','ETH','SOL']) {
+    const byTF = pairs[name]?.champion_config?.by_tf || {};
+    for (const tf of ['1m','15m','1H']) {
+      const s = byTF[tf];
+      if (!s) continue;
+      rows.push(`<tr>
+        <td><span class="pair-${name.toLowerCase()}">${name}</span> ${tf}</td>
+        <td>${s.trades}</td>
+        <td>${s.wr}%</td>
+        <td class="pf ${pfClass(s.pf)}">${s.pf}</td>
+        <td class="${s.total_r > 0 ? 'good' : 'bad'}">${s.total_r > 0 ? '+' : ''}${s.total_r}R</td>
+      </tr>`);
+    }
+  }
+  return rows.join('');
+}
+
+function renderLongShort(btc, eth, sol, all) {
+  return [['BTC',btc],['ETH',eth],['SOL',sol],['ALL',all]].map(([name, s]) => {
+    if (!s || !s.trades) return '';
+    const edge = s.long_pf > s.short_pf ? 'Longs' : (s.short_pf > s.long_pf ? 'Shorts' : 'Even');
+    const edgeColor = edge === 'Shorts' ? 'var(--red)' : (edge === 'Longs' ? 'var(--green)' : 'var(--dim)');
+    return `<tr class="${name==='ALL'?'total':''}">
+      <td class="pair-${name.toLowerCase()}">${name}</td>
+      <td class="${pfClass(s.long_pf)}">${s.long_pf}</td>
+      <td class="${pfClass(s.short_pf)}">${s.short_pf}</td>
+      <td>${s.longs}</td>
+      <td>${s.shorts}</td>
+      <td>${s.longs && s.shorts ? (s.longs/s.shorts).toFixed(2) : '—'}</td>
+      <td style="color:${edgeColor};font-weight:600">${edge}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderVerdict(btc, eth, sol, all) {
+  // Auto-generate verdict based on results
+  const pairResults = [
+    { name: 'BTC', ...btc },
+    { name: 'ETH', ...eth },
+    { name: 'SOL', ...sol },
+  ].filter(p => p.trades > 0);
+  
+  const bestPF = pairResults.reduce((a, b) => a.pf > b.pf ? a : b, { pf: 0 });
+  const mostTrades = pairResults.reduce((a, b) => a.trades > b.trades ? a : b, { trades: 0 });
+  const bestRPerTrade = pairResults.reduce((a, b) => (a.r_per_trade||0) > (b.r_per_trade||0) ? a : b, { r_per_trade: 0 });
+  
+  const profitable = pairResults.filter(p => p.pf > 1.0);
+  const strong = pairResults.filter(p => p.pf >= 1.2);
+  
+  return `<div class="verdict">
+    <h3>🎯 Multi-Pair Verdict</h3>
+    <p><strong>Profitable pairs:</strong> ${profitable.map(p => p.name).join(', ') || 'None'} (${profitable.length}/3)</p>
+    <p><strong>Strong edge (PF ≥1.2):</strong> ${strong.map(p => `${p.name} (${p.pf})`).join(', ') || 'None'}</p>
+    <p><strong>Highest PF:</strong> ${bestPF.name} at ${bestPF.pf}</p>
+    <p><strong>Most trades:</strong> ${mostTrades.name} (${mostTrades.trades?.toLocaleString()})</p>
+    <p><strong>Best R/trade:</strong> ${bestRPerTrade.name} (+${bestRPerTrade.r_per_trade})</p>
+    <br>
+    <p><strong>Combined portfolio:</strong> ${all.trades?.toLocaleString() || '—'} trades, PF ${all.pf || '—'}, +${all.total_r || '—'}R total</p>
+    <p><strong>Diversification benefit:</strong> ${all.max_consec_loss || '—'} max consecutive losses (vs single-pair worst)</p>
+    <br>
+    <p class="rec">💡 Recommendation: ${generateRecommendation(pairResults, all)}</p>
+  </div>`;
+}
+
+function generateRecommendation(pairs, all) {
+  const strong = pairs.filter(p => p.pf >= 1.2);
+  const weak = pairs.filter(p => p.pf < 1.1);
+  
+  if (strong.length === 3) return `All 3 pairs show strong edge. Run full portfolio for maximum diversification (${all.trades} trades, ${(all.trades/102).toFixed(0)}/month).`;
+  if (strong.length >= 2) return `${strong.map(p=>p.name).join(' + ')} have strong edge. ${weak.length ? weak.map(p=>p.name).join(', ') + ' may dilute — consider excluding.' : 'Add cautiously.'}`;
+  if (strong.length === 1) return `${strong[0].name} carries the edge. Other pairs ${weak.length ? 'may dilute returns' : 'add volume but check if they help or hurt'}.`;
+  return `No pair shows PF ≥1.2 at this threshold. Consider tighter spacing or BTC-only.`;
+}
+
+// Spacing chart (Canvas)
+function drawSpacingChart(data) {
+  const canvas = document.getElementById('spacingChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  
+  canvas.width = canvas.clientWidth * dpr;
+  canvas.height = canvas.clientHeight * dpr;
+  ctx.scale(dpr, dpr);
+  
+  const W = canvas.clientWidth;
+  const H = canvas.clientHeight;
+  const pad = { top: 30, right: 30, bottom: 40, left: 50 };
+  const plotW = W - pad.left - pad.right;
+  const plotH = H - pad.top - pad.bottom;
+  
+  const thresholds = [0.0, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0];
+  
+  // Gather all PF values to set Y range
+  let minPF = 999, maxPF = 0;
+  const series = {};
+  
+  for (const pair of ['BTC','ETH','SOL']) {
+    series[pair] = [];
+    const tests = data.per_pair[pair]?.spacing_tests || {};
+    for (const thr of thresholds) {
+      const s = tests[thr];
+      if (s && s.trades > 10) {
+        series[pair].push({ x: thr, y: s.pf, trades: s.trades });
+        minPF = Math.min(minPF, s.pf);
+        maxPF = Math.max(maxPF, s.pf);
+      }
+    }
+  }
+  
+  minPF = Math.floor(minPF * 10) / 10 - 0.1;
+  maxPF = Math.ceil(maxPF * 10) / 10 + 0.1;
+  
+  const xScale = (v) => pad.left + (v / 2.0) * plotW;
+  const yScale = (v) => pad.top + plotH - ((v - minPF) / (maxPF - minPF)) * plotH;
+  
+  // Grid
+  ctx.strokeStyle = '#2a2a3a';
+  ctx.lineWidth = 0.5;
+  for (let pf = Math.ceil(minPF * 10) / 10; pf <= maxPF; pf += 0.1) {
+    const y = yScale(pf);
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W - pad.right, y); ctx.stroke();
+    ctx.fillStyle = '#8888aa';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(pf.toFixed(1), pad.left - 8, y + 4);
+  }
+  
+  // X axis labels
+  ctx.textAlign = 'center';
+  for (const thr of thresholds) {
+    const x = xScale(thr);
+    ctx.fillStyle = '#8888aa';
+    ctx.fillText(`≥${thr}×`, x, H - pad.bottom + 20);
+    ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, H - pad.bottom); ctx.stroke();
+  }
+  
+  // Champion line (0.75)
+  ctx.strokeStyle = 'rgba(99,102,241,0.4)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 4]);
+  const champX = xScale(0.75);
+  ctx.beginPath(); ctx.moveTo(champX, pad.top); ctx.lineTo(champX, H - pad.bottom); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#6366f1';
+  ctx.font = '10px sans-serif';
+  ctx.fillText('Champion', champX, pad.top - 8);
+  
+  // Lines
+  for (const [pair, color] of [['BTC','#f7931a'],['ETH','#627eea'],['SOL','#9945ff']]) {
+    const pts = series[pair];
+    if (pts.length < 2) continue;
+    
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    pts.forEach((p, i) => {
+      const x = xScale(p.x), y = yScale(p.y);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    
+    // Dots
+    pts.forEach(p => {
+      const x = xScale(p.x), y = yScale(p.y);
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
+      
+      // Label at champion threshold
+      if (p.x === 0.75) {
+        ctx.fillStyle = color;
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(`${pair} ${p.y}`, x + 8, y - 6);
+      }
+    });
+  }
+  
+  // Legend
+  ctx.font = '12px sans-serif';
+  let lx = pad.left + 10;
+  for (const [pair, color] of [['BTC','#f7931a'],['ETH','#627eea'],['SOL','#9945ff']]) {
+    ctx.fillStyle = color;
+    ctx.fillRect(lx, pad.top + 5, 14, 3);
+    ctx.fillText(pair, lx + 18, pad.top + 12);
+    lx += 70;
+  }
+  
+  // Axis labels
+  ctx.fillStyle = '#8888aa';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Min Level Gap (× ATR)', W/2, H - 4);
+  ctx.save();
+  ctx.translate(12, H/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('Profit Factor', 0, 0);
+  ctx.restore();
+}
+
+// Heatmap
+function drawHeatmap(pairs) {
+  const container = document.getElementById('heatmap-container');
+  if (!container) return;
+  
+  const tfs = ['1m', '15m', '1H'];
+  const pairNames = ['BTC', 'ETH', 'SOL'];
+  
+  let html = '<div class="heatmap" style="grid-template-columns: 80px repeat(3,1fr);">';
+  html += '<div></div>';
+  tfs.forEach(tf => { html += `<div style="text-align:center;font-weight:600;padding:8px;color:var(--dim)">${tf}</div>`; });
+  
+  for (const name of pairNames) {
+    html += `<div style="padding:8px;font-weight:600;color:${PAIR_COLORS[name]}">${name}</div>`;
+    const byTF = pairs[name]?.champion_config?.by_tf || {};
+    for (const tf of tfs) {
+      const s = byTF[tf];
+      if (!s) {
+        html += '<div class="heat-cell" style="background:#1a1a28;color:var(--dim)">—</div>';
+        continue;
+      }
+      const pf = s.pf;
+      let bg;
+      if (pf >= 1.5) bg = 'rgba(34,197,94,0.4)';
+      else if (pf >= 1.3) bg = 'rgba(34,197,94,0.25)';
+      else if (pf >= 1.1) bg = 'rgba(245,158,11,0.25)';
+      else if (pf >= 1.0) bg = 'rgba(245,158,11,0.15)';
+      else bg = 'rgba(239,68,68,0.2)';
+      
+      html += `<div class="heat-cell" style="background:${bg}">
+        <div style="font-size:1.1rem">${pf}</div>
+        <div style="font-size:0.65rem;color:var(--dim)">${s.trades}t | +${s.total_r}R</div>
+      </div>`;
+    }
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+// Load data and render
+fetch(DATA_URL)
+  .then(r => r.json())
+  .then(data => renderApp(data))
+  .catch(err => {
+    document.getElementById('app').innerHTML = `
+      <div class="card" style="text-align:center;padding:40px">
+        <p style="color:var(--red);font-size:1.2rem;margin-bottom:8px">⚠️ Data not loaded</p>
+        <p style="color:var(--dim)">Place <code>multipair-spacing-data.json</code> in the same directory.</p>
+        <p style="color:var(--dim);font-size:0.8rem;margin-top:8px">${err.message}</p>
+      </div>`;
+  });
+</script>
+</body>
+</html>
