@@ -350,10 +350,11 @@ function renderBarChart(btc, eth, sol, key, label) {
 function renderSpacingSweep(data) {
   const thresholds = [0.0, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0];
   return thresholds.map(thr => {
-    const btc = data.per_pair.BTC?.spacing_tests?.[thr] || {};
-    const eth = data.per_pair.ETH?.spacing_tests?.[thr] || {};
-    const sol = data.per_pair.SOL?.spacing_tests?.[thr] || {};
-    const all = data.combined?.spacing_tests?.[String(thr)] || {};
+    const key = Number.isInteger(thr) ? thr.toFixed(1) : String(thr);
+    const btc = data.per_pair.BTC?.spacing_tests?.[key] || {};
+    const eth = data.per_pair.ETH?.spacing_tests?.[key] || {};
+    const sol = data.per_pair.SOL?.spacing_tests?.[key] || {};
+    const all = data.combined?.spacing_tests?.[key] || {};
     const isChamp = thr === 0.75;
     return `<tr style="${isChamp ? 'background:rgba(99,102,241,0.15);font-weight:600' : ''}">
       <td>≥${thr}×</td>
@@ -486,7 +487,7 @@ function drawSpacingChart(data) {
     series[pair] = [];
     const tests = data.per_pair[pair]?.spacing_tests || {};
     for (const thr of thresholds) {
-      const s = tests[thr];
+      const s = tests[Number.isInteger(thr) ? thr.toFixed(1) : String(thr)];
       if (s && s.trades > 10) {
         series[pair].push({ x: thr, y: s.pf, trades: s.trades });
         minPF = Math.min(minPF, s.pf);
