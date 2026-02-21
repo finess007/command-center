@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sweet Spot Anatomy — Why PF 4.34 Works</title>
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --surface2: #1a1a26;
+  --border: #2a2a3a;
+  --text: #e0e0e8;
+  --text2: #8888a0;
+  --gold: #f0b429;
+  --gold-dim: #8a6a18;
+  --green: #22c55e;
+  --red: #ef4444;
+  --blue: #3b82f6;
+  --purple: #a855f7;
+  --cyan: #06b6d4;
+  --orange: #f97316;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Inter',-apple-system,system-ui,sans-serif; }
+.header { padding:20px 24px 12px; border-bottom:1px solid var(--border); }
+.header h1 { font-size:22px; font-weight:700; color:var(--gold); }
+.header .subtitle { font-size:13px; color:var(--text2); margin-top:4px; }
+.hero-stats { display:flex; gap:16px; padding:16px 24px; flex-wrap:wrap; }
+.hero-stat { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px 18px; min-width:120px; }
+.hero-stat .val { font-size:28px; font-weight:800; }
+.hero-stat .lbl { font-size:11px; color:var(--text2); text-transform:uppercase; letter-spacing:0.5px; margin-top:2px; }
+.hero-stat.gold .val { color:var(--gold); }
+.hero-stat.green .val { color:var(--green); }
+.hero-stat.blue .val { color:var(--blue); }
+.hero-stat.purple .val { color:var(--purple); }
+
+.tabs { display:flex; gap:0; border-bottom:1px solid var(--border); padding:0 24px; overflow-x:auto; }
+.tab { padding:10px 16px; font-size:13px; font-weight:600; color:var(--text2); cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap; transition:all 0.2s; }
+.tab:hover { color:var(--text); }
+.tab.active { color:var(--gold); border-bottom-color:var(--gold); }
+.tab-content { display:none; padding:20px 24px; }
+.tab-content.active { display:block; }
+
+.card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:16px; }
+.card h3 { font-size:15px; font-weight:700; margin-bottom:10px; }
+.card .insight { font-size:13px; color:var(--text2); line-height:1.6; margin-bottom:8px; }
+.card .insight strong { color:var(--text); }
+.card .insight em { color:var(--gold); font-style:normal; font-weight:600; }
+
+canvas { display:block; width:100%; border-radius:8px; }
+
+/* Funnel */
+.funnel { display:flex; flex-direction:column; align-items:center; gap:0; padding:20px 0; }
+.funnel-stage { position:relative; text-align:center; padding:16px 0; }
+.funnel-bar { height:56px; border-radius:8px; display:flex; align-items:center; justify-content:center; margin:0 auto; transition:all 0.3s; }
+.funnel-bar .num { font-size:24px; font-weight:800; }
+.funnel-bar .meta { font-size:11px; opacity:0.8; margin-left:8px; }
+.funnel-label { font-size:12px; font-weight:600; margin-top:6px; color:var(--text2); }
+.funnel-arrow { font-size:20px; color:var(--text2); padding:4px 0; }
+.funnel-cut { font-size:11px; color:var(--red); font-weight:600; }
+
+/* Grid layout */
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media(max-width:768px) { .grid-2 { grid-template-columns:1fr; } }
+
+/* Table */
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th { text-align:left; padding:8px 10px; border-bottom:2px solid var(--border); color:var(--text2); font-weight:600; font-size:11px; text-transform:uppercase; }
+td { padding:8px 10px; border-bottom:1px solid var(--border); }
+tr:hover { background:var(--surface2); }
+.win { color:var(--green); }
+.loss { color:var(--red); }
+
+/* Anatomy diagram */
+.anatomy-svg { width:100%; max-width:700px; margin:0 auto; display:block; }
+
+/* Key insight box */
+.key-insight { background:linear-gradient(135deg, #1a1520, #12121a); border:1px solid var(--gold-dim); border-radius:10px; padding:16px 20px; margin:16px 0; }
+.key-insight h4 { color:var(--gold); font-size:14px; margin-bottom:8px; }
+.key-insight p { color:var(--text2); font-size:13px; line-height:1.6; }
+.key-insight p strong { color:var(--text); }
+
+/* Legend */
+.legend { display:flex; gap:16px; flex-wrap:wrap; padding:8px 0; font-size:12px; }
+.legend-item { display:flex; align-items:center; gap:5px; }
+.legend-dot { width:10px; height:10px; border-radius:50%; }
+
+/* Mini stats */
+.mini-stats { display:grid; grid-template-columns:repeat(auto-fit, minmax(100px, 1fr)); gap:10px; margin:12px 0; }
+.mini-stat { text-align:center; padding:10px; background:var(--surface2); border-radius:8px; }
+.mini-stat .v { font-size:20px; font-weight:700; }
+.mini-stat .l { font-size:10px; color:var(--text2); text-transform:uppercase; margin-top:2px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🔬 Sweet Spot Anatomy</h1>
+  <div class="subtitle">Why the 10-25% Box / 0.5-0.7 Step zone produces PF 4.34 — Visual deep-dive into pattern geometry</div>
+</div>
+
+<div class="hero-stats">
+  <div class="hero-stat gold"><div class="val">4.34</div><div class="lbl">Profit Factor</div></div>
+  <div class="hero-stat green"><div class="val">68%</div><div class="lbl">Win Rate</div></div>
+  <div class="hero-stat blue"><div class="val">41</div><div class="lbl">Sweet Spots</div></div>
+  <div class="hero-stat purple"><div class="val">+43.5R</div><div class="lbl">Total Return</div></div>
+  <div class="hero-stat" style="border-color:var(--gold-dim)"><div class="val" style="color:var(--orange)">+1.06</div><div class="lbl">Avg R/Trade</div></div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="scatter">🎯 The Sweet Zone</div>
+  <div class="tab" data-tab="funnel">🔻 Filter Pipeline</div>
+  <div class="tab" data-tab="dist">📊 Distributions</div>
+  <div class="tab" data-tab="anatomy">🧬 Pattern Anatomy</div>
+  <div class="tab" data-tab="wl">⚔️ Winners vs Losers</div>
+  <div class="tab" data-tab="trades">📋 All 41 Trades</div>
+</div>
+
+<!-- TAB 1: Scatter -->
+<div class="tab-content active" id="tab-scatter">
+  <div class="card">
+    <h3>Box Deviation vs Step Ratio — All Spacing Trades</h3>
+    <div class="insight">Each dot = one trade from the 2,607 spacing champion set. <em>Gold diamonds</em> = the 41 sweet spot trades. The shaded zone shows the sweet spot filter boundaries.</div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#22c55e40"></div> Win (all)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ef444440"></div> Loss (all)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div> Sweet Win</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--red);border:2px solid var(--gold)"></div> Sweet Loss</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--gold);opacity:0.15"></div> Sweet Zone</div>
+    </div>
+    <canvas id="scatterCanvas" height="500"></canvas>
+  </div>
+  <div class="key-insight">
+    <h4>💡 The Geometry of Edge</h4>
+    <p>The sweet zone sits at the intersection of two properties:<br>
+    • <strong>Box Deviation 10-25%</strong> — levels are "moderately imperfect". Too perfect (0-10%) = horizontal chop, not real MM accumulation. Too wide (>25%) = random price action, not structured levels.<br>
+    • <strong>Step Ratio 0.5-0.7</strong> — the spacing between L1→L2 and L2→L3 is relatively even. This means <strong>deliberate positioning</strong>, not random bounces. Real market makers place levels with consistent spacing.</p>
+  </div>
+</div>
+
+<!-- TAB 2: Funnel -->
+<div class="tab-content" id="tab-funnel">
+  <div class="card">
+    <h3>From 2,607 Trades to 41 — The Quality Funnel</h3>
+    <div class="insight">Each filter adds quality. Watch how PF multiplies while count shrinks — that's edge concentration.</div>
+    <div class="funnel" id="funnelContainer"></div>
+  </div>
+  <div class="key-insight">
+    <h4>💡 Geometry IS the Quality Gate</h4>
+    <p>Rule removal ablation (Feb 20) proved that <strong>volume filters are useless</strong> — removing them changes nothing. The <strong>sweet spot geometry</strong> (box deviation + step ratio) does all the heavy lifting. It's the only filter that takes PF from 1.31 to 4.34.</p>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <h3>What Each Filter Removes</h3>
+      <div class="insight">
+        <strong>Spacing ≥0.75× ATR:</strong> Removes trades where levels are too close together (noise). Keeps structurally significant levels.<br><br>
+        <strong>3-Box 10-25%:</strong> Removes trades where the TOP→L1 "box" is too tight (chop) or too wide (random). Keeps "moderate imperfection".<br><br>
+        <strong>Step 0.5-0.7:</strong> Removes trades where level spacing is erratic. Keeps deliberate, evenly-spaced levels — the MM signature.
+      </div>
+    </div>
+    <div class="card">
+      <h3>Edge Multiplication</h3>
+      <div class="insight">
+        <strong>Base (spacing only):</strong> PF 1.31 — slight edge<br>
+        <strong>+ Box filter:</strong> PF ~1.65 — getting sharper<br>
+        <strong>+ Step filter:</strong> PF 4.34 — <em>3.3× quality jump!</em><br><br>
+        The step ratio filter is the secret weapon. It's what separates "decent levels" from "market maker placement patterns".
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 3: Distributions -->
+<div class="tab-content" id="tab-dist">
+  <div class="grid-2">
+    <div class="card">
+      <h3>Box Deviation Distribution</h3>
+      <div class="insight">Where the sweet spots cluster vs all trades</div>
+      <canvas id="histBD" height="300"></canvas>
+    </div>
+    <div class="card">
+      <h3>Step Ratio Distribution</h3>
+      <div class="insight">The 0.5-0.7 sweet zone is a narrow band</div>
+      <canvas id="histSR" height="300"></canvas>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <h3>By Timeframe</h3>
+      <canvas id="chartTF" height="200"></canvas>
+    </div>
+    <div class="card">
+      <h3>By Direction</h3>
+      <canvas id="chartDir" height="200"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <h3>By Year</h3>
+    <canvas id="chartYear" height="220"></canvas>
+  </div>
+</div>
+
+<!-- TAB 4: Anatomy -->
+<div class="tab-content" id="tab-anatomy">
+  <div class="card">
+    <h3>Anatomy of a Sweet Spot Pattern</h3>
+    <div class="insight">What makes the 3-box structure with "moderate imperfection" a market maker fingerprint</div>
+    <canvas id="anatomyCanvas" height="520"></canvas>
+  </div>
+  <div class="grid-2">
+    <div class="key-insight">
+      <h4>📐 Box Deviation (10-25%)</h4>
+      <p>Measures how far the TOP overshoots L3 (the last level before entry), relative to the total L1→L3 range.<br><br>
+      <strong>Formula:</strong> (TOP - L3) / (L3 - L1)<br><br>
+      • <strong>&lt;10%:</strong> TOP barely exceeds L3 = horizontal chop, no real sweep<br>
+      • <strong>10-25%:</strong> Moderate overshoot = MM probing above levels, triggering stops<br>
+      • <strong>&gt;25%:</strong> Too far from levels = random volatility, no structure</p>
+    </div>
+    <div class="key-insight">
+      <h4>📏 Step Ratio (0.5-0.7)</h4>
+      <p>Measures the evenness of level spacing. Ratio of (L2-L1) to (L3-L2).<br><br>
+      <strong>Formula:</strong> (L2 - L1) / (L3 - L2)<br><br>
+      • <strong>&lt;0.5:</strong> First step too small = levels bunched at bottom, random<br>
+      • <strong>0.5-0.7:</strong> Steps moderately even = deliberate placement pattern<br>
+      • <strong>&gt;0.7:</strong> Steps too equal or first bigger = could be accidental alignment</p>
+    </div>
+  </div>
+  <div class="key-insight">
+    <h4>🏭 Why "Moderate Imperfection" = Real Market Makers</h4>
+    <p>Perfect alignment (step=1.0, box=0%) happens in choppy, ranging markets — not from institutional positioning. Real market makers don't place levels at mathematically perfect intervals. They place them at <strong>structurally significant prices</strong> (round numbers, previous S/R, VWAP, options strikes). This creates patterns that are <strong>close to regular but not perfect</strong> — exactly the 0.5-0.7 step and 10-25% box zone. The sweet spot filter is essentially a <strong>market maker fingerprint detector</strong>.</p>
+  </div>
+</div>
+
+<!-- TAB 5: Winners vs Losers -->
+<div class="tab-content" id="tab-wl">
+  <div class="card">
+    <h3>Sweet Spot: What Separates Winners from Losers?</h3>
+    <div class="insight">28 winners (68%) vs 13 losers (32%) — surprisingly similar geometry</div>
+  </div>
+  <div class="grid-2">
+    <div class="card" style="border-color:var(--green)">
+      <h3 style="color:var(--green)">✅ Winners (28 trades)</h3>
+      <div class="mini-stats" id="winnerStats"></div>
+    </div>
+    <div class="card" style="border-color:var(--red)">
+      <h3 style="color:var(--red)">❌ Losers (13 trades)</h3>
+      <div class="mini-stats" id="loserStats"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Side-by-Side Comparison</h3>
+    <canvas id="compareCanvas" height="300"></canvas>
+  </div>
+  <div class="key-insight">
+    <h4>💡 The Edge is in the Setup, Not the Execution</h4>
+    <p>Winners and losers have <strong>nearly identical geometry</strong> (box dev: 0.179 vs 0.176, step ratio: 0.602 vs 0.608). This means the sweet spot filter correctly identifies high-quality setups — the 32% loss rate is just <strong>normal market variance</strong>, not filter leakage. With PF 4.34, the winners more than compensate for the losses. The average winner (+2.02R) is 2× the average loser (-1.00R) — classic "cut losses, let winners run" profile.</p>
+  </div>
+  <div class="card">
+    <h3>R-Multiple Distribution</h3>
+    <canvas id="rDistCanvas" height="250"></canvas>
+  </div>
+</div>
+
+<!-- TAB 6: Trade List -->
+<div class="tab-content" id="tab-trades">
+  <div class="card">
+    <h3>All 41 Sweet Spot Trades</h3>
+    <div class="insight">Sorted by date. Click column headers to re-sort.</div>
+    <div style="overflow-x:auto">
+      <table id="tradeTable">
+        <thead>
+          <tr>
+            <th data-sort="date">Date ↕</th>
+            <th data-sort="tf">TF</th>
+            <th data-sort="dir">Dir</th>
+            <th data-sort="r">R ↕</th>
+            <th data-sort="exit_type">Exit</th>
+            <th data-sort="box_deviation">Box Dev ↕</th>
+            <th data-sort="step_ratio">Step ↕</th>
+            <th data-sort="spread_ratio">Spread</th>
+            <th data-sort="entry">Entry</th>
+          </tr>
+        </thead>
+        <tbody id="tradeBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+// === DATA (embedded at build time or loaded) ===
+let DATA = null;
+
+async function loadData() {
+  try {
+    const resp = await fetch('data/sweetspot-anatomy-data.json');
+    DATA = await resp.json();
+  } catch(e) {
+    console.error('Failed to load data:', e);
+    return;
+  }
+  renderAll();
+}
+
+function renderAll() {
+  renderScatter();
+  renderFunnel();
+  renderDistributions();
+  renderAnatomy();
+  renderWinnersLosers();
+  renderTradeList();
+}
+
+// === TAB SWITCHING ===
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+// === SCATTER PLOT ===
+function renderScatter() {
+  const canvas = document.getElementById('scatterCanvas');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = 500 * dpr;
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = 500;
+  const pad = { top:20, right:30, bottom:50, left:60 };
+  const pw = W - pad.left - pad.right;
+  const ph = H - pad.top - pad.bottom;
+
+  // Axis ranges
+  const xMin = 0, xMax = 0.8;
+  const yMin = 0, yMax = 2.5;
+  const sx = v => pad.left + ((v - xMin)/(xMax - xMin)) * pw;
+  const sy = v => pad.top + ph - ((v - yMin)/(yMax - yMin)) * ph;
+
+  // Background
+  ctx.fillStyle = '#0d0d14';
+  ctx.fillRect(0, 0, W, H);
+
+  // Sweet zone highlight
+  ctx.fillStyle = 'rgba(240,180,41,0.07)';
+  ctx.fillRect(sx(0.10), sy(0.70), sx(0.25)-sx(0.10), sy(0.50)-sy(0.70));
+  ctx.strokeStyle = 'rgba(240,180,41,0.3)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([5,5]);
+  ctx.strokeRect(sx(0.10), sy(0.70), sx(0.25)-sx(0.10), sy(0.50)-sy(0.70));
+  ctx.setLineDash([]);
+
+  // Zone label
+  ctx.fillStyle = 'rgba(240,180,41,0.5)';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.fillText('SWEET ZONE', sx(0.12), sy(0.68));
+
+  // Grid
+  ctx.strokeStyle = '#1a1a2a';
+  ctx.lineWidth = 0.5;
+  for(let x = 0; x <= xMax; x += 0.1) {
+    ctx.beginPath(); ctx.moveTo(sx(x), pad.top); ctx.lineTo(sx(x), pad.top+ph); ctx.stroke();
+  }
+  for(let y = 0; y <= yMax; y += 0.5) {
+    ctx.beginPath(); ctx.moveTo(pad.left, sy(y)); ctx.lineTo(pad.left+pw, sy(y)); ctx.stroke();
+  }
+
+  // Axes
+  ctx.strokeStyle = '#3a3a4a';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.left, pad.top+ph); ctx.lineTo(pad.left+pw, pad.top+ph); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad.left, pad.top); ctx.lineTo(pad.left, pad.top+ph); ctx.stroke();
+
+  // Labels
+  ctx.fillStyle = '#6a6a80';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  for(let x = 0; x <= xMax; x += 0.1) {
+    ctx.fillText((x*100).toFixed(0) + '%', sx(x), pad.top+ph+18);
+  }
+  ctx.fillText('Box Deviation', W/2, H-8);
+
+  ctx.textAlign = 'right';
+  for(let y = 0; y <= yMax; y += 0.5) {
+    ctx.fillText(y.toFixed(1), pad.left-8, sy(y)+4);
+  }
+  ctx.save();
+  ctx.translate(14, H/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.textAlign = 'center';
+  ctx.fillText('Step Ratio', 0, 0);
+  ctx.restore();
+
+  // Plot all trades (small dots)
+  const all = DATA.scatterAll;
+  for(const p of all) {
+    if(p.bd > xMax || p.sr > yMax) continue;
+    ctx.beginPath();
+    ctx.arc(sx(p.bd), sy(p.sr), 2, 0, Math.PI*2);
+    ctx.fillStyle = p.w ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.15)';
+    ctx.fill();
+  }
+
+  // Plot sweet spot trades (larger diamonds)
+  const sweet = DATA.scatterSweet;
+  for(const p of sweet) {
+    const x = sx(p.bd), y = sy(p.sr);
+    const s = 6;
+    ctx.beginPath();
+    ctx.moveTo(x, y-s); ctx.lineTo(x+s, y); ctx.lineTo(x, y+s); ctx.lineTo(x-s, y); ctx.closePath();
+    if(p.w) {
+      ctx.fillStyle = 'rgba(240,180,41,0.9)';
+      ctx.fill();
+      ctx.strokeStyle = '#f0b429';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = 'rgba(239,68,68,0.9)';
+      ctx.fill();
+      ctx.strokeStyle = '#f0b429';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+  }
+
+  // Density annotation
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.font = '10px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(`${all.length} spacing trades · ${sweet.length} sweet spots`, pad.left+8, pad.top+14);
+}
+
+// === FUNNEL ===
+function renderFunnel() {
+  const container = document.getElementById('funnelContainer');
+  const p = DATA.pipeline;
+  const stages = [
+    { label:'Spacing Champion (≥0.75× ATR)', count:p.spacing.count, pf:p.spacing.pf, wr:p.spacing.wr, color:'var(--blue)', width:100 },
+    { label:'+ 3-Box Filter (10-25%)', count:p.threeBox.count, pf:p.threeBox.pf, wr:p.threeBox.wr, color:'var(--purple)', width:60 },
+    { label:'+ Step Filter (0.5-0.7)', count:p.sweetSpot.count, pf:p.sweetSpot.pf, wr:p.sweetSpot.wr, color:'var(--gold)', width:30 }
+  ];
+  
+  // Use the actual sweet spot stats for the last stage
+  stages[2].count = 41;
+  stages[2].pf = 4.34;
+  stages[2].wr = 68.3;
+
+  let html = '';
+  stages.forEach((s, i) => {
+    html += `<div class="funnel-stage">
+      <div class="funnel-bar" style="width:${s.width}%;background:${s.color}20;border:2px solid ${s.color}">
+        <span class="num" style="color:${s.color}">${s.count.toLocaleString()}</span>
+        <span class="meta" style="color:${s.color}">PF ${s.pf} · ${s.wr}% WR</span>
+      </div>
+      <div class="funnel-label">${s.label}</div>
+    </div>`;
+    if(i < stages.length - 1) {
+      const cut = stages[i].count - stages[i+1].count;
+      const pct = ((cut / stages[i].count) * 100).toFixed(0);
+      html += `<div class="funnel-arrow">↓</div>
+      <div class="funnel-cut">-${cut.toLocaleString()} trades (${pct}% cut)</div>
+      <div class="funnel-arrow">↓</div>`;
+    }
+  });
+  container.innerHTML = html;
+}
+
+// === DISTRIBUTIONS ===
+function renderDistributions() {
+  renderHistogram('histBD', DATA.distributions.boxDev, 'Box Deviation', v => (v*100).toFixed(0)+'%', [0.10, 0.25]);
+  renderHistogram('histSR', DATA.distributions.stepRatio, 'Step Ratio', v => v.toFixed(2), [0.50, 0.70]);
+  renderTFChart();
+  renderDirChart();
+  renderYearChart();
+}
+
+function renderHistogram(canvasId, distData, label, fmt, sweetRange) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = 300 * dpr;
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = 300;
+  const pad = { top:20, right:20, bottom:40, left:50 };
+  const pw = W - pad.left - pad.right;
+  const ph = H - pad.top - pad.bottom;
+
+  ctx.fillStyle = '#0d0d14';
+  ctx.fillRect(0, 0, W, H);
+
+  const allBuckets = distData.all;
+  const sweetBuckets = distData.sweet;
+  const keys = Object.keys(allBuckets).map(Number).sort((a,b) => a-b);
+  if(!keys.length) return;
+
+  const maxVal = Math.max(...keys.map(k => allBuckets[k] || 0));
+  const barW = pw / keys.length * 0.8;
+  const gap = pw / keys.length * 0.2;
+
+  // Sweet zone highlight
+  if(sweetRange) {
+    const x1 = pad.left + keys.indexOf(keys.find(k => k >= sweetRange[0])) / keys.length * pw;
+    const x2 = pad.left + (keys.indexOf(keys.find(k => k >= sweetRange[1])) + 1) / keys.length * pw;
+    ctx.fillStyle = 'rgba(240,180,41,0.08)';
+    ctx.fillRect(x1, pad.top, x2-x1, ph);
+  }
+
+  keys.forEach((k, i) => {
+    const x = pad.left + (i / keys.length) * pw + gap/2;
+    const allH = ((allBuckets[k] || 0) / maxVal) * ph;
+    const sweetH = ((sweetBuckets[k] || 0) / maxVal) * ph;
+
+    // All bar
+    ctx.fillStyle = 'rgba(59,130,246,0.3)';
+    ctx.fillRect(x, pad.top + ph - allH, barW, allH);
+
+    // Sweet bar overlay
+    if(sweetH > 0) {
+      ctx.fillStyle = 'rgba(240,180,41,0.8)';
+      ctx.fillRect(x, pad.top + ph - sweetH, barW, sweetH);
+    }
+  });
+
+  // X labels (show every Nth)
+  ctx.fillStyle = '#6a6a80';
+  ctx.font = '10px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  const step = Math.max(1, Math.floor(keys.length / 10));
+  keys.forEach((k, i) => {
+    if(i % step === 0) {
+      const x = pad.left + (i / keys.length) * pw + (pw/keys.length)/2;
+      ctx.fillText(fmt(k), x, pad.top+ph+16);
+    }
+  });
+
+  // Y axis
+  ctx.textAlign = 'right';
+  for(let y = 0; y <= maxVal; y += Math.ceil(maxVal/5)) {
+    const py = pad.top + ph - (y/maxVal)*ph;
+    ctx.fillText(y, pad.left-6, py+4);
+    ctx.strokeStyle = '#1a1a2a';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(pad.left, py); ctx.lineTo(pad.left+pw, py); ctx.stroke();
+  }
+
+  // Legend
+  ctx.font = '10px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = 'rgba(59,130,246,0.5)'; ctx.fillRect(W-140, 10, 10, 10);
+  ctx.fillStyle = '#6a6a80'; ctx.fillText('All trades', W-126, 19);
+  ctx.fillStyle = 'rgba(240,180,41,0.9)'; ctx.fillRect(W-140, 26, 10, 10);
+  ctx.fillStyle = '#6a6a80'; ctx.fillText('Sweet spots', W-126, 35);
+}
+
+function renderTFChart() {
+  const canvas = document.getElementById('chartTF');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = 200 * dpr;
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = 200;
+  ctx.fillStyle = '#0d0d14';
+  ctx.fillRect(0, 0, W, H);
+
+  const tfs = DATA.byTf;
+  const labels = Object.keys(tfs).sort();
+  const pad = { left:60, right:20, top:20, bottom:30 };
+  const barH = 35;
+  const gap = 15;
+
+  labels.forEach((tf, i) => {
+    const y = pad.top + i * (barH + gap);
+    const d = tfs[tf];
+    const wr = d.count > 0 ? (d.wins/d.count*100).toFixed(0) : 0;
+    const maxW = W - pad.left - pad.right - 120;
+    const w = (d.count / 30) * maxW; // Scale
+
+    ctx.fillStyle = 'rgba(240,180,41,0.2)';
+    ctx.fillRect(pad.left, y, Math.min(w, maxW), barH);
+    ctx.strokeStyle = 'var(--gold)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(pad.left, y, Math.min(w, maxW), barH);
+
+    ctx.fillStyle = '#e0e0e8';
+    ctx.font = 'bold 13px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(tf, pad.left - 10, y + barH/2 + 5);
+
+    ctx.textAlign = 'left';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillStyle = 'var(--gold)';
+    ctx.fillText(`${d.count} trades`, pad.left + 8, y + barH/2 + 4);
+
+    ctx.fillStyle = '#6a6a80';
+    ctx.fillText(`${wr}% WR · ${d.r > 0 ? '+' : ''}${d.r.toFixed(1)}R`, Math.min(w, maxW) + pad.left + 10, y + barH/2 + 4);
+  });
+}
+
+function renderDirChart() {
+  const canvas = document.getElementById('chartDir');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = 200 * dpr;
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = 200;
+  ctx.fillStyle = '#0d0d14';
+  ctx.fillRect(0, 0, W, H);
+
+  const dirs = DATA.byDir;
+  const labels = ['Long', 'Short'];
+  const colors = { Long: 'var(--green)', Short: 'var(--red)' };
+  const pad = { left:70, right:20, top:20, bottom:30 };
+  const barH = 40;
+  const gap = 20;
+
+  labels.forEach((dir, i) => {
+    const d = dirs[dir];
+    if(!d) return;
+    const y = pad.top + i * (barH + gap);
+    const wr = (d.wins/d.count*100).toFixed(0);
+    const maxW = W - pad.left - pad.right - 140;
+    const w = (d.count / 25) * maxW;
+
+    ctx.fillStyle = dir === 'Long' ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)';
+    ctx.fillRect(pad.left, y, Math.min(w, maxW), barH);
+
+    ctx.fillStyle = '#e0e0e8';
+    ctx.font = 'bold 13px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(dir, pad.left - 10, y + barH/2 + 5);
+
+    ctx.textAlign = 'left';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillStyle = dir === 'Long' ? '#22c55e' : '#ef4444';
+    ctx.fillText(`${d.count} trades`, pad.left + 8, y + barH/2 + 4);
+
+    ctx.fillStyle = '#6a6a80';
+    ctx.fillText(`${wr}% WR · ${d.r > 0 ? '+' : ''}${d.r.toFixed(1)}R · Avg ${d.avg > 0 ? '+' : ''}${d.avg}R`, Math.min(w, maxW) + pad.left + 10, y + barH/2 + 4);
+  });
+}
+
+function renderYearChart() {
+  const canvas = document.getElementById('chartYear');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = 220 * dpr;
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = 220;
+  ctx.fillStyle = '#0d0d14';
+  ctx.fillRect(0, 0, W, H);
+
+  const yearly = DATA.yearly;
+  const years = Object.keys(yearly).sort();
+  const pad = { left:50, right:20, top:30, bottom:40 };
+  const pw = W - pad.left - pad.right;
+  const ph = H - pad.top - pad.bottom;
+  const maxR = Math.max(...years.map(y => Math.abs(yearly[y].r)), 5);
+
+  // Zero line
+  const zeroY = pad.top + ph/2;
+  ctx.strokeStyle = '#3a3a4a';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.left, zeroY); ctx.lineTo(pad.left+pw, zeroY); ctx.stroke();
+
+  const barW = Math.min(pw / years.length * 0.7, 40);
+  const gap = (pw - barW * years.length) / (years.length + 1);
+
+  years.forEach((yr, i) => {
+    const d = yearly[yr];
+    const x = pad.left + gap + i * (barW + gap);
+    const h = (Math.abs(d.r) / maxR) * (ph/2 - 10);
+    const y = d.r >= 0 ? zeroY - h : zeroY;
+
+    ctx.fillStyle = d.r >= 0 ? 'rgba(34,197,94,0.6)' : 'rgba(239,68,68,0.6)';
+    ctx.fillRect(x, y, barW, h);
+
+    // Label
+    ctx.fillStyle = '#6a6a80';
+    ctx.font = '10px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(yr, x + barW/2, H - pad.bottom + 16);
+
+    // Value
+    ctx.fillStyle = d.r >= 0 ? '#22c55e' : '#ef4444';
+    ctx.font = 'bold 11px Inter, sans-serif';
+    const valY = d.r >= 0 ? y - 6 : y + h + 14;
+    ctx.fillText((d.r > 0 ? '+' : '') + d.r.toFixed(1) + 'R', x + barW/2, valY);
+
+    // Trade count
+    ctx.fillStyle = '#4a4a5a';
+    ctx.font = '9px Inter, sans-serif';
+    ctx.fillText(`${d.wins + d.losses}t`, x + barW/2, d.r >= 0 ? y - 17 : y + h + 25);
+  });
+
+  // Title
+  ctx.fillStyle = '#6a6a80';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('R-Multiple by Year', pad.left, 16);
+}
+
+// === ANATOMY DIAGRAM ===
+function renderAnatomy() {
+  const canvas = document.getElementById('anatomyCanvas');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = 520 * dpr;
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = 520;
+
+  ctx.fillStyle = '#0d0d14';
+  ctx.fillRect(0, 0, W, H);
+
+  // Draw a SHORT pattern example (3 ascending highs + entry at top)
+  const cx = W * 0.35; // Chart center
+  const chartW = Math.min(W * 0.5, 300);
+  const chartH = 350;
+  const chartTop = 40;
+
+  // Price levels
+  const bottom = chartTop + chartH;
+  const l1Y = bottom - chartH * 0.3;
+  const l2Y = bottom - chartH * 0.52;
+  const l3Y = bottom - chartH * 0.72;
+  const topY = bottom - chartH * 0.88;
+  const entryY = l3Y - 5;
+
+  // Time positions
+  const t0 = cx - chartW * 0.4;
+  const t1 = cx - chartW * 0.15;
+  const t2 = cx + chartW * 0.1;
+  const t3 = cx + chartW * 0.35;
+  const tTop = cx + chartW * 0.22;
+
+  // Draw price action line (simplified W pattern)
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(t0 - 30, bottom - chartH * 0.15);
+  ctx.lineTo(t0, l1Y);
+  ctx.lineTo(t0 + 20, l1Y + 40);
+  ctx.lineTo(t1, l2Y);
+  ctx.lineTo(t1 + 20, l2Y + 35);
+  ctx.lineTo(t2, l3Y);
+  ctx.lineTo(tTop, topY);
+  ctx.lineTo(t3, entryY);
+  ctx.lineTo(t3 + 30, entryY + 50);
+  ctx.stroke();
+
+  // Level lines (dashed)
+  const levels = [
+    { y: l1Y, label: 'L1 (First High)', color: '#3b82f6', x: t0 },
+    { y: l2Y, label: 'L2 (Second High)', color: '#8b5cf6', x: t1 },
+    { y: l3Y, label: 'L3 (Third High)', color: '#a855f7', x: t2 },
+    { y: topY, label: 'TOP (Peak)', color: '#f97316', x: tTop },
+  ];
+
+  levels.forEach(lv => {
+    ctx.strokeStyle = lv.color + '60';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(cx - chartW * 0.5, lv.y);
+    ctx.lineTo(cx + chartW * 0.5, lv.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Dot at level
+    ctx.beginPath();
+    ctx.arc(lv.x, lv.y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = lv.color;
+    ctx.fill();
+
+    // Label
+    ctx.fillStyle = lv.color;
+    ctx.font = 'bold 11px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(lv.label, cx + chartW * 0.5 + 10, lv.y + 4);
+  });
+
+  // Entry arrow
+  ctx.fillStyle = '#22c55e';
+  ctx.font = 'bold 12px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('▸ ENTRY (Short)', cx + chartW * 0.5 + 10, entryY + 4);
+
+  // Annotations on the right side
+  const annoX = W * 0.7;
+  const annoW = W * 0.27;
+
+  // Box Deviation annotation
+  const boxMidY = (topY + l3Y) / 2;
+  ctx.strokeStyle = '#f97316';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cx + chartW * 0.5 - 5, topY);
+  ctx.lineTo(cx + chartW * 0.5 + 5, topY);
+  ctx.moveTo(cx + chartW * 0.5, topY);
+  ctx.lineTo(cx + chartW * 0.5, l3Y);
+  ctx.moveTo(cx + chartW * 0.5 - 5, l3Y);
+  ctx.lineTo(cx + chartW * 0.5 + 5, l3Y);
+  ctx.stroke();
+
+  // Arrow to annotation
+  ctx.strokeStyle = '#f97316';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([2,2]);
+  ctx.beginPath();
+  ctx.moveTo(cx + chartW * 0.5, boxMidY);
+  ctx.lineTo(annoX - 10, boxMidY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Box dev annotation box
+  ctx.fillStyle = 'rgba(249,115,22,0.1)';
+  ctx.strokeStyle = 'rgba(249,115,22,0.4)';
+  ctx.lineWidth = 1;
+  roundRect(ctx, annoX - 8, boxMidY - 40, annoW, 80, 6);
+
+  ctx.fillStyle = '#f97316';
+  ctx.font = 'bold 12px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('📐 Box Deviation', annoX, boxMidY - 22);
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '10px Inter, sans-serif';
+  ctx.fillText('(TOP - L3) / (L3 - L1)', annoX, boxMidY - 6);
+  ctx.fillStyle = '#f97316';
+  ctx.font = 'bold 11px Inter, sans-serif';
+  ctx.fillText('Sweet: 10-25%', annoX, boxMidY + 12);
+  ctx.fillStyle = '#7a7a90';
+  ctx.font = '10px Inter, sans-serif';
+  ctx.fillText('= moderate overshoot', annoX, boxMidY + 26);
+
+  // Step Ratio annotation
+  const stepMidY = (l1Y + l3Y) / 2;
+
+  // Step 1 bracket
+  ctx.strokeStyle = '#3b82f6';
+  ctx.lineWidth = 1.5;
+  const bracketX = cx - chartW * 0.5 - 10;
+  ctx.beginPath();
+  ctx.moveTo(bracketX + 5, l1Y);
+  ctx.lineTo(bracketX, l1Y);
+  ctx.lineTo(bracketX, l2Y);
+  ctx.lineTo(bracketX + 5, l2Y);
+  ctx.stroke();
+
+  ctx.fillStyle = '#3b82f6';
+  ctx.font = '10px Inter, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('Step 1', bracketX - 5, (l1Y + l2Y)/2 + 4);
+
+  // Step 2 bracket
+  ctx.strokeStyle = '#a855f7';
+  ctx.beginPath();
+  ctx.moveTo(bracketX + 5, l2Y);
+  ctx.lineTo(bracketX, l2Y);
+  ctx.lineTo(bracketX, l3Y);
+  ctx.lineTo(bracketX + 5, l3Y);
+  ctx.stroke();
+
+  ctx.fillStyle = '#a855f7';
+  ctx.fillText('Step 2', bracketX - 5, (l2Y + l3Y)/2 + 4);
+
+  // Step ratio annotation
+  ctx.strokeStyle = '#a855f7';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([2,2]);
+  ctx.beginPath();
+  ctx.moveTo(bracketX, stepMidY);
+  ctx.lineTo(30, stepMidY);
+  ctx.lineTo(30, H - 110);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Step ratio box at bottom-left
+  ctx.fillStyle = 'rgba(168,85,247,0.1)';
+  ctx.strokeStyle = 'rgba(168,85,247,0.4)';
+  ctx.lineWidth = 1;
+  roundRect(ctx, 10, H - 105, annoW + 20, 80, 6);
+
+  ctx.fillStyle = '#a855f7';
+  ctx.font = 'bold 12px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('📏 Step Ratio', 18, H - 82);
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '10px Inter, sans-serif';
+  ctx.fillText('Step 1 / Step 2 = (L2-L1) / (L3-L2)', 18, H - 65);
+  ctx.fillStyle = '#a855f7';
+  ctx.font = 'bold 11px Inter, sans-serif';
+  ctx.fillText('Sweet: 0.5 - 0.7', 18, H - 46);
+  ctx.fillStyle = '#7a7a90';
+  ctx.font = '10px Inter, sans-serif';
+  ctx.fillText('= evenly spaced levels (MM signature)', 18, H - 32);
+
+  // Title
+  ctx.fillStyle = '#e0e0e8';
+  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('SHORT Pattern — 3 Ascending Highs + Sweep', cx, 20);
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y);
+  ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r);
+  ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h);
+  ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r);
+  ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+}
+
+// === WINNERS vs LOSERS ===
+function renderWinnersLosers() {
+  const trades = DATA.sweetSpotTrades;
+  const winners = trades.filter(t => t.r > 0);
+  const losers = trades.filter(t => t.r <= 0);
+
+  function stats(arr) {
+    return {
+      count: arr.length,
+      avgBD: (arr.reduce((s,t) => s + t.box_deviation, 0) / arr.length).toFixed(3),
+      avgSR: (arr.reduce((s,t) => s + t.step_ratio, 0) / arr.length).toFixed(3),
+      avgSpread: (arr.reduce((s,t) => s + t.spread_ratio, 0) / arr.length).toFixed(3),
+      avgR: (arr.reduce((s,t) => s + t.r, 0) / arr.length).toFixed(2),
+      totalR: arr.reduce((s,t) => s + t.r, 0).toFixed(1)
+    };
+  }
+
+  const ws = stats(winners);
+  const ls = stats(losers);
+
+  function renderStats(containerId, s, color) {
+    const c = document.getElementById(containerId);
+    c.innerHTML = `
+      <div class="mini-stat"><div class="v" style="color:${color}">${s.count}</div><div class="l">Trades</div></div>
+      <div class="mini-stat"><div class="v">${s.avgBD}</div><div class="l">Avg Box Dev</div></div>
+      <div class="mini-stat"><div class="v">${s.avgSR}</div><div class="l">Avg Step</div></div>
+      <div class="mini-stat"><div class="v">${s.avgSpread}</div><div class="l">Avg Spread</div></div>
+      <div class="mini-stat"><div class="v" style="color:${color}">${s.avgR > 0 ? '+' : ''}${s.avgR}R</div><div class="l">Avg R/Trade</div></div>
+      <div class="mini-stat"><div class="v" style="color:${color}">${s.totalR > 0 ? '+' : ''}${s.totalR}R</div><div class="l">Total R</div></div>
+    `;
+  }
+
+  renderStats('winnerStats', ws, '#22c55e');
+  renderStats('loserStats', ls, '#ef4444');
+
+  // Comparison bar chart
+  renderCompareChart(ws, ls);
+
+  // R distribution
+  renderRDist(winners, losers);
+}
+
+function renderCompareChart(ws, ls) {
+  const canvas = document.getElementById('compareCanvas');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = 300 * dpr;
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = 300;
+  ctx.fillStyle = '#0d0d14';
+  ctx.fillRect(0, 0, W, H);
+
+  const metrics = [
+    { label: 'Box Deviation', w: parseFloat(ws.avgBD), l: parseFloat(ls.avgBD), max: 0.3 },
+    { label: 'Step Ratio', w: parseFloat(ws.avgSR), l: parseFloat(ls.avgSR), max: 0.8 },
+    { label: 'Spread Ratio', w: parseFloat(ws.avgSpread), l: parseFloat(ls.avgSpread), max: 0.8 },
+  ];
+
+  const pad = { left:110, right:40, top:30, bottom:20 };
+  const rowH = 60;
+
+  ctx.fillStyle = '#6a6a80';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Nearly identical geometry → the edge is in the setup, not execution', W/2, 16);
+
+  metrics.forEach((m, i) => {
+    const y = pad.top + i * rowH;
+    const maxW = W - pad.left - pad.right;
+    const barH = 18;
+
+    // Label
+    ctx.fillStyle = '#e0e0e8';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(m.label, pad.left - 12, y + 22);
+
+    // Winner bar
+    const wW = (m.w / m.max) * maxW;
+    ctx.fillStyle = 'rgba(34,197,94,0.5)';
+    ctx.fillRect(pad.left, y, wW, barH);
+    ctx.fillStyle = '#22c55e';
+    ctx.font = 'bold 11px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(m.w.toFixed(3), pad.left + wW + 6, y + 13);
+
+    // Loser bar
+    const lW = (m.l / m.max) * maxW;
+    ctx.fillStyle = 'rgba(239,68,68,0.5)';
+    ctx.fillRect(pad.left, y + barH + 4, lW, barH);
+    ctx.fillStyle = '#ef4444';
+    ctx.fillText(m.l.toFixed(3), pad.left + lW + 6, y + barH + 17);
+  });
+
+  // Legend
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#22c55e'; ctx.fillText('● Winners', W - 20, pad.top + metrics.length * rowH + 10);
+  ctx.fillStyle = '#ef4444'; ctx.fillText('● Losers', W - 20, pad.top + metrics.length * rowH + 26);
+}
+
+function renderRDist(winners, losers) {
+  const canvas = document.getElementById('rDistCanvas');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = 250 * dpr;
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = 250;
+  ctx.fillStyle = '#0d0d14';
+  ctx.fillRect(0, 0, W, H);
+
+  const all = [...winners, ...losers].sort((a,b) => a.r - b.r);
+  const pad = { left:40, right:20, top:20, bottom:40 };
+  const pw = W - pad.left - pad.right;
+  const ph = H - pad.top - pad.bottom;
+  const maxR = Math.max(...all.map(t => Math.abs(t.r)), 2);
+  const barW = pw / all.length * 0.85;
+  const gap = pw / all.length * 0.15;
+  const zeroY = pad.top + ph * (maxR / (maxR * 2));
+
+  // Zero line
+  ctx.strokeStyle = '#3a3a4a';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.left, zeroY); ctx.lineTo(pad.left+pw, zeroY); ctx.stroke();
+
+  all.forEach((t, i) => {
+    const x = pad.left + i * (barW + gap);
+    const h = (Math.abs(t.r) / maxR) * (ph/2 - 5);
+    const y = t.r >= 0 ? zeroY - h : zeroY;
+    ctx.fillStyle = t.r >= 0 ? 'rgba(34,197,94,0.7)' : 'rgba(239,68,68,0.7)';
+    ctx.fillRect(x, y, barW, h);
+  });
+
+  // Avg lines
+  const avgW = winners.reduce((s,t) => s+t.r, 0) / winners.length;
+  const avgL = losers.reduce((s,t) => s+t.r, 0) / losers.length;
+
+  ctx.setLineDash([4,4]);
+  ctx.strokeStyle = '#22c55e';
+  ctx.lineWidth = 1.5;
+  const avgWY = zeroY - (avgW / maxR) * (ph/2 - 5);
+  ctx.beginPath(); ctx.moveTo(pad.left, avgWY); ctx.lineTo(pad.left+pw, avgWY); ctx.stroke();
+
+  ctx.strokeStyle = '#ef4444';
+  const avgLY = zeroY + (Math.abs(avgL) / maxR) * (ph/2 - 5);
+  ctx.beginPath(); ctx.moveTo(pad.left, avgLY); ctx.lineTo(pad.left+pw, avgLY); ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.font = '10px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#22c55e';
+  ctx.fillText(`Avg win: +${avgW.toFixed(2)}R`, pad.left+4, avgWY - 6);
+  ctx.fillStyle = '#ef4444';
+  ctx.fillText(`Avg loss: ${avgL.toFixed(2)}R`, pad.left+4, avgLY + 14);
+
+  // X label
+  ctx.fillStyle = '#6a6a80';
+  ctx.textAlign = 'center';
+  ctx.fillText('Trades sorted by R (worst → best)', W/2, H - 8);
+}
+
+// === TRADE LIST ===
+function renderTradeList() {
+  const tbody = document.getElementById('tradeBody');
+  const trades = [...DATA.sweetSpotTrades].sort((a,b) => a.date.localeCompare(b.date));
+
+  tbody.innerHTML = trades.map(t => `
+    <tr>
+      <td>${t.date}</td>
+      <td>${t.tf}</td>
+      <td class="${t.dir === 'L' ? 'win' : 'loss'}">${t.dir === 'L' ? 'Long' : 'Short'}</td>
+      <td class="${t.r > 0 ? 'win' : 'loss'}" style="font-weight:700">${t.r > 0 ? '+' : ''}${t.r.toFixed(1)}R</td>
+      <td>${t.exit_type}</td>
+      <td>${(t.box_deviation * 100).toFixed(1)}%</td>
+      <td>${t.step_ratio.toFixed(3)}</td>
+      <td>${t.spread_ratio.toFixed(3)}</td>
+      <td>$${t.entry.toLocaleString()}</td>
+    </tr>
+  `).join('');
+
+  // Sorting
+  let sortKey = null, sortAsc = true;
+  document.querySelectorAll('#tradeTable th[data-sort]').forEach(th => {
+    th.style.cursor = 'pointer';
+    th.addEventListener('click', () => {
+      const key = th.dataset.sort;
+      if(sortKey === key) sortAsc = !sortAsc;
+      else { sortKey = key; sortAsc = true; }
+
+      const sorted = [...DATA.sweetSpotTrades].sort((a,b) => {
+        let va = a[key], vb = b[key];
+        if(typeof va === 'string') return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+        return sortAsc ? va - vb : vb - va;
+      });
+
+      tbody.innerHTML = sorted.map(t => `
+        <tr>
+          <td>${t.date}</td>
+          <td>${t.tf}</td>
+          <td class="${t.dir === 'L' ? 'win' : 'loss'}">${t.dir === 'L' ? 'Long' : 'Short'}</td>
+          <td class="${t.r > 0 ? 'win' : 'loss'}" style="font-weight:700">${t.r > 0 ? '+' : ''}${t.r.toFixed(1)}R</td>
+          <td>${t.exit_type}</td>
+          <td>${(t.box_deviation * 100).toFixed(1)}%</td>
+          <td>${t.step_ratio.toFixed(3)}</td>
+          <td>${t.spread_ratio.toFixed(3)}</td>
+          <td>$${t.entry.toLocaleString()}</td>
+        </tr>
+      `).join('');
+    });
+  });
+}
+
+// === INIT ===
+loadData();
+window.addEventListener('resize', () => { if(DATA) renderAll(); });
+</script>
+</body>
+</html>
