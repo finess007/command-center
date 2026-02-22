@@ -704,8 +704,8 @@ let TRADE_DATA = [];
 const SYMBOL_MAP = { BTC: 'BTCUSDT', ETH: 'ETHUSDT', SOL: 'SOLUSDT' };
 const INTERVAL_MAP = { '1m': '1m', '15m': '15m', '1H': '1h' };
 const TF_MINUTES = { '1m': 1, '15m': 15, '1H': 60 };
-const CANDLE_PADDING = { '1m': 250, '15m': 120, '1H': 100 };
-const LEVELS_PADDING = { '1m': 400, '15m': 300, '1H': 200 };
+const CANDLE_PADDING = { '1m': 600, '15m': 300, '1H': 200 };
+const LEVELS_PADDING = { '1m': 800, '15m': 500, '1H': 350 };
 const BINANCE_API = 'https://api.binance.com/api/v3/klines';
 
 // Fix timezone: backtest dates were UTC but Python .timestamp() on Sofia machine
@@ -1246,11 +1246,75 @@ async function selectTrade(idx) {
       axisLabelVisible: true,
       title: 'Exit ' + trade.exit.toLocaleString(),
     }));
-    
+
+    // Add TOP / L1 / L2 / L3 price lines so the structure is visible
+    if (trade.top !== undefined) {
+      const topColor = trade.dir === 'L' ? '#ff6d00' : '#ff6d00';
+      state.priceLines.push(state.candleSeries.createPriceLine({
+        price: trade.top,
+        color: '#ff6d00',
+        lineWidth: 1,
+        lineStyle: 1,
+        axisLabelVisible: true,
+        title: 'TOP ' + trade.top.toLocaleString(),
+      }));
+    }
+    if (trade.l1 !== undefined) {
+      state.priceLines.push(state.candleSeries.createPriceLine({
+        price: trade.l1,
+        color: '#b388ff',
+        lineWidth: 1,
+        lineStyle: 1,
+        axisLabelVisible: true,
+        title: 'L1 ' + trade.l1.toLocaleString(),
+      }));
+    }
+    if (trade.l2 !== undefined) {
+      state.priceLines.push(state.candleSeries.createPriceLine({
+        price: trade.l2,
+        color: '#b388ff',
+        lineWidth: 1,
+        lineStyle: 1,
+        axisLabelVisible: true,
+        title: 'L2 ' + trade.l2.toLocaleString(),
+      }));
+    }
+    if (trade.l3 !== undefined) {
+      state.priceLines.push(state.candleSeries.createPriceLine({
+        price: trade.l3,
+        color: '#b388ff',
+        lineWidth: 1,
+        lineStyle: 1,
+        axisLabelVisible: true,
+        title: 'L3 ' + trade.l3.toLocaleString(),
+      }));
+    }
+
+    // Find the TOP candle on the chart to set proper left boundary
+    let topTime = null;
+    if (trade.top !== undefined && candles.length) {
+      // Find the candle whose high/low matches TOP price (within tolerance)
+      const tol = Math.abs(trade.top) * 0.0001;
+      const isLong = trade.dir === 'L';
+      for (let i = candles.length - 1; i >= 0; i--) {
+        const c = candles[i];
+        if (c.time >= trade.et) continue; // TOP is before entry
+        if (isLong && Math.abs(c.high - trade.top) < tol) { topTime = c.time; break; }
+        if (!isLong && Math.abs(c.low - trade.top) < tol) { topTime = c.time; break; }
+      }
+    }
+
     const tradeDuration = Math.max(trade.xt - trade.et, TF_MINUTES[trade.tf] * 60 * 10);
     const viewPad = Math.max(tradeDuration * 0.5, TF_MINUTES[trade.tf] * 60 * 15);
-    const viewFrom = trade.et - viewPad;
+    let viewFrom = trade.et - viewPad;
     const viewTo = trade.xt + viewPad;
+
+    // Extend left to show TOP if it's further back
+    if (topTime && topTime < viewFrom) {
+      const topPad = TF_MINUTES[trade.tf] * 60 * 10; // 10 bars extra left of TOP
+      viewFrom = topTime - topPad;
+    }
+
     state.chart.timeScale().setVisibleRange({ from: viewFrom, to: viewTo });
 
     // V11c: no auto 3-box (no v2_meta). Use manual 3-Box tool or Levels tool.

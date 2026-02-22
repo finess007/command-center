@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trading Test Tracker — Alessa Command Center</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --card: #12121a;
+    --border: #1e1e2e;
+    --text: #e0e0e0;
+    --dim: #888;
+    --accent: #fbbf24;
+    --green: #22c55e;
+    --red: #ef4444;
+    --blue: #3b82f6;
+    --purple: #a855f7;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 20px; max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 1.8em; margin-bottom: 4px; }
+  .subtitle { color: var(--dim); margin-bottom: 24px; font-size: 0.95em; }
+  .goal-banner { background: linear-gradient(135deg, #1a1a2e, #16213e); border: 1px solid var(--accent); border-radius: 12px; padding: 20px; margin-bottom: 24px; }
+  .goal-banner .pf { font-size: 2.5em; font-weight: 800; color: var(--accent); }
+  .goal-banner .math { color: var(--dim); font-size: 0.85em; margin-top: 6px; }
+  .champion { background: linear-gradient(135deg, #0f2a1a, #1a2e0f); border: 1px solid var(--green); border-radius: 12px; padding: 16px; margin-bottom: 24px; display: flex; align-items: center; gap: 14px; }
+  .champion .star { font-size: 2em; }
+  .champion .info { flex: 1; }
+  .champion .name { font-weight: 700; font-size: 1.1em; color: var(--green); }
+  .champion .stats { color: var(--dim); font-size: 0.85em; margin-top: 4px; }
+  .section { margin-bottom: 28px; }
+  .section-title { font-size: 1.2em; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 10px; }
+  .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .card-title { font-weight: 700; font-size: 1em; }
+  .badge { font-size: 0.7em; padding: 3px 8px; border-radius: 6px; font-weight: 600; }
+  .badge-grok { background: #2d1b4e; color: #a855f7; }
+  .badge-gemini { background: #1b3a4e; color: #38bdf8; }
+  .badge-chatgpt { background: #1b4e2d; color: #4ade80; }
+  .badge-consensus { background: #4e3a1b; color: #fbbf24; }
+  .card ul { list-style: none; padding: 0; }
+  .card li { padding: 3px 0; font-size: 0.9em; color: var(--dim); }
+  .card li::before { content: "→ "; color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+  th { text-align: left; padding: 8px; border-bottom: 2px solid var(--border); color: var(--dim); font-weight: 600; }
+  td { padding: 8px; border-bottom: 1px solid var(--border); }
+  tr.champion-row td { color: var(--green); font-weight: 600; }
+  .queue-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; }
+  .queue-num { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #000; font-weight: 800; font-size: 0.85em; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .queue-text { font-size: 0.9em; }
+  .queue-sub { color: var(--dim); font-size: 0.8em; }
+  .dead-end { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; margin-bottom: 6px; font-size: 0.85em; color: var(--dim); display: flex; align-items: center; gap: 8px; }
+  .dead-end .x { color: var(--red); font-weight: 700; }
+  .notes-list { list-style: none; padding: 0; }
+  .notes-list li { padding: 6px 0; font-size: 0.9em; border-bottom: 1px solid var(--border); }
+  .notes-list li:last-child { border: none; }
+  .notes-list li::before { content: "⚡ "; }
+  .updated { text-align: center; color: var(--dim); font-size: 0.75em; margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<h1>🎯 Trading Test Tracker</h1>
+<p class="subtitle">Market Maker Method — V11c Improvement Journey</p>
+
+<div class="goal-banner">
+  <div class="pf">PF 2.0</div>
+  <div>Target Profit Factor</div>
+  <div class="math">17 trades/week × 2% risk → +0.44R/trade → 15%/week → doubles every 5 weeks</div>
+</div>
+
+<div class="champion">
+  <div class="star">⭐</div>
+  <div class="info">
+    <div class="name">Current Champion: Spacing ≥0.75× ATR (backtest) | SM v3 mult=2.0 best-of-10 (pivot detection)</div>
+    <div class="stats">Backtest: PF 1.31 · 2,607 trades · +451R | Pivot: 21/41 within $50, avg diff $295</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">📊 Champion Progression</div>
+  <div class="card">
+    <table>
+      <thead><tr><th>Version</th><th>PF</th><th>Trades</th><th>WR</th><th>R</th></tr></thead>
+      <tbody>
+        <tr><td>Baseline (honest)</td><td>1.20</td><td>3,362</td><td>47%</td><td>+336</td></tr>
+        <tr><td>ATR normalization</td><td>1.18</td><td>—</td><td>—</td><td>+688</td></tr>
+        <tr><td>Stop Hunt V3 no-wick</td><td>1.23</td><td>—</td><td>—</td><td>—</td></tr>
+        <tr class="champion-row"><td>⭐ Spacing ≥0.75× ATR</td><td>1.31</td><td>2,607</td><td>43.3%</td><td>+451</td></tr>
+        <tr><td>Spacing + 3-Box 30%</td><td>1.45</td><td>330</td><td>—</td><td>—</td></tr>
+        <tr><td>Spacing + 3-Box 20%</td><td>1.58</td><td>191</td><td>—</td><td>—</td></tr>
+        <tr><td>Sweet Spot (real TOP)</td><td>2.76</td><td>15</td><td>60%</td><td>+10.6</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">🧪 AI Council Round 2 — Dual Detector</div>
+  <p style="color:var(--dim);font-size:0.85em;margin-bottom:12px;">Consensus: All 3 AIs agree dual-detector is the path forward.</p>
+  
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Option A — Grok 4.20</span>
+      <span class="badge badge-grok">GROK</span>
+    </div>
+    <div style="font-weight:600;margin-bottom:6px;">Dual + Dynamic k</div>
+    <ul>
+      <li>Coarse detector defines window</li>
+      <li>Fine detector picks extreme within window</li>
+      <li>Dynamic k adapts to volatility (ATR-based)</li>
+      <li>Predicted: 35-40/41 correct picks</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Option B — Gemini Pro</span>
+      <span class="badge badge-gemini">GEMINI</span>
+    </div>
+    <div style="font-weight:600;margin-bottom:6px;">Dual WITHOUT dynamic k</div>
+    <ul>
+      <li>Same dual structure, no dynamic k</li>
+      <li>Dynamic k risks curve-fitting on 1m crypto</li>
+      <li>Validate 3-level count within macro swing</li>
+      <li>≥3 micro highs = valid MMM pattern</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Option C — ChatGPT 5.2</span>
+      <span class="badge badge-chatgpt">CHATGPT</span>
+    </div>
+    <div style="font-weight:600;margin-bottom:6px;">Dual + Weighted Scoring</div>
+    <ul>
+      <li>35% proximity to coarse pivot</li>
+      <li>20% reversal excursion</li>
+      <li>20% MMM geometry fit</li>
+      <li>10% volume spike · 10% wick rejection · 5% recency</li>
+    </ul>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">📋 Test Queue</div>
+  
+  <div class="queue-item" style="border-color: var(--accent);">
+    <div class="queue-num">1</div>
+    <div>
+      <div class="queue-text"><strong>🔨 Phase 1: Dual-detector baseline</strong></div>
+      <div class="queue-sub">coarse=6.5, fine=2.0. Coarse defines zone (prev_coarse→current), fine picks extreme in zone. All 3 AIs agree this is the quick win.</div>
+    </div>
+  </div>
+
+  <div class="queue-item">
+    <div class="queue-num">2</div>
+    <div>
+      <div class="queue-text"><strong>Phase 1b: Tune coarse multiplier</strong></div>
+      <div class="queue-sub">Grid search: coarse 5.0 / 6.5 / 7.0 / 8.0, keep fine=2.0. Find optimal coarse mult.</div>
+    </div>
+  </div>
+
+  <div class="queue-item">
+    <div class="queue-num">3</div>
+    <div>
+      <div class="queue-text"><strong>Phase 2: Add dynamic k</strong></div>
+      <div class="queue-sub">k = base × (ATR/ATR_mean)^0.5 on both detectors. Grok's recommendation. Gemini warns: curve-fitting risk on 1m.</div>
+    </div>
+  </div>
+
+  <div class="queue-item">
+    <div class="queue-num">4</div>
+    <div>
+      <div class="queue-text"><strong>Phase 3: Basic scoring</strong></div>
+      <div class="queue-sub">Don't just pick extreme — score candidates: proximity to coarse + prominence + recency penalty.</div>
+    </div>
+  </div>
+
+  <div class="queue-item">
+    <div class="queue-num">5</div>
+    <div>
+      <div class="queue-text"><strong>Phase 4: MMM geometry scoring</strong></div>
+      <div class="queue-sub">3-drive validation + equal measured move fit + retracement quality. ChatGPT Extended's deep recommendation.</div>
+    </div>
+  </div>
+
+  <div class="queue-item">
+    <div class="queue-num">6</div>
+    <div>
+      <div class="queue-text"><strong>Phase 5: Gemini's 3-level count</strong></div>
+      <div class="queue-sub">Validate ≥3 micro highs within macro swing = real MMM structure. Reject false triggers.</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">❌ Dead Ends</div>
+  <div class="dead-end"><span class="x">✗</span> Single SM mult=2.0, last pivot — 7/41 (too noisy, 300 pivots)</div>
+  <div class="dead-end"><span class="x">✗</span> Single SM mult=8.0, last pivot — 11/41 (misses 25%)</div>
+  <div class="dead-end"><span class="x">✗</span> Fixed lookback ±N candles — original engine, misses wicks</div>
+  <div class="dead-end"><span class="x">✗</span> Pivot-only scan — true extreme can be any candle</div>
+  <div class="dead-end"><span class="x">✗</span> Old pivot detection improvements (4 tests, all failed)</div>
+  <div class="dead-end"><span class="x">✗</span> BOS narrow (PF 1.01-1.07, too noisy)</div>
+  <div class="dead-end"><span class="x">✗</span> Level spread standalone (PF 1.24 max)</div>
+  <div class="dead-end"><span class="x">✗</span> Teacher method (PF 1.15 max)</div>
+  <div class="dead-end"><span class="x">✗</span> AI Council M-top combos (PF 1.09-1.13)</div>
+  <div class="dead-end"><span class="x">✗</span> Volume spike filter (zero impact)</div>
+  <div class="dead-end"><span class="x">✗</span> Strict box geometry filter (hurts performance)</div>
+</div>
+
+<div class="section">
+  <div class="section-title">📝 Notes</div>
+  <div class="card">
+    <ul class="notes-list">
+      <li>Edge decay: 2025 alone PF 1.02 (breakeven). Edge strongest in trending years.</li>
+      <li>ETH is the star: PF 1.81 (nearly 2× BTC). ETH 1H = PF 2.45!</li>
+      <li>Strategy A (Boxes=Swings) vs B (Boxes guide, Swings confirm) — Ivo deciding.</li>
+      <li>Scanner running V11c live while improvements tested.</li>
+      <li>Multi-pair: BTC 1.34, ETH 1.81, SOL 1.51, Combined 1.55 (1,029 trades)</li>
+    </ul>
+  </div>
+</div>
+
+<div class="updated">Last updated: Feb 21, 2026 23:45 — Nova keeps this in sync after every test</div>
+
+</body>
+</html>

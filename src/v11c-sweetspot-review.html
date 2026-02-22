@@ -1,0 +1,2739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>V11c Sweet Spot Review — Real TOP Fix</title>
+<script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --surface2: #1a1a28;
+  --border: #2a2a3a;
+  --text: #e0e0e0;
+  --text-dim: #888;
+  --accent: #00bcd4;
+  --green: #00c853;
+  --red: #ff1744;
+  --gold: #ffd700;
+  --blue: #448aff;
+  --purple: #b388ff;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+.header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.header h1 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.header .home-link {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+.header .home-link:hover { color: var(--accent); }
+.header-links { display: flex; gap: 16px; align-items: center; }
+
+/* Filters */
+.filters {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.filter-group {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.filter-group label {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-right: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.filter-btn {
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.filter-btn:hover { border-color: var(--accent); color: var(--text); }
+.filter-btn.active {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+  font-weight: 600;
+}
+.filter-btn.long.active { background: var(--green); border-color: var(--green); }
+.filter-btn.short.active { background: var(--red); border-color: var(--red); }
+.filter-sep {
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+  margin: 0 8px;
+}
+
+/* Stats bar */
+.stats-bar {
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+}
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.stat-label { color: var(--text-dim); }
+.stat-value { font-weight: 700; }
+.stat-value.positive { color: var(--green); }
+.stat-value.negative { color: var(--red); }
+
+/* Summary panel */
+.summary-panel {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  display: none;
+}
+.summary-panel.visible { display: block; }
+.summary-toggle {
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.summary-toggle:hover { border-color: var(--accent); color: var(--text); }
+.summary-toggle.active { background: var(--accent); color: #000; border-color: var(--accent); }
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+.summary-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+.summary-card h3 {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+.summary-card .summary-stat {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  padding: 2px 0;
+}
+.summary-card .summary-stat .label { color: var(--text-dim); }
+.summary-card .summary-stat .val { font-weight: 600; }
+.summary-card .summary-stat .val.pos { color: var(--green); }
+.summary-card .summary-stat .val.neg { color: var(--red); }
+
+/* Equity curve mini */
+.equity-row {
+  padding: 0 20px 12px 20px;
+  border-bottom: 1px solid var(--border);
+}
+#equity-container {
+  height: 120px;
+  width: 100%;
+}
+
+/* Main content */
+.main {
+  display: flex;
+  height: calc(100vh - 230px);
+  min-height: 500px;
+}
+
+/* Trade list panel */
+.trade-list-panel {
+  width: 320px;
+  min-width: 280px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+.trade-list-header {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+.trade-list {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.trade-item {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  transition: background 0.1s;
+}
+.trade-item:hover { background: var(--surface2); }
+.trade-item.active { background: var(--surface2); border-left: 3px solid var(--accent); }
+.trade-item .left {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.trade-item .pair-badge {
+  font-weight: 700;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 3px;
+  min-width: 36px;
+  text-align: center;
+}
+.trade-item .pair-badge.BTC { background: #f7931a22; color: #f7931a; }
+.trade-item .pair-badge.ETH { background: #627eea22; color: #627eea; }
+.trade-item .pair-badge.SOL { background: #9945ff22; color: #9945ff; }
+.trade-item .tf-badge {
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  min-width: 24px;
+}
+.trade-item .dir-badge {
+  font-weight: 700;
+  font-size: 0.7rem;
+}
+.trade-item .dir-badge.L { color: var(--green); }
+.trade-item .dir-badge.S { color: var(--red); }
+.trade-item .r-value {
+  font-weight: 700;
+  font-size: 0.85rem;
+  min-width: 50px;
+  text-align: right;
+}
+.trade-item .r-value.positive { color: var(--green); }
+.trade-item .r-value.negative { color: var(--red); }
+.trade-item .date-text {
+  color: var(--text-dim);
+  font-size: 0.7rem;
+}
+
+/* Chart panel */
+.chart-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.chart-info {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chart-info .trade-detail {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  font-size: 0.85rem;
+}
+.chart-info .nav-btns {
+  display: flex;
+  gap: 8px;
+}
+.nav-btn {
+  padding: 4px 16px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.nav-btn:hover { border-color: var(--accent); }
+#chart-container {
+  flex: 1;
+  position: relative;
+}
+.chart-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--text-dim);
+  font-size: 1rem;
+}
+
+/* Sort buttons */
+.sort-btns {
+  display: flex;
+  gap: 4px;
+}
+.sort-btn {
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+.sort-btn.active { color: var(--accent); border-color: var(--accent); }
+
+/* Load more bar */
+.load-more-bar {
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+.load-more-btn {
+  padding: 6px 16px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--accent);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-weight: 600;
+}
+.load-more-btn:hover {
+  background: var(--accent);
+  color: #000;
+}
+.load-more-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.initial-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: var(--text-dim);
+  font-size: 1rem;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .main { flex-direction: column; height: auto; }
+  .trade-list-panel { width: 100%; min-width: 0; max-height: 250px; border-right: none; border-bottom: 1px solid var(--border); }
+  #chart-container { min-height: 400px; }
+}
+
+/* 3-Box Tool */
+.three-box-btn {
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.15s;
+}
+.three-box-btn:hover { border-color: var(--accent); color: var(--text); }
+.three-box-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+.three-box-btn.drawing { background: #ff9800; color: #000; border-color: #ff9800; animation: tbPulse 1.2s ease-in-out infinite; }
+@keyframes tbPulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+#three-box-overlay { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 10; }
+.three-box-status { font-size: 0.75rem; color: #ff9800; font-weight: 600; white-space: nowrap; }
+
+/* Levels Tool */
+#levels-overlay { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 9; }
+.levels-status { font-size: 0.75rem; color: #b388ff; font-weight: 600; white-space: nowrap; }
+
+/* Channel Drawing Tool */
+#channel-overlay { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 11; }
+.channel-status { font-size: 0.75rem; color: #00bcd4; font-weight: 600; white-space: nowrap; }
+
+/* Date range inputs */
+.date-input {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.8rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.date-input:focus { border-color: var(--accent); }
+.date-input::-webkit-calendar-picker-indicator { filter: invert(0.7); cursor: pointer; }
+
+/* Equity header row */
+.equity-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0 4px 0;
+}
+.equity-header .equity-label {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.compound-toggle {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.compound-btn {
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.compound-btn:hover { border-color: var(--accent); color: var(--text); }
+.compound-btn.active {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+  font-weight: 600;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🔍 Sweet Spot REVIEW — <span id="trade-count">41</span> Trades <span style="color:#ff6d00;font-size:0.7em;background:rgba(255,109,0,0.15);padding:2px 10px;border-radius:12px;margin-left:8px;">Real TOP Fix — Old vs New</span></h1>
+  <div class="header-links">
+    <a href="v11c-challenger.html" class="home-link">⚔️ Challenger →</a>
+    <a href="v11c-spacing.html" class="home-link">🏆 Champion →</a>
+    <a href="v11c-improvements.html" class="home-link">📊 Tests →</a>
+    <a href="index.html" class="home-link">← Dashboard</a>
+  </div>
+</div>
+
+<div class="filters">
+  <div class="filter-group">
+    <label>Pair:</label>
+    <button class="filter-btn active" data-filter="pair" data-value="ALL">ALL</button>
+    <button class="filter-btn" data-filter="pair" data-value="BTC">BTC</button>
+    <button class="filter-btn" data-filter="pair" data-value="ETH">ETH</button>
+    <button class="filter-btn" data-filter="pair" data-value="SOL">SOL</button>
+  </div>
+  <div class="filter-sep"></div>
+  <div class="filter-group">
+    <label>TF:</label>
+    <button class="filter-btn active" data-filter="tf" data-value="ALL">ALL</button>
+    <button class="filter-btn" data-filter="tf" data-value="1m">1m</button>
+    <button class="filter-btn" data-filter="tf" data-value="15m">15m</button>
+    <button class="filter-btn" data-filter="tf" data-value="1H">1H</button>
+  </div>
+  <div class="filter-sep"></div>
+  <div class="filter-group">
+    <label>Dir:</label>
+    <button class="filter-btn active" data-filter="dir" data-value="ALL">ALL</button>
+    <button class="filter-btn long" data-filter="dir" data-value="L">LONG</button>
+    <button class="filter-btn short" data-filter="dir" data-value="S">SHORT</button>
+  </div>
+  <div class="filter-sep"></div>
+  <div class="filter-group">
+    <label>Exit:</label>
+    <button class="filter-btn active" data-filter="exit" data-value="ALL">ALL</button>
+    <button class="filter-btn" data-filter="exit" data-value="stop">Stop</button>
+    <button class="filter-btn" data-filter="exit" data-value="vector_exit">Vector</button>
+    <button class="filter-btn" data-filter="exit" data-value="timeout">Timeout</button>
+  </div>
+  <div class="filter-sep"></div>
+  <div class="filter-group">
+    <label>Result:</label>
+    <button class="filter-btn active" data-filter="result" data-value="ALL">ALL</button>
+    <button class="filter-btn" data-filter="result" data-value="win">Winners</button>
+    <button class="filter-btn" data-filter="result" data-value="loss">Losers</button>
+  </div>
+  <div class="filter-sep"></div>
+  <div class="filter-group">
+    <label>Box Zone:</label>
+    <button class="filter-btn active" data-filter="box_zone" data-value="ALL">ALL</button>
+    <button class="filter-btn" data-filter="box_zone" data-value="Box 3" style="border-color:#00c853">Box 3</button>
+    <button class="filter-btn" data-filter="box_zone" data-value="Box 4" style="border-color:#ff9100">Box 4</button>
+  </div>
+  <div class="filter-sep"></div>
+  <div class="filter-group">
+    <label>From:</label>
+    <input type="date" class="date-input" id="date-from" value="2017-01-01">
+  </div>
+  <div class="filter-group">
+    <label>To:</label>
+    <input type="date" class="date-input" id="date-to">
+  </div>
+  <div class="filter-group">
+    <button class="filter-btn" id="apply-dates-btn" onclick="applyFilters()" style="background:var(--accent);color:#000;font-weight:600;">Apply</button>
+  </div>
+  <div class="filter-sep"></div>
+  <button class="summary-toggle" id="summary-btn" onclick="toggleSummary()">📋 Summary</button>
+</div>
+
+<div class="stats-bar">
+  <div class="stat"><span class="stat-label">Trades:</span><span class="stat-value" id="stat-trades">0</span></div>
+  <div class="stat"><span class="stat-label">Win Rate:</span><span class="stat-value" id="stat-wr">—</span></div>
+  <div class="stat"><span class="stat-label">Total R:</span><span class="stat-value" id="stat-total-r">—</span></div>
+  <div class="stat"><span class="stat-label">Compound $:</span><span class="stat-value" id="stat-compound">—</span></div>
+  <div class="stat"><span class="stat-label">Avg R:</span><span class="stat-value" id="stat-avg-r">1.42</span></div>
+  <div class="stat"><span class="stat-label">Best:</span><span class="stat-value positive" id="stat-best">+45.15</span></div>
+  <div class="stat"><span class="stat-label">Worst:</span><span class="stat-value negative" id="stat-worst">-1.00</span></div>
+  <div class="stat"><span class="stat-label">Max Consec Loss:</span><span class="stat-value" id="stat-streak">0</span></div>
+  <div class="stat"><span class="stat-label">Profit Factor:</span><span class="stat-value" id="stat-pf">0</span></div>
+  <div class="stat"><span class="stat-label">Expectancy:</span><span class="stat-value" id="stat-expect">0</span></div>
+</div>
+
+<div class="summary-panel" id="summary-panel">
+  <div id="summary-content"></div>
+</div>
+
+<div class="main">
+  <div class="trade-list-panel">
+    <div class="trade-list-header">
+      <span id="filtered-count">0 trades</span>
+      <div class="sort-btns">
+        <button class="sort-btn active" data-sort="date">Date</button>
+        <button class="sort-btn" data-sort="r-desc">R ↓</button>
+        <button class="sort-btn" data-sort="r-asc">R ↑</button>
+      </div>
+    </div>
+    <div class="trade-list" id="trade-list"></div>
+  </div>
+
+  <div class="chart-panel">
+    <div class="chart-info">
+      <div class="trade-detail" id="trade-detail">
+        <span>Select a trade to view chart</span>
+      </div>
+      <div class="nav-btns">
+        <button class="nav-btn" id="btn-prev">◀ Prev</button>
+        <button class="nav-btn" id="btn-next">Next ▶</button>
+        <button class="nav-btn" id="btn-random">🎲</button>
+        <span style="width:1px;height:20px;background:var(--border);margin:0 6px;display:inline-block"></span>
+        <button class="three-box-btn" id="btn-three-box" onclick="toggleThreeBox()">📐 3-Box</button>
+        <button class="three-box-btn" id="btn-clear-boxes" onclick="clearThreeBoxes()" style="display:none">🗑️ Clear</button>
+        <span class="three-box-status" id="three-box-status"></span>
+        <span style="width:1px;height:20px;background:var(--border);margin:0 6px;display:inline-block"></span>
+        <button class="three-box-btn" id="btn-levels" onclick="toggleLevels()">🔍 Levels</button>
+        <span class="levels-status" id="levels-status"></span>
+        <span style="width:1px;height:20px;background:var(--border);margin:0 6px;display:inline-block"></span>
+        <button class="three-box-btn" id="btn-channel" onclick="toggleChannel()">📐 Channel</button>
+        <button class="three-box-btn" id="btn-auto-channel" onclick="autoDetectChannel()">🤖 Auto Ch</button>
+        <button class="three-box-btn" id="btn-clear-channels" onclick="clearChannels()" style="display:none">🗑️ Ch Clear</button>
+        <span class="channel-status" id="channel-status"></span>
+      </div>
+    </div>
+    <div id="chart-container">
+      <div class="chart-loading" id="chart-loading">← Select a trade from the list</div>
+    </div>
+  </div>
+</div>
+
+<div class="rules-panel" style="background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px 20px;margin:12px 0;">
+  <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="this.parentElement.querySelector('.rules-body').classList.toggle('collapsed');this.querySelector('.chevron').textContent=this.parentElement.querySelector('.rules-body').classList.contains('collapsed')?'▶':'▼'">
+    <span style="font-weight:700;font-size:1.05em;color:var(--gold)">📋 Strategy Rules — V11c Sweet Spot (Spacing + 3-Box + Step Symmetry)</span>
+    <span class="chevron" style="color:var(--text-dim)">▼</span>
+  </div>
+  <div class="rules-body" style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:0.88em;line-height:1.6">
+    <div>
+      <div style="color:var(--accent);font-weight:600;margin-bottom:4px">📐 3-Level Detection (Swing Points)</div>
+      <div style="color:var(--text-dim)">
+        • <b style="color:var(--text)">find_swing_points()</b> with lookback per TF<br>
+        • 1H: lookback <b style="color:var(--text)">5</b> | 15m: <b style="color:var(--text)">5</b> | 1m: <b style="color:var(--text)">10</b><br>
+        • 3 consecutive lower lows (DOWN→LONG) or higher highs (UP→SHORT)<br>
+        • Volume spike in L2→L3 segment ≥ <b style="color:var(--text)">1.3×</b> avg<br>
+        • Min move: BTC 1.5/3/4.5% | ETH 2.4/4.5/6% | SOL 3/6/9%<br>
+        • <span style="color:var(--green)">✓ Honest fix: action delayed by lookback candles</span>
+      </div>
+
+      <div style="color:var(--green);font-weight:600;margin:10px 0 4px">📈 W Surpass (LONG)</div>
+      <div style="color:var(--text-dim)">
+        • After L3 (lowest of 3 lows), find swing low in segment<br>
+        • 2nd low must go <b style="color:var(--text)">BELOW</b> L3 = surpass (stop hunt)<br>
+        • Max surpass: <b style="color:var(--text)">1.5× ATR</b> band<br>
+        • Min bounce between legs: <b style="color:var(--text)">0.15%</b><br>
+        • Entry: wick below + close above, OR bullish candle near 2nd low<br>
+        • <span style="color:var(--green)">✓ Honest fix: entry delayed by swing_lookback</span>
+      </div>
+
+      <div style="color:var(--red);font-weight:600;margin:10px 0 4px">📉 M Surpass (SHORT)</div>
+      <div style="color:var(--text-dim)">
+        • After L3 (highest of 3 highs), find swing high in segment<br>
+        • 2nd high must go <b style="color:var(--text)">ABOVE</b> L3 = surpass<br>
+        • Same band + bounce rules as W<br>
+        • Entry: wick above + close below, OR bearish candle near 2nd high
+      </div>
+    </div>
+
+    <div>
+      <div style="color:#6bff8e;font-weight:600;margin:10px 0 4px">📏 Level Spacing Filter</div>
+      <div style="color:var(--text-dim)">
+        • Each level gap must be ≥ <b style="color:var(--green)">0.75× ATR(20)</b><br>
+        • gap12 = |L2 − L1| / ATR, gap23 = |L3 − L2| / ATR<br>
+        • min(gap12, gap23) ≥ 0.75 → pass<br>
+        • <span style="color:var(--red)">Trades with gaps < 0.3× ATR had PF 1.10 = dead weight</span>
+      </div>
+
+      <div style="color:#ffd700;font-weight:600;margin:10px 0 4px">📦 3-Box Filter</div>
+      <div style="color:var(--text-dim)">
+        • Equal measured move: top→L1 = first range<br>
+        • Box 3 boundary = top − 3× range (DOWN) or bottom + 3× range (UP)<br>
+        • Deviation = |L3 − box3_boundary| / range<br>
+        • Must be <b style="color:var(--gold)">10-25%</b> deviation<br>
+        • <span style="color:var(--red)">0-5% = too perfect = horizontal chop (PF 0.99)</span><br>
+        • <span style="color:var(--green)">10-25% = real moves with slight imperfection</span>
+      </div>
+
+      <div style="color:#ff6d00;font-weight:600;margin:10px 0 4px">📐 Step Symmetry Filter (NEW)</div>
+      <div style="color:var(--text-dim)">
+        • step1 = |L2 − L1|, step2 = |L3 − L2|<br>
+        • ratio = min(step1, step2) / max(step1, step2)<br>
+        • Must be <b style="color:#ff6d00">0.50 − 0.70</b><br>
+        • <span style="color:var(--red)">0.7-1.0 = too symmetric = fake oscillation (PF 0.86)</span><br>
+        • <span style="color:var(--green)">0.5-0.7 = real accumulation with natural acceleration</span>
+      </div>
+
+      <div style="color:#f7931a;font-weight:600;margin-bottom:4px">🧭 Daily Alignment</div>
+      <div style="color:var(--text-dim)">
+        • SMA10 + SMA20 on daily chart<br>
+        • LONG: price > SMA20 OR SMA10 > SMA20<br>
+        • SHORT: price < SMA20 OR SMA10 < SMA20
+      </div>
+
+      <div style="color:#9945ff;font-weight:600;margin:10px 0 4px">🚪 Exit Rules</div>
+      <div style="color:var(--text-dim)">
+        • Stop loss: <b style="color:var(--red)">−1R</b> (at surpass extreme × 0.999)<br>
+        • Vector exit: vol ≥ <b style="color:var(--text)">1.5×</b> + body ≥ <b style="color:var(--text)">1.2×</b> avg<br>
+        • Lookback for avg: <b style="color:var(--text)">20 bars</b> (1H/15m), <b style="color:var(--text)">30 bars</b> (1m)<br>
+        • Timeout: <b style="color:var(--text)">80 bars</b> (1H/15m), <b style="color:var(--text)">200 bars</b> (1m)
+      </div>
+
+      <div style="color:var(--green);font-weight:600;margin:10px 0 4px">✅ Honest Changes Applied</div>
+      <div style="color:var(--text-dim)">
+        • L1/L2/L3: surpass search starts from <b style="color:var(--text)">l3.index + lookback</b><br>
+        • W/M entry: requires <b style="color:var(--text)">eidx ≥ swing_idx + swing_lookback</b><br>
+        • <b style="color:var(--green)">Verified:</b> global vs incremental swing detection = identical results
+      </div>
+
+      <div style="color:var(--gold);font-weight:600;margin:10px 0 4px">📊 Performance (8 years, BTC, 3 TFs)</div>
+      <div style="color:var(--text-dim)">
+        • <b style="color:var(--text)">41 trades</b> | 68% WR | <b style="color:var(--green)">PF 4.34</b><br>
+        • +43.5R total · R/trade: <b style="color:var(--green)">+1.06</b><br>
+        • Filters: Spacing ≥0.75× + Box 10-25% + Step 0.5-0.7<br>
+        • <span style="color:var(--green)">Sweet spot: moderate imperfection = real moves</span><br>
+        • <span style="color:var(--red)">Trap: "perfect" levels (box 0-5%, step 0.9+) = PF 0.42</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>.rules-body.collapsed{display:none!important}</style>
+
+<div class="rules-panel" style="background:var(--panel);border:2px solid #ff6d00;border-radius:8px;padding:16px 20px;margin:12px 0;">
+  <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="this.parentElement.querySelector('.strat-b-body').classList.toggle('collapsed');this.querySelector('.chevron').textContent=this.parentElement.querySelector('.strat-b-body').classList.contains('collapsed')?'▶':'▼'">
+    <span style="font-weight:700;font-size:1.05em;color:#ff6d00">🔥 Strategy B — "Boxes Guide, Swings Confirm" (Feb 21, 2026)</span>
+    <span class="chevron" style="color:var(--text-dim)">▼</span>
+  </div>
+  <div class="strat-b-body" style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:0.88em;line-height:1.6">
+    <div>
+      <div style="color:#ff6d00;font-weight:600;margin-bottom:4px">💡 Core Concept</div>
+      <div style="color:var(--text-dim)">
+        • Boxes and swings are <b style="color:var(--text)">related but NOT the same thing</b><br>
+        • Boxes = projections (where reversal SHOULD happen)<br>
+        • Swings = actual price structure (where price DID bounce)<br>
+        • Boxes GUIDE where to look → Swings CONFIRM when to enter<br>
+        • The 3-box system is <b style="color:var(--green)">adaptive and dynamic</b> — a filter on top of good setups, not standalone
+      </div>
+
+      <div style="color:var(--accent);font-weight:600;margin:10px 0 4px">📋 Entry Decision Sequence</div>
+      <div style="color:var(--text-dim)">
+        <b style="color:var(--text)">1. Identify the move</b> — 3 levels forming (L1→L2→L3)<br>
+        <b style="color:var(--text)">2. Check spacing</b> — levels ≥ 0.75× ATR apart<br>
+        <b style="color:var(--text)">3. 3-Box projection</b> — Real Top→L1 = box size, project 3 boxes → reversal zone<br>
+        <b style="color:var(--text)">4. Vector candle + volume at L3</b> — biggest candle, highest volume = the trap<br>
+        <b style="color:var(--text)">5. Wait for W/M pattern</b> — don't enter first touch<br>
+        <b style="color:var(--text)">6. 2nd leg surpasses</b> — takes out stops (stop hunt)<br>
+        <b style="color:var(--text)">7. Channel break</b> — confirms reversal is real<br>
+        <b style="color:var(--text)">8. Daily alignment</b> — SMA10/SMA20<br>
+        <b style="color:var(--text)">9. Enter</b> — at close of surpass candle, stop at wick extreme
+      </div>
+    </div>
+
+    <div>
+      <div style="color:var(--red);font-weight:600;margin-bottom:4px">⚠️ What Engine Does vs Should Do</div>
+      <div style="color:var(--text-dim)">
+        <span style="color:var(--green)">✅</span> 3 levels (swing detection)<br>
+        <span style="color:var(--green)">✅</span> Spacing filter (≥ 0.75× ATR)<br>
+        <span style="color:var(--green)">✅</span> 3-Box geometry (box dev, step ratio)<br>
+        <span style="color:#ff9800">⚠️</span> Volume: checks L2→L3 avg, <b style="color:var(--red)">NOT</b> vector candle specifically<br>
+        <span style="color:var(--green)">✅</span> W/M surpass detection<br>
+        <span style="color:var(--green)">✅</span> Stop hunt entry<br>
+        <span style="color:var(--red)">❌</span> <b style="color:var(--red)">Channel break — NOT implemented</b><br>
+        <span style="color:var(--green)">✅</span> Daily SMA alignment<br>
+        <span style="color:var(--green)">✅</span> Real TOP detection (fixed Feb 21)
+      </div>
+
+      <div style="color:var(--green);font-weight:600;margin:10px 0 4px">🎯 Strategy B Approach (NEW)</div>
+      <div style="color:var(--text-dim)">
+        <b style="color:var(--text)">Step 1:</b> Detect Real Top + first swing (L1)<br>
+        <b style="color:var(--text)">Step 2:</b> Project 3 equal boxes → defines reversal ZONE<br>
+        <b style="color:var(--text)">Step 3:</b> Look for swing activity / W/M pattern <b style="color:var(--green)">NEAR</b> projected zone<br>
+        <b style="color:var(--text)">Step 4:</b> Swings don't need to match box boundaries exactly<br>
+        <b style="color:var(--text)">Step 5:</b> Box gives WHERE, swing gives WHEN<br>
+        <br>
+        <span style="color:#ff6d00">Key difference from Strategy A:</span> Don't find 3 swings first then check geometry.<br>
+        <b style="color:var(--text)">Project the zone first, then find confirmation patterns inside it.</b>
+      </div>
+
+      <div style="color:var(--gold);font-weight:600;margin:10px 0 4px">🔮 Key Insight (Feb 21)</div>
+      <div style="color:var(--text-dim)">
+        • The 3-box from Real Top through first swing predicted the exact reversal zone<br>
+        • Even different L1 choices lead to valid projections (adaptive/dynamic)<br>
+        • <b style="color:var(--green)">"It's just a good filter to put on top of good setups"</b> — Ivo<br>
+        • Visual proof: trade 41/41 (BTC 1m 2025-05-15) — 3 boxes from Real Top → W formed exactly at New L3
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="equity-row">
+  <div class="equity-header">
+    <span class="equity-label">📈 Equity Curve</span>
+    <div class="compound-toggle">
+      <button class="compound-btn active" id="btn-flat-r" onclick="setEquityMode('flat')">Flat R</button>
+      <button class="compound-btn" id="btn-compound" onclick="setEquityMode('compound')">Compound $</button>
+    </div>
+  </div>
+  <div id="equity-container"></div>
+</div>
+
+<div class="load-more-bar" id="load-more-bar">
+  <span id="load-status">⏳ Loading recent trades...</span>
+  <button class="load-more-btn" id="load-more-btn" style="display:none" onclick="loadOlderYears()">
+    📥 Load 2017–2022
+  </button>
+</div>
+
+<script>
+// ============= TRADE DATA (lazy-loaded) =============
+let TRADE_DATA = [];
+
+
+// ============= CONSTANTS =============
+const SYMBOL_MAP = { BTC: 'BTCUSDT', ETH: 'ETHUSDT', SOL: 'SOLUSDT' };
+const INTERVAL_MAP = { '1m': '1m', '15m': '15m', '1H': '1h' };
+const TF_MINUTES = { '1m': 1, '15m': 15, '1H': 60 };
+const CANDLE_PADDING = { '1m': 600, '15m': 300, '1H': 200 };
+const LEVELS_PADDING = { '1m': 800, '15m': 500, '1H': 350 };
+const BINANCE_API = 'https://api.binance.com/api/v3/klines';
+
+// Fix timezone: backtest dates were UTC but Python .timestamp() on Sofia machine
+// interpreted them as local time, subtracting 2h (winter EET) or 3h (summer EEST).
+function getSofiaOffset(ts) {
+  const d = new Date(ts * 1000);
+  const utc = new Date(d.toLocaleString('en-US', {timeZone: 'UTC'}));
+  const sofia = new Date(d.toLocaleString('en-US', {timeZone: 'Europe/Sofia'}));
+  return (sofia - utc) / 1000;
+}
+// V11c data timestamps are already correct UTC - no timezone fix needed
+// (V5.2 legacy data needed fixing because Python .timestamp() on Sofia machine shifted them)
+function fixTimezones(trades) {
+  // no-op for v11c data
+}
+
+// ============= STATE =============
+let state = {
+  filters: { pair: 'ALL', tf: 'ALL', dir: 'ALL', exit: 'ALL', result: 'ALL', box_zone: 'ALL' },
+  sort: 'date',
+  dateAsc: true,
+  filtered: [],
+  selectedIndex: -1,
+  chart: null,
+  candleSeries: null,
+  volumeSeries: null,
+  candleCache: {},
+  equityChart: null,
+  showSummary: false,
+  equityMode: 'flat' // 'flat' or 'compound'
+};
+
+// ============= FILTER & SORT =============
+async function applyFilters() {
+  const f = state.filters;
+  // Date range filter
+  const fromEl = document.getElementById('date-from');
+  const toEl = document.getElementById('date-to');
+  const fromTs = fromEl && fromEl.value ? new Date(fromEl.value + 'T00:00:00Z').getTime() / 1000 : 0;
+  const toTs = toEl && toEl.value ? new Date(toEl.value + 'T23:59:59Z').getTime() / 1000 : Infinity;
+
+    state.filtered = TRADE_DATA.filter(t => {
+    if (t.et < fromTs || t.et > toTs) return false;
+    if (f.pair !== 'ALL' && t.pair !== f.pair) return false;
+    if (f.tf !== 'ALL' && t.tf !== f.tf) return false;
+    if (f.dir !== 'ALL' && t.dir !== f.dir) return false;
+    if (f.exit !== 'ALL' && t.exit_type !== f.exit) return false;
+    if (f.result === 'win' && t.r <= 0) return false;
+    if (f.result === 'loss' && t.r >= 0) return false;
+    if (f.box_zone !== 'ALL' && t.box_zone !== f.box_zone) return false;
+    return true;
+  });
+  applySort();
+}
+
+function applySort() {
+  const s = state.sort;
+  state.filtered.sort((a, b) => {
+    if (s === 'date') return state.dateAsc ? a.et - b.et : b.et - a.et;
+    if (s === 'r-desc') return b.r - a.r;
+    if (s === 'r-asc') return a.r - b.r;
+    return 0;
+  });
+  state.selectedIndex = -1;
+  updateUI();
+}
+
+// ============= STATS =============
+function calcStats(trades) {
+  if (!trades.length) return { count: 0, wr: 0, totalR: 0, avgR: 0, best: 0, worst: 0, maxConsecLoss: 0, pf: 0, expectancy: 0, compoundDollar: 1000 };
+  const wins = trades.filter(t => t.r > 0).length;
+  const totalR = trades.reduce((s, t) => s + t.r, 0);
+  const best = Math.max(...trades.map(t => t.r));
+  const worst = Math.min(...trades.map(t => t.r));
+  
+  // Profit Factor
+  const grossProfit = trades.filter(t => t.r > 0).reduce((s, t) => s + t.r, 0);
+  const grossLoss = Math.abs(trades.filter(t => t.r < 0).reduce((s, t) => s + t.r, 0));
+  const pf = grossLoss > 0 ? grossProfit / grossLoss : Infinity;
+  
+  // Expectancy
+  const wr = wins / trades.length;
+  const avgWin = wins > 0 ? grossProfit / wins : 0;
+  const losers = trades.length - wins;
+  const avgLoss = losers > 0 ? grossLoss / losers : 0;
+  const expectancy = (wr * avgWin) - ((1 - wr) * avgLoss);
+  
+  // Max consecutive losses (by date order)
+  const byDate = [...trades].sort((a, b) => a.et - b.et);
+  let maxLoss = 0, curLoss = 0;
+  for (const t of byDate) {
+    if (t.r < 0) { curLoss++; maxLoss = Math.max(maxLoss, curLoss); }
+    else curLoss = 0;
+  }
+  
+  // Compound $ (2% risk, $1000 start)
+  const byDateForCompound = [...trades].sort((a, b) => a.et - b.et);
+  let compoundBal = 1000;
+  for (const t of byDateForCompound) compoundBal = compoundBal * (1 + t.r * 0.02);
+
+  return {
+    count: trades.length,
+    wr: Math.round(wins / trades.length * 100),
+    totalR: totalR.toFixed(2),
+    avgR: (totalR / trades.length).toFixed(2),
+    best: best.toFixed(2),
+    worst: worst.toFixed(2),
+    maxConsecLoss: maxLoss,
+    pf: pf === Infinity ? '∞' : pf.toFixed(2),
+    expectancy: expectancy.toFixed(2),
+    compoundDollar: compoundBal
+  };
+}
+
+// ============= SUMMARY =============
+function toggleSummary() {
+  state.showSummary = !state.showSummary;
+  const panel = document.getElementById('summary-panel');
+  const btn = document.getElementById('summary-btn');
+  if (state.showSummary) {
+    panel.classList.add('visible');
+    btn.classList.add('active');
+    renderSummary();
+  } else {
+    panel.classList.remove('visible');
+    btn.classList.remove('active');
+  }
+}
+
+function renderSummary() {
+  const trades = state.filtered;
+  
+  // Per-pair breakdown
+  const pairs = ['BTC', 'ETH', 'SOL'];
+  const tfs = ['1m', '15m', '1H'];
+  const dirs = ['L', 'S'];
+  
+  function makeCard(title, subsets) {
+    let html = `<div class="summary-card"><h3>${title}</h3>`;
+    for (const [label, subset] of subsets) {
+      if (!subset.length) continue;
+      const wins = subset.filter(t => t.r > 0).length;
+      const wr = Math.round(wins / subset.length * 100);
+      const totalR = subset.reduce((s, t) => s + t.r, 0);
+      const avgR = (totalR / subset.length).toFixed(2);
+      const rClass = totalR >= 0 ? 'pos' : 'neg';
+      html += `<div class="summary-stat">
+        <span class="label">${label}</span>
+        <span class="val">${subset.length} trades</span>
+        <span class="val ${rClass}">${wr}% WR</span>
+        <span class="val ${rClass}">${totalR >= 0 ? '+' : ''}${totalR.toFixed(1)}R</span>
+        <span class="val">${avgR} avg</span>
+      </div>`;
+    }
+    html += '</div>';
+    return html;
+  }
+  
+  let html = '<div class="summary-grid">';
+  
+  // Per pair
+  html += makeCard('By Pair', pairs.map(p => [p, trades.filter(t => t.pair === p)]));
+  
+  // Per TF
+  html += makeCard('By Timeframe', tfs.map(tf => [tf, trades.filter(t => t.tf === tf)]));
+  
+  // Per direction
+  html += makeCard('By Direction', dirs.map(d => [d === 'L' ? 'LONG' : 'SHORT', trades.filter(t => t.dir === d)]));
+  
+  // Per exit type
+  html += makeCard('By Exit Type', [
+    ['Stop', trades.filter(t => t.exit_type === 'stop')],
+    ['Vector', trades.filter(t => t.exit_type === 'vector_exit')],
+    ['Timeout', trades.filter(t => t.exit_type === 'timeout')],
+  ]);
+  
+  // Per pair+TF combo
+  const combos = [];
+  for (const p of pairs) {
+    for (const tf of tfs) {
+      const sub = trades.filter(t => t.pair === p && t.tf === tf);
+      if (sub.length) combos.push([`${p} ${tf}`, sub]);
+    }
+  }
+  html += makeCard('By Pair × TF', combos);
+  
+  // Yearly breakdown
+  const years = [...new Set(trades.map(t => new Date(t.et * 1000).getFullYear()))].sort();
+  html += makeCard('By Year', years.map(y => [String(y), trades.filter(t => new Date(t.et * 1000).getFullYear() === y)]));
+  
+  html += '</div>';
+  document.getElementById('summary-content').innerHTML = html;
+}
+
+// ============= EQUITY CURVE =============
+function renderEquityCurve() {
+  const container = document.getElementById('equity-container');
+  if (state.equityChart) {
+    state.equityChart.remove();
+    state.equityChart = null;
+  }
+  
+  const byDate = [...state.filtered].sort((a, b) => a.et - b.et);
+  if (!byDate.length) {
+    container.innerHTML = '<div style="text-align:center;color:#666;padding:20px;">No trades in selected range</div>';
+    return;
+  }
+  
+  let data;
+  if (state.equityMode === 'compound') {
+    let balance = 1000;
+    data = byDate.map(t => {
+      balance = balance * (1 + t.r * 0.02);
+      return { time: t.et, value: parseFloat(balance.toFixed(2)) };
+    });
+  } else {
+    let cumR = 0;
+    data = byDate.map(t => {
+      cumR += t.r;
+      return { time: t.et, value: parseFloat(cumR.toFixed(2)) };
+    });
+  }
+  
+  // Deduplicate by time (keep last value for same timestamp)
+  const dedupMap = new Map();
+  data.forEach(d => dedupMap.set(d.time, d.value));
+  const dedupData = [...dedupMap.entries()].sort((a,b) => a[0] - b[0]).map(([time, value]) => ({time, value}));
+  
+  state.equityChart = LightweightCharts.createChart(container, {
+    layout: { background: { color: '#0a0a0f' }, textColor: '#888' },
+    grid: { vertLines: { visible: false }, horzLines: { color: '#1e1e2e' } },
+    rightPriceScale: { borderColor: '#2a2a3a' },
+    timeScale: { borderColor: '#2a2a3a', timeVisible: false },
+    width: container.clientWidth,
+    height: 120,
+    crosshair: { mode: LightweightCharts.CrosshairMode.Magnet },
+  });
+  
+  const seriesOpts = {
+    topColor: 'rgba(0, 188, 212, 0.4)',
+    bottomColor: 'rgba(0, 188, 212, 0.0)',
+    lineColor: '#00bcd4',
+    lineWidth: 2,
+  };
+  if (state.equityMode === 'compound') {
+    seriesOpts.priceFormat = { type: 'custom', formatter: p => '$' + p.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) };
+  }
+  const series = state.equityChart.addAreaSeries(seriesOpts);
+  series.setData(dedupData);
+  state.equityChart.timeScale().fitContent();
+  
+  const ro = new ResizeObserver(() => {
+    if (state.equityChart) {
+      state.equityChart.applyOptions({ width: container.clientWidth });
+    }
+  });
+  ro.observe(container);
+}
+
+// ============= UI UPDATE =============
+function updateUI() {
+  const stats = calcStats(state.filtered);
+  
+  document.getElementById('stat-trades').textContent = stats.count.toLocaleString();
+  document.getElementById('trade-count').textContent = stats.count.toLocaleString();
+  const wrEl = document.getElementById('stat-wr');
+  wrEl.textContent = stats.wr + '%';
+  wrEl.className = 'stat-value ' + (stats.wr >= 50 ? 'positive' : 'negative');
+  const trEl = document.getElementById('stat-total-r');
+  trEl.textContent = (stats.totalR >= 0 ? '+' : '') + parseFloat(stats.totalR).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  trEl.className = 'stat-value ' + (stats.totalR >= 0 ? 'positive' : 'negative');
+  const arEl = document.getElementById('stat-avg-r');
+  arEl.textContent = stats.avgR;
+  arEl.className = 'stat-value ' + (stats.avgR >= 0 ? 'positive' : 'negative');
+  document.getElementById('stat-best').textContent = '+' + stats.best;
+  document.getElementById('stat-worst').textContent = stats.worst;
+  document.getElementById('stat-streak').textContent = stats.maxConsecLoss;
+  const pfEl = document.getElementById('stat-pf');
+  pfEl.textContent = stats.pf;
+  pfEl.className = 'stat-value ' + (parseFloat(stats.pf) >= 1.5 ? 'positive' : parseFloat(stats.pf) < 1 ? 'negative' : '');
+  const exEl = document.getElementById('stat-expect');
+  exEl.textContent = stats.expectancy;
+  exEl.className = 'stat-value ' + (stats.expectancy >= 0 ? 'positive' : 'negative');
+  const compEl = document.getElementById('stat-compound');
+  const compVal = stats.compoundDollar;
+  compEl.textContent = '$' + compVal.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+  compEl.className = 'stat-value ' + (compVal >= 1000 ? 'positive' : 'negative');
+  
+  document.getElementById('filtered-count').textContent = stats.count.toLocaleString() + ' trades';
+  
+  renderTradeList();
+  renderEquityCurve();
+  
+  if (state.showSummary) renderSummary();
+}
+
+function renderTradeList() {
+  const list = document.getElementById('trade-list');
+  // Virtual scrolling for 5K+ trades - show first 500, load more on scroll
+  const maxShow = Math.min(state.filtered.length, 500);
+  const html = [];
+  for (let i = 0; i < maxShow; i++) {
+    const t = state.filtered[i];
+    const date = new Date(t.et * 1000);
+    const dateStr = date.toISOString().slice(0, 10);
+    const rStr = (t.r >= 0 ? '+' : '') + t.r.toFixed(2) + 'R';
+    const rClass = t.r >= 0 ? 'positive' : 'negative';
+    const active = i === state.selectedIndex ? 'active' : '';
+    html.push(`<div class="trade-item ${active}" data-idx="${i}" onclick="selectTrade(${i})">
+      <div class="left">
+        <span class="pair-badge ${t.pair}">${t.pair}</span>
+        <span class="tf-badge">${t.tf}</span>
+        <span class="dir-badge ${t.dir}">${t.dir === 'L' ? 'LONG' : 'SHORT'}</span>
+        <span class="date-text">${dateStr}</span>
+        <span style="font-size:0.65rem;padding:2px 6px;border-radius:3px;background:${t.box_zone==='Box 3'?'rgba(0,200,83,0.15)':'rgba(255,145,0,0.15)'};color:${t.box_zone==='Box 3'?'#00c853':'#ff9100'};margin-left:4px">${t.box_zone}</span>
+        <span style="font-size:0.65rem;margin-left:4px">${t.top_fixed ? '✅' : '⚠️'}</span>
+      </div>
+      <span class="r-value ${rClass}">${rStr}</span>
+    </div>`);
+  }
+  if (state.filtered.length > maxShow) {
+    html.push(`<div class="trade-item" style="justify-content:center;color:var(--text-dim);cursor:default">... ${state.filtered.length - maxShow} more trades (use filters to narrow)</div>`);
+  }
+  list.innerHTML = html.join('');
+  
+  if (state.selectedIndex >= 0 && state.selectedIndex < maxShow) {
+    const active = list.querySelector('.trade-item.active');
+    if (active) active.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+}
+
+// ============= CHART =============
+function initChart() {
+  const container = document.getElementById('chart-container');
+  state.chart = LightweightCharts.createChart(container, {
+    layout: {
+      background: { color: '#0a0a0f' },
+      textColor: '#888',
+    },
+    grid: {
+      vertLines: { color: '#1e1e2e' },
+      horzLines: { color: '#1e1e2e' },
+    },
+    crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+    rightPriceScale: { borderColor: '#2a2a3a' },
+    timeScale: { borderColor: '#2a2a3a', timeVisible: true, secondsVisible: false },
+    width: container.clientWidth,
+    height: container.clientHeight,
+  });
+  
+  state.candleSeries = state.chart.addCandlestickSeries({
+    upColor: '#00c853',
+    downColor: '#ff1744',
+    borderUpColor: '#00c853',
+    borderDownColor: '#ff1744',
+    wickUpColor: '#00c853',
+    wickDownColor: '#ff1744',
+    priceScaleId: 'right',
+  });
+  state.chart.priceScale('right').applyOptions({
+    scaleMargins: { top: 0.02, bottom: 0.06 },
+  });
+  
+  state.volumeSeries = state.chart.addHistogramSeries({
+    priceFormat: { type: 'volume' },
+    priceScaleId: 'vol',
+  });
+  state.chart.priceScale('vol').applyOptions({
+    scaleMargins: { top: 0.93, bottom: 0 },
+  });
+  
+  state.markerSeries = state.chart.addLineSeries({
+    color: 'transparent',
+    lineWidth: 0,
+    crosshairMarkerVisible: false,
+    lastValueVisible: false,
+    priceLineVisible: false,
+    priceScaleId: 'right',
+  });
+  
+  const ro = new ResizeObserver(() => {
+    state.chart.applyOptions({
+      width: container.clientWidth,
+      height: container.clientHeight,
+    });
+    scheduleThreeBoxRedraw();
+    scheduleLevelsRedraw();
+    scheduleChannelRedraw();
+  });
+  ro.observe(container);
+
+  // 3-Box tool: subscribe to chart clicks and scale changes
+  state.chart.subscribeClick(handleThreeBoxClick);
+  state.chart.subscribeClick(handleChannelClick);
+  state.chart.timeScale().subscribeVisibleLogicalRangeChange(() => { scheduleThreeBoxRedraw(); scheduleLevelsRedraw(); scheduleChannelRedraw(); });
+  state.chart.subscribeCrosshairMove(() => { scheduleThreeBoxRedraw(); scheduleLevelsRedraw(); scheduleChannelRedraw(); });
+}
+
+async function fetchCandles(trade) {
+  const cacheKey = `${trade.pair}_${trade.tf}_${trade.et}`;
+  if (state.candleCache[cacheKey]) return state.candleCache[cacheKey];
+  
+  const symbol = SYMBOL_MAP[trade.pair];
+  const interval = INTERVAL_MAP[trade.tf];
+  const pad = CANDLE_PADDING[trade.tf];
+  const tfMs = TF_MINUTES[trade.tf] * 60 * 1000;
+  
+  const startTime = (trade.et * 1000) - (pad * tfMs);
+  const endTime = Math.max(trade.xt * 1000, trade.et * 1000) + (pad * tfMs);
+  
+  let allCandles = [];
+  let cursor = startTime;
+  
+  while (cursor < endTime) {
+    const url = `${BINANCE_API}?symbol=${symbol}&interval=${interval}&startTime=${cursor}&endTime=${endTime}&limit=1000`;
+    try {
+      const resp = await fetch(url);
+      const data = await resp.json();
+      if (!data || !data.length) break;
+      allCandles = allCandles.concat(data);
+      cursor = data[data.length - 1][0] + 1;
+      if (data.length < 1000) break;
+    } catch (e) {
+      console.error('Fetch error:', e);
+      break;
+    }
+  }
+  
+  const candles = allCandles.map(c => ({
+    time: Math.floor(c[0] / 1000),
+    open: parseFloat(c[1]),
+    high: parseFloat(c[2]),
+    low: parseFloat(c[3]),
+    close: parseFloat(c[4]),
+    volume: parseFloat(c[5]),
+  }));
+  
+  state.candleCache[cacheKey] = candles;
+  return candles;
+}
+
+async function selectTrade(idx) {
+  if (idx < 0 || idx >= state.filtered.length) return;
+  state.selectedIndex = idx;
+  if (channel.drawing) cancelChannelDrawing();
+  const trade = state.filtered[idx];
+  
+  // Persist to URL hash so refresh keeps the same trade
+  try { history.replaceState(null, '', '#' + trade.pair + '_' + trade.tf + '_' + trade.et); } catch(e) {}
+  
+  const dir = trade.dir === 'L' ? '🟢 LONG' : '🔴 SHORT';
+  const rStr = (trade.r >= 0 ? '+' : '') + trade.r.toFixed(2) + 'R';
+  const rColor = trade.r >= 0 ? 'var(--green)' : 'var(--red)';
+  const date = new Date(trade.et * 1000).toISOString().slice(0, 16).replace('T', ' ');
+  const pColor = trade.pair === 'BTC' ? '#f7931a' : trade.pair === 'ETH' ? '#627eea' : '#9945ff';
+  document.getElementById('trade-detail').innerHTML = `
+    <span style="font-weight:700;color:${pColor}">${trade.pair}</span>
+    <span>${trade.tf}</span>
+    <span>${dir}</span>
+    <span style="font-weight:700;color:${rColor}">${rStr}</span>
+    <span style="color:var(--text-dim)">${trade.exit_type}</span>
+    <span style="color:var(--text-dim)">${date}</span>
+    <span style="color:var(--text-dim)">Entry: ${trade.entry.toLocaleString()}</span>
+    <span style="color:var(--text-dim)">Stop: ${trade.stop.toLocaleString()}</span>
+    <span style="color:var(--text-dim)">Exit: ${trade.exit.toLocaleString()}</span>
+    <span style="color:var(--text-dim)">Trade ${idx + 1}/${state.filtered.length.toLocaleString()}</span>
+    ${trade.dual_bot || trade.dual_top ? `<span style="color:#00e676">DUAL ${trade.dir === 'S' ? 'Bot' : 'Top'}: ${(trade.dir === 'S' ? trade.dual_bot : trade.dual_top || 0).toLocaleString()}</span>` : ''}
+    ${trade.dual_diff_v3 !== undefined && trade.dual_diff_v3 !== null ? `<span style="color:${trade.dual_diff_v3 < 50 ? '#00e676' : trade.dual_diff_v3 < 200 ? '#ff9800' : '#ff1744'}">ΔV3: $${trade.dual_diff_v3.toFixed(0)}</span>` : ''}
+  `;
+  
+  renderTradeList();
+  
+  document.getElementById('chart-loading').style.display = 'block';
+  document.getElementById('chart-loading').textContent = 'Loading candles...';
+  
+  try {
+    const candles = await fetchCandles(trade);
+    if (state.selectedIndex !== idx) return;
+    
+    if (!candles.length) {
+      document.getElementById('chart-loading').textContent = 'No candle data available (pre-listing?)';
+      return;
+    }
+    
+    document.getElementById('chart-loading').style.display = 'none';
+    
+    state.candleSeries.setData(candles);
+    
+    state.volumeSeries.setData(candles.map(c => ({
+      time: c.time,
+      value: c.volume,
+      color: c.close >= c.open ? 'rgba(0,200,83,0.8)' : 'rgba(255,23,68,0.8)',
+    })));
+    
+    const entryMarkerTime = trade.et;
+    const markerData = [
+      { time: entryMarkerTime, value: trade.entry },
+      { time: trade.xt, value: trade.exit },
+    ].sort((a, b) => a.time - b.time);
+    state.markerSeries.setData(markerData);
+    
+    // Compute levels if active, then set all markers together
+    if (levels.active) {
+      computeLevels();
+    } else {
+      refreshCandleMarkers();
+    }
+    state.markerSeries.setMarkers([]);
+    
+    if (state.priceLines) {
+      state.priceLines.forEach(pl => state.candleSeries.removePriceLine(pl));
+    }
+    state.priceLines = [];
+    
+    state.priceLines.push(state.candleSeries.createPriceLine({
+      price: trade.entry,
+      color: '#00bcd4',
+      lineWidth: 2,
+      lineStyle: 0,
+      axisLabelVisible: true,
+      title: 'Entry ' + trade.entry.toLocaleString(),
+    }));
+    
+    state.priceLines.push(state.candleSeries.createPriceLine({
+      price: trade.stop,
+      color: '#ff1744',
+      lineWidth: 1,
+      lineStyle: 2,
+      axisLabelVisible: true,
+      title: 'Stop ' + trade.stop.toLocaleString(),
+    }));
+    
+    state.priceLines.push(state.candleSeries.createPriceLine({
+      price: trade.exit,
+      color: '#ffd700',
+      lineWidth: 2,
+      lineStyle: 0,
+      axisLabelVisible: true,
+      title: 'Exit ' + trade.exit.toLocaleString(),
+    }));
+    
+    // === DUAL DETECTOR TOP/BOTTOM (green line) — the only anchor line ===
+    const dualPrice = trade.dir === 'S' ? trade.dual_bot : trade.dual_top;
+    if (dualPrice) {
+      state.priceLines.push(state.candleSeries.createPriceLine({
+        price: dualPrice,
+        color: '#00e676',
+        lineWidth: 2,
+        lineStyle: 0,
+        axisLabelVisible: true,
+        title: 'DUAL ' + (trade.dir === 'S' ? 'Bot' : 'Top') + ' ' + dualPrice.toLocaleString(),
+      }));
+    }
+
+    // Find the Real TOP candle on chart to set proper left boundary
+    // Use SM price if it extends further than V3
+    let topTime = null;
+    const v3Price = trade.dir === 'L' ? trade.v3_top : trade.v3_bottom;
+    const realTopPrice = v3Price || trade.real_top || trade.top;
+    if (realTopPrice && candles.length) {
+      const tol = Math.abs(realTopPrice) * 0.0002;
+      const isLong = trade.dir === 'L';
+      for (let i = candles.length - 1; i >= 0; i--) {
+        const c = candles[i];
+        if (c.time >= trade.et) continue;
+        if (isLong && Math.abs(c.high - realTopPrice) <= tol) { topTime = c.time; break; }
+        if (!isLong && Math.abs(c.low - realTopPrice) <= tol) { topTime = c.time; break; }
+      }
+      // Fallback: find the candle with extreme price before entry
+      if (!topTime) {
+        let bestPrice = isLong ? -Infinity : Infinity;
+        let bestTime = null;
+        for (let i = 0; i < candles.length; i++) {
+          const c = candles[i];
+          if (c.time >= trade.et) break;
+          if (isLong && c.high > bestPrice) { bestPrice = c.high; bestTime = c.time; }
+          if (!isLong && c.low < bestPrice) { bestPrice = c.low; bestTime = c.time; }
+        }
+        if (bestTime) topTime = bestTime;
+      }
+    }
+
+    const tradeDuration = Math.max(trade.xt - trade.et, TF_MINUTES[trade.tf] * 60 * 10);
+    const viewPad = Math.max(tradeDuration * 0.5, TF_MINUTES[trade.tf] * 60 * 15);
+    let viewFrom = trade.et - viewPad;
+    const viewTo = trade.xt + viewPad;
+
+    // Extend left to show Real TOP if it's further back
+    if (topTime && topTime < viewFrom) {
+      const topPadBars = TF_MINUTES[trade.tf] * 60 * 15; // 15 bars extra left of TOP
+      viewFrom = topTime - topPadBars;
+    }
+
+    // Extend left to show Dual detector extreme if further back
+    const dualTs = trade.dir === 'S' ? trade.dual_bot_ts : trade.dual_top_ts;
+    if (dualTs && dualTs < viewFrom) {
+      const dualPad = TF_MINUTES[trade.tf] * 60 * 15;
+      viewFrom = dualTs - dualPad;
+    }
+
+    state.chart.timeScale().setVisibleRange({ from: viewFrom, to: viewTo });
+
+    // V11c: no auto 3-box (no v2_meta). Use manual 3-Box tool or Levels tool.
+    
+    // Restore channels for this trade
+    restoreChannels();
+
+  } catch (e) {
+    console.error('Error loading trade:', e);
+    document.getElementById('chart-loading').textContent = 'Error loading candles';
+    document.getElementById('chart-loading').style.display = 'block';
+  }
+}
+
+// ============= EVENT HANDLERS =============
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const filter = btn.dataset.filter;
+    const value = btn.dataset.value;
+    state.filters[filter] = value;
+    document.querySelectorAll(`.filter-btn[data-filter="${filter}"]`).forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applyFilters();
+  });
+});
+
+document.querySelectorAll('.sort-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const newSort = btn.dataset.sort;
+    if (newSort === 'date' && state.sort === 'date') {
+      state.dateAsc = !state.dateAsc;
+      btn.textContent = state.dateAsc ? 'Date ↑' : 'Date ↓';
+    } else if (newSort === 'date') {
+      btn.textContent = state.dateAsc ? 'Date ↑' : 'Date ↓';
+    }
+    state.sort = newSort;
+    document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applySort();
+  });
+});
+
+document.getElementById('btn-prev').addEventListener('click', () => {
+  if (state.selectedIndex > 0) selectTrade(state.selectedIndex - 1);
+});
+document.getElementById('btn-next').addEventListener('click', () => {
+  if (state.selectedIndex < state.filtered.length - 1) selectTrade(state.selectedIndex + 1);
+  else if (state.selectedIndex === -1 && state.filtered.length > 0) selectTrade(0);
+});
+document.getElementById('btn-random').addEventListener('click', () => {
+  if (state.filtered.length > 0) {
+    selectTrade(Math.floor(Math.random() * state.filtered.length));
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && threeBox.drawing) { cancelThreeBoxDrawing(); return; }
+  if (e.key === 'Escape' && channel.drawing) { cancelChannelDrawing(); return; }
+  if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+    e.preventDefault();
+    if (state.selectedIndex > 0) selectTrade(state.selectedIndex - 1);
+  } else if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+    e.preventDefault();
+    if (state.selectedIndex < state.filtered.length - 1) selectTrade(state.selectedIndex + 1);
+  }
+});
+
+// ============= 3-BOX TOOL (Market Maker Method Rule 5) =============
+const threeBox = { drawing: false, clickCount: 0, price1: null, price2: null, tempLine: null, boxData: null, overlay: null };
+let threeBoxRedrawPending = false;
+
+function createThreeBoxOverlay() {
+  if (threeBox.overlay) return;
+  const container = document.getElementById('chart-container');
+  const canvas = document.createElement('canvas');
+  canvas.id = 'three-box-overlay';
+  container.appendChild(canvas);
+  threeBox.overlay = canvas;
+  sizeThreeBoxCanvas();
+}
+
+function sizeThreeBoxCanvas() {
+  if (!threeBox.overlay) return;
+  const container = document.getElementById('chart-container');
+  const dpr = window.devicePixelRatio || 1;
+  const w = container.clientWidth * dpr;
+  const h = container.clientHeight * dpr;
+  if (threeBox.overlay.width !== w || threeBox.overlay.height !== h) {
+    threeBox.overlay.width = w;
+    threeBox.overlay.height = h;
+    threeBox.overlay.style.width = container.clientWidth + 'px';
+    threeBox.overlay.style.height = container.clientHeight + 'px';
+  }
+}
+
+function toggleThreeBox() {
+  if (!state.candleSeries) return;
+  if (threeBox.drawing) { cancelThreeBoxDrawing(); return; }
+  // Cancel channel if drawing
+  if (channel.drawing) cancelChannelDrawing();
+  // Enter drawing mode
+  threeBox.drawing = true;
+  threeBox.clickCount = 0;
+  threeBox.price1 = null;
+  threeBox.price2 = null;
+  document.getElementById('btn-three-box').classList.add('drawing');
+  document.getElementById('btn-three-box').textContent = '✋ Cancel';
+  document.getElementById('three-box-status').textContent = '① Click start of range';
+  createThreeBoxOverlay();
+}
+
+function cancelThreeBoxDrawing() {
+  threeBox.drawing = false;
+  threeBox.clickCount = 0;
+  if (threeBox.tempLine) {
+    try { state.candleSeries.removePriceLine(threeBox.tempLine); } catch(e) {}
+    threeBox.tempLine = null;
+  }
+  const btn = document.getElementById('btn-three-box');
+  btn.classList.remove('drawing');
+  btn.textContent = '📐 3-Box';
+  document.getElementById('three-box-status').textContent = '';
+}
+
+function clearThreeBoxes() {
+  cancelThreeBoxDrawing();
+  threeBox.boxData = null;
+  if (threeBox.overlay) {
+    const ctx = threeBox.overlay.getContext('2d');
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, threeBox.overlay.width, threeBox.overlay.height);
+  }
+  document.getElementById('btn-three-box').classList.remove('active');
+  document.getElementById('btn-three-box').textContent = '📐 3-Box';
+  document.getElementById('btn-clear-boxes').style.display = 'none';
+  document.getElementById('three-box-status').textContent = '';
+}
+
+function handleThreeBoxClick(param) {
+  if (!threeBox.drawing || !param.point) return;
+  const price = state.candleSeries.coordinateToPrice(param.point.y);
+  if (price == null || isNaN(price)) return;
+
+  if (threeBox.clickCount === 0) {
+    threeBox.price1 = price;
+    threeBox.clickCount = 1;
+    threeBox.tempLine = state.candleSeries.createPriceLine({
+      price: price, color: '#ff9800', lineWidth: 1, lineStyle: 2,
+      axisLabelVisible: true, title: '① ' + price.toFixed(2),
+    });
+    document.getElementById('three-box-status').textContent =
+      '① ' + price.toFixed(2) + ' — ② Click end of range';
+  } else if (threeBox.clickCount === 1) {
+    threeBox.price2 = price;
+    threeBox.drawing = false;
+    if (threeBox.tempLine) {
+      try { state.candleSeries.removePriceLine(threeBox.tempLine); } catch(e) {}
+      threeBox.tempLine = null;
+    }
+    computeAndDrawBoxes();
+  }
+}
+
+function computeAndDrawBoxes() {
+  const p1 = threeBox.price1, p2 = threeBox.price2;
+  const range = Math.abs(p1 - p2);
+  if (range === 0) { cancelThreeBoxDrawing(); return; }
+  const bearish = p1 > p2;
+  // 5 boundaries: 0 (start), 1 (end of measured range), 2, 3, 4 (end of box 3)
+  const boundaries = [];
+  for (let i = 0; i <= 4; i++) boundaries.push(bearish ? p1 - i * range : p1 + i * range);
+  threeBox.boxData = { boundaries, bearish, range };
+
+  const btn = document.getElementById('btn-three-box');
+  btn.classList.remove('drawing');
+  btn.classList.add('active');
+  btn.textContent = '📐 3-Box';
+  document.getElementById('btn-clear-boxes').style.display = 'inline-block';
+  const dir = bearish ? '🔴 Bear' : '🟢 Bull';
+  document.getElementById('three-box-status').textContent =
+    dir + ' | Range: ' + range.toFixed(2) + ' | Reversal: ' + boundaries[4].toFixed(2);
+  renderThreeBoxOverlay();
+}
+
+function renderThreeBoxOverlay() {
+  if (!threeBox.overlay || !threeBox.boxData || !state.candleSeries) return;
+  sizeThreeBoxCanvas();
+  const canvas = threeBox.overlay;
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.width / dpr, h = canvas.height / dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  const { boundaries, bearish } = threeBox.boxData;
+  let chartW = w - 55;
+  try { chartW = state.chart.timeScale().width(); } catch(e) {}
+
+  // Convert prices to Y with off-screen clamping
+  const yCoords = boundaries.map(p => {
+    const y = state.candleSeries.priceToCoordinate(p);
+    if (y !== null && y !== undefined) return y;
+    const topP = state.candleSeries.coordinateToPrice(0);
+    const botP = state.candleSeries.coordinateToPrice(h);
+    if (topP != null && p > topP) return -20;
+    if (botP != null && p < botP) return h + 20;
+    return null;
+  });
+  if (yCoords.every(y => y === null)) return;
+
+  const fills  = ['rgba(150,150,180,0.10)','rgba(68,138,255,0.10)','rgba(68,138,255,0.10)','rgba(0,230,118,0.16)'];
+  const strokes = ['rgba(150,150,180,0.50)','rgba(68,138,255,0.50)','rgba(68,138,255,0.50)','rgba(0,230,118,0.70)'];
+  const lblBg   = ['rgba(100,100,130,0.85)','rgba(55,120,230,0.85)','rgba(55,120,230,0.85)','rgba(0,180,80,0.85)'];
+
+  // Draw 4 boxes
+  for (let i = 0; i < 4; i++) {
+    const y1 = yCoords[i], y2 = yCoords[i + 1];
+    if (y1 === null || y2 === null) continue;
+    const top = Math.min(y1, y2), boxH = Math.abs(y2 - y1);
+    ctx.fillStyle = fills[i];
+    ctx.fillRect(0, top, chartW, boxH);
+    // Top border line
+    ctx.strokeStyle = strokes[i];
+    ctx.lineWidth = i === 3 ? 1.5 : 1;
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(0, y1); ctx.lineTo(chartW, y1); ctx.stroke();
+  }
+  // Bottom border of box 3
+  if (yCoords[4] !== null) {
+    ctx.strokeStyle = strokes[3]; ctx.lineWidth = 2; ctx.setLineDash([6, 3]);
+    ctx.beginPath(); ctx.moveTo(0, yCoords[4]); ctx.lineTo(chartW, yCoords[4]); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Boundary labels (0–4)
+  ctx.textBaseline = 'middle';
+  for (let i = 0; i < 5; i++) {
+    const y = yCoords[i];
+    if (y === null || y < -15 || y > h + 15) continue;
+    const bg = i < 4 ? lblBg[i] : lblBg[3];
+    const pw = 20, ph = 16, px = 6, py = y - ph / 2, r = 3;
+    // Rounded rect pill
+    ctx.fillStyle = bg;
+    ctx.beginPath();
+    ctx.moveTo(px + r, py); ctx.lineTo(px + pw - r, py);
+    ctx.quadraticCurveTo(px + pw, py, px + pw, py + r);
+    ctx.lineTo(px + pw, py + ph - r);
+    ctx.quadraticCurveTo(px + pw, py + ph, px + pw - r, py + ph);
+    ctx.lineTo(px + r, py + ph);
+    ctx.quadraticCurveTo(px, py + ph, px, py + ph - r);
+    ctx.lineTo(px, py + r);
+    ctx.quadraticCurveTo(px, py, px + r, py);
+    ctx.closePath(); ctx.fill();
+    // Number
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(String(i), px + pw / 2, y);
+    // Price
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.font = '10px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(boundaries[i].toFixed(2), px + pw + 5, y);
+    ctx.textAlign = 'center';
+  }
+
+  // "REVERSAL ZONE" label in box 3
+  if (yCoords[3] !== null && yCoords[4] !== null && Math.abs(yCoords[4] - yCoords[3]) > 24) {
+    const midY = (yCoords[3] + yCoords[4]) / 2;
+    ctx.fillStyle = 'rgba(0,230,118,0.85)';
+    ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('⚡ REVERSAL ZONE', chartW / 2, midY);
+  }
+}
+
+function scheduleThreeBoxRedraw() {
+  if (threeBoxRedrawPending || !threeBox.boxData) return;
+  threeBoxRedrawPending = true;
+  requestAnimationFrame(() => { renderThreeBoxOverlay(); threeBoxRedrawPending = false; });
+}
+
+// ============= LEVELS TOOL =============
+const levels = { active: false, overlay: null, data: null };
+let levelsRedrawPending = false;
+
+// Swing point lookback per TF (matches backtest_v11c_surpass.py)
+const SWING_LOOKBACK = { '1m': 10, '15m': 5, '1H': 5 };
+// Min move % per pair per TF (min_pct * 3)
+const MIN_MOVE_PCT = {
+  BTC: { '1m': 1.5, '15m': 3.0, '1H': 4.5 },
+  ETH: { '1m': 2.4, '15m': 4.5, '1H': 6.0 },
+  SOL: { '1m': 3.0, '15m': 6.0, '1H': 9.0 },
+};
+
+function findSwingPoints(candles, lookback) {
+  const highs = [], lows = [];
+  for (let i = lookback; i < candles.length - lookback; i++) {
+    let isHigh = true, isLow = true;
+    for (let j = i - lookback; j <= i + lookback; j++) {
+      if (candles[j].high > candles[i].high) isHigh = false;
+      if (candles[j].low < candles[i].low) isLow = false;
+    }
+    if (isHigh) highs.push({ idx: i, time: candles[i].time, price: candles[i].high });
+    if (isLow) lows.push({ idx: i, time: candles[i].time, price: candles[i].low });
+  }
+  return { highs, lows };
+}
+
+function findTradeLevels(candles, trade, skipVolCheck) {
+  const lookback = SWING_LOOKBACK[trade.tf] || 5;
+  const { highs, lows } = findSwingPoints(candles, lookback);
+  const minPct = MIN_MOVE_PCT[trade.pair]?.[trade.tf] || 1.5;
+  const entryTime = trade.et;
+
+  if (trade.dir === 'S') {
+    // SHORT = UP move (3 higher highs)
+    // Find 3 ascending swing highs before entry
+    const beforeEntry = highs.filter(h => h.time <= entryTime);
+    for (let i = beforeEntry.length - 3; i >= 0; i--) {
+      const h1 = beforeEntry[i], h2 = beforeEntry[i+1], h3 = beforeEntry[i+2];
+      if (h2.price <= h1.price || h3.price <= h2.price) continue;
+      // Proportional spacing: each level must be at least 15% of the L1→L3 range
+      const levelRange = h3.price - h1.price;
+      const step1 = h2.price - h1.price;
+      const step2 = h3.price - h2.price;
+      if (levelRange > 0 && (step1 / levelRange < 0.25 || step2 / levelRange < 0.25)) continue;
+      // Find bottom before h1: the absolute LOWEST candle before h1
+      const searchCandles = candles.filter(c => c.time < h1.time);
+      if (!searchCandles.length) continue;
+      const bottomCandle = searchCandles.reduce((min, c) => c.low < min.low ? c : min);
+      const bottom = { time: bottomCandle.time, price: bottomCandle.low };
+      const totalMove = h3.price - bottom.price;
+      const movePct = (totalMove / bottom.price) * 100;
+      if (movePct < minPct) continue;
+      // Check volume spike in L2→L3 segment
+      const seg = candles.filter(c => c.time >= h2.time && c.time <= h3.time);
+      const fullSeg = candles.filter(c => c.time >= bottom.time && c.time <= h3.time);
+      if (seg.length && fullSeg.length) {
+        const maxVol = Math.max(...seg.map(c => c.volume));
+        const avgVol = fullSeg.reduce((s,c) => s + c.volume, 0) / fullSeg.length;
+        if (!skipVolCheck && maxVol < avgVol * 1.3) continue;
+      }
+      return {
+        type: 'UP',
+        bottom: bottom,
+        levels: [h1, h2, h3],
+        movePct: movePct.toFixed(2),
+      };
+    }
+  } else {
+    // LONG = DOWN move (3 lower lows)
+    const beforeEntry = lows.filter(l => l.time <= entryTime);
+    for (let i = beforeEntry.length - 3; i >= 0; i--) {
+      const l1 = beforeEntry[i], l2 = beforeEntry[i+1], l3 = beforeEntry[i+2];
+      if (l2.price >= l1.price || l3.price >= l2.price) continue;
+      // Proportional spacing: each level must be at least 15% of the L1→L3 range
+      const levelRange = l1.price - l3.price;
+      const step1 = l1.price - l2.price;
+      const step2 = l2.price - l3.price;
+      if (levelRange > 0 && (step1 / levelRange < 0.25 || step2 / levelRange < 0.25)) continue;
+      // Find top before l1: the absolute HIGHEST candle before l1
+      const searchCandlesTop = candles.filter(c => c.time < l1.time);
+      if (!searchCandlesTop.length) continue;
+      const topCandle = searchCandlesTop.reduce((max, c) => c.high > max.high ? c : max);
+      const top = { time: topCandle.time, price: topCandle.high };
+      const totalMove = top.price - l3.price;
+      const movePct = (totalMove / top.price) * 100;
+      if (movePct < minPct) continue;
+      // Volume check
+      const seg = candles.filter(c => c.time >= l2.time && c.time <= l3.time);
+      const fullSeg = candles.filter(c => c.time >= top.time && c.time <= l3.time);
+      if (seg.length && fullSeg.length) {
+        const maxVol = Math.max(...seg.map(c => c.volume));
+        const avgVol = fullSeg.reduce((s,c) => s + c.volume, 0) / fullSeg.length;
+        if (!skipVolCheck && maxVol < avgVol * 1.3) continue;
+      }
+      return {
+        type: 'DOWN',
+        top: top,
+        levels: [l1, l2, l3],
+        movePct: movePct.toFixed(2),
+      };
+    }
+  }
+  return null;
+}
+
+function createLevelsOverlay() {
+  if (levels.overlay) return;
+  const container = document.getElementById('chart-container');
+  const canvas = document.createElement('canvas');
+  canvas.id = 'levels-overlay';
+  container.appendChild(canvas);
+  levels.overlay = canvas;
+  sizeLevelsCanvas();
+}
+
+function sizeLevelsCanvas() {
+  if (!levels.overlay) return;
+  const container = document.getElementById('chart-container');
+  const dpr = window.devicePixelRatio || 1;
+  const w = container.clientWidth * dpr;
+  const h = container.clientHeight * dpr;
+  if (levels.overlay.width !== w || levels.overlay.height !== h) {
+    levels.overlay.width = w;
+    levels.overlay.height = h;
+    levels.overlay.style.width = container.clientWidth + 'px';
+    levels.overlay.style.height = container.clientHeight + 'px';
+  }
+}
+
+function toggleLevels() {
+  if (!state.candleSeries) return;
+  const btn = document.getElementById('btn-levels');
+  if (levels.active) {
+    // Turn off
+    levels.active = false;
+    levels.data = null;
+    btn.classList.remove('active');
+    document.getElementById('levels-status').textContent = '';
+    if (levels.overlay) {
+      const ctx = levels.overlay.getContext('2d');
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, levels.overlay.width, levels.overlay.height);
+    }
+    // Remove level markers from candle series
+    refreshCandleMarkers();
+    return;
+  }
+  // Turn on
+  levels.active = true;
+  btn.classList.add('active');
+  createLevelsOverlay();
+  computeLevels();
+}
+
+async function computeLevels() {
+  if (!levels.active || state.selectedIndex < 0) return;
+  const trade = state.filtered[state.selectedIndex];
+  
+  // Use pre-computed levels from trade data if available (nested format)
+  if (trade.levels) {
+    const lv = trade.levels;
+    levels.data = {
+      type: lv.type,
+      levels: [
+        { time: lv.l1.time, price: lv.l1.price },
+        { time: lv.l2.time, price: lv.l2.price },
+        { time: lv.l3.time, price: lv.l3.price },
+      ],
+      movePct: lv.move_pct?.toFixed(2) || '?',
+    };
+    if (lv.type === 'UP') {
+      levels.data.bottom = { time: lv.origin.time, price: lv.origin.price };
+    } else {
+      levels.data.top = { time: lv.origin.time, price: lv.origin.price };
+    }
+    const dir = lv.type === 'UP' ? '📈 UP' : '📉 DOWN';
+    const originLabel = lv.type === 'UP' ? 'Bottom' : 'Top';
+    document.getElementById('levels-status').textContent =
+      `${dir} | Move: ${levels.data.movePct}% | ${originLabel}: ${lv.origin.price.toFixed(2)} → L1 → L2 → L3`;
+    refreshCandleMarkers();
+    renderLevelsOverlay();
+    return;
+  }
+
+  // Use engine's flat l1/l2/l3/top properties (from backtest JSON)
+  if (trade.l1 != null && trade.l2 != null && trade.l3 != null && trade.top != null) {
+    const cacheKey = `${trade.pair}_${trade.tf}_${trade.et}`;
+    let candles = state.candleCache[cacheKey];
+    // Helper: find candle whose low/high is closest to target price, before entry
+    const findTimeForPrice = (price, type) => {
+      if (!candles || !candles.length) return trade.et;
+      const before = candles.filter(c => c.time <= trade.et);
+      if (!before.length) return trade.et;
+      if (type === 'low') {
+        let best = before[0], bestDist = Math.abs(before[0].low - price);
+        for (const c of before) {
+          const d = Math.abs(c.low - price);
+          if (d < bestDist) { bestDist = d; best = c; }
+        }
+        return best.time;
+      } else {
+        let best = before[0], bestDist = Math.abs(before[0].high - price);
+        for (const c of before) {
+          const d = Math.abs(c.high - price);
+          if (d < bestDist) { bestDist = d; best = c; }
+        }
+        return best.time;
+      }
+    };
+    const isDown = trade.dir === 'L';
+    const topPrice = trade.top;
+    const totalMove = isDown ? (topPrice - trade.l3) : (trade.l3 - topPrice);
+    const movePct = isDown ? (totalMove / topPrice * 100) : (totalMove / topPrice * 100);
+    levels.data = {
+      type: isDown ? 'DOWN' : 'UP',
+      levels: [
+        { time: findTimeForPrice(trade.l1, isDown ? 'low' : 'high'), price: trade.l1 },
+        { time: findTimeForPrice(trade.l2, isDown ? 'low' : 'high'), price: trade.l2 },
+        { time: findTimeForPrice(trade.l3, isDown ? 'low' : 'high'), price: trade.l3 },
+      ],
+      movePct: movePct.toFixed(2),
+    };
+    if (isDown) {
+      levels.data.top = { time: findTimeForPrice(topPrice, 'high'), price: topPrice };
+    } else {
+      levels.data.bottom = { time: findTimeForPrice(topPrice, 'low'), price: topPrice };
+    }
+    const dir = isDown ? '📉 DOWN' : '📈 UP';
+    const originLabel = isDown ? 'Top' : 'Bottom';
+    const realTopInfo = trade.real_top && Math.abs(trade.real_top - topPrice) > 1
+      ? ` | Real ${originLabel}: ${trade.real_top.toFixed(2)} (Δ${Math.abs(trade.real_top - topPrice).toFixed(0)})`
+      : '';
+    document.getElementById('levels-status').textContent =
+      `${dir} | Move: ${movePct.toFixed(2)}% | ${originLabel}: ${topPrice.toFixed(2)} → L1 → L2 → L3 (engine)${realTopInfo}`;
+    refreshCandleMarkers();
+    renderLevelsOverlay();
+    return;
+  }
+  
+  // Fallback: compute from candle data
+  const cacheKey = `${trade.pair}_${trade.tf}_${trade.et}`;
+  let candles = state.candleCache[cacheKey];
+  if (!candles || !candles.length) {
+    document.getElementById('levels-status').textContent = 'No candle data';
+    return;
+  }
+  
+  let result = findTradeLevels(candles, trade);
+  
+  // If not found, fetch extended data
+  if (!result) {
+    document.getElementById('levels-status').textContent = '⏳ Loading more data...';
+    const extKey = `${trade.pair}_${trade.tf}_${trade.et}_ext`;
+    if (!state.candleCache[extKey]) {
+      const symbol = SYMBOL_MAP[trade.pair];
+      const interval = INTERVAL_MAP[trade.tf];
+      const pad = LEVELS_PADDING[trade.tf] || 300;
+      const tfMs = TF_MINUTES[trade.tf] * 60 * 1000;
+      const startTime = (trade.et * 1000) - (pad * tfMs);
+      const endTime = Math.max(trade.xt * 1000, trade.et * 1000) + (CANDLE_PADDING[trade.tf] * tfMs);
+      let allCandles = [];
+      let cursor = startTime;
+      while (cursor < endTime) {
+        const url = `${BINANCE_API}?symbol=${symbol}&interval=${interval}&startTime=${cursor}&endTime=${endTime}&limit=1000`;
+        try {
+          const resp = await fetch(url);
+          const data = await resp.json();
+          if (!data || !data.length) break;
+          allCandles = allCandles.concat(data);
+          cursor = data[data.length - 1][0] + 1;
+          if (data.length < 1000) break;
+        } catch (e) { break; }
+      }
+      state.candleCache[extKey] = allCandles.map(c => ({
+        time: Math.floor(c[0] / 1000),
+        open: parseFloat(c[1]),
+        high: parseFloat(c[2]),
+        low: parseFloat(c[3]),
+        close: parseFloat(c[4]),
+        volume: parseFloat(c[5]),
+      }));
+    }
+    candles = state.candleCache[extKey];
+    result = findTradeLevels(candles, trade);
+    if (!result) result = findTradeLevels(candles, trade, true);
+  }
+  
+  levels.data = result;
+  if (!result) {
+    document.getElementById('levels-status').textContent = '⚠️ Could not find 3 levels';
+    renderLevelsOverlay();
+    refreshCandleMarkers();
+    return;
+  }
+  const dir = result.type === 'UP' ? '📈 UP' : '📉 DOWN';
+  const origin = result.type === 'UP' ? result.bottom : result.top;
+  document.getElementById('levels-status').textContent =
+    `${dir} | Move: ${result.movePct}% | ${result.type === 'UP' ? 'Bottom' : 'Top'}: ${origin.price.toFixed(2)} → L1 → L2 → L3`;
+  
+  refreshCandleMarkers();
+  renderLevelsOverlay();
+}
+
+function refreshCandleMarkers() {
+  // Rebuild all candle markers (entry/exit + levels)
+  if (state.selectedIndex < 0) return;
+  const trade = state.filtered[state.selectedIndex];
+  const markers = [];
+
+  // Entry marker
+  markers.push({
+    time: trade.et,
+    position: trade.dir === 'L' ? 'belowBar' : 'aboveBar',
+    color: '#00bcd4',
+    shape: trade.dir === 'L' ? 'arrowUp' : 'arrowDown',
+    text: '▶ ENTRY',
+  });
+  // Exit marker
+  markers.push({
+    time: trade.xt,
+    position: trade.r >= 0 ? (trade.dir === 'L' ? 'aboveBar' : 'belowBar') : (trade.dir === 'L' ? 'belowBar' : 'aboveBar'),
+    color: trade.r >= 0 ? '#ffd700' : '#ff1744',
+    shape: 'circle',
+    text: trade.exit_type === 'stop' ? '✕ STOP' : '✓ EXIT ' + (trade.r >= 0 ? '+' : '') + trade.r.toFixed(2) + 'R',
+  });
+
+  // Level markers
+  if (levels.active && levels.data) {
+    const d = levels.data;
+    const origin = d.type === 'UP' ? d.bottom : d.top;
+    const originLabel = d.type === 'UP' ? '▼ BOTTOM' : '▲ TOP';
+    markers.push({
+      time: origin.time,
+      position: d.type === 'UP' ? 'belowBar' : 'aboveBar',
+      color: '#ff9800',
+      shape: 'circle',
+      text: originLabel,
+    });
+    d.levels.forEach((lv, i) => {
+      markers.push({
+        time: lv.time,
+        position: d.type === 'UP' ? 'aboveBar' : 'belowBar',
+        color: '#b388ff',
+        shape: 'circle',
+        text: `L${i+1}`,
+      });
+    });
+  }
+
+  // Real TOP marker (review dashboard)
+  if (trade.real_top && trade.old_top && Math.abs(trade.real_top - trade.old_top) > 1) {
+    const realTopPrice = trade.real_top;
+    const isDown = trade.dir === 'L';
+    // Find candle time closest to real top price
+    const cacheKey = `${trade.pair}_${trade.tf}_${trade.et}`;
+    const candles = state.candleCache[cacheKey];
+    if (candles) {
+      let realTopTime = trade.et;
+      const entryTime = trade.et;
+      // Search before entry for the candle with high/low matching real top
+      for (const c of candles) {
+        if (c.time >= entryTime) break;
+        if (isDown && Math.abs(c.high - realTopPrice) < realTopPrice * 0.0002) {
+          realTopTime = c.time;
+        } else if (!isDown && Math.abs(c.low - realTopPrice) < realTopPrice * 0.0002) {
+          realTopTime = c.time;
+        }
+      }
+      markers.push({
+        time: realTopTime,
+        position: isDown ? 'aboveBar' : 'belowBar',
+        color: '#ff1744',
+        shape: 'diamond',
+        text: isDown ? '🎯 REAL TOP' : '🎯 REAL BOTTOM',
+      });
+    }
+  }
+
+  markers.sort((a, b) => a.time - b.time);
+  state.candleSeries.setMarkers(markers);
+}
+
+function renderLevelsOverlay() {
+  if (!levels.overlay || !state.candleSeries) return;
+  sizeLevelsCanvas();
+  const canvas = levels.overlay;
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.width / dpr, h = canvas.height / dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (!levels.active || !levels.data) return;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  const d = levels.data;
+  let chartW = w - 55;
+  try { chartW = state.chart.timeScale().width(); } catch(e) {}
+
+  const priceToY = (p) => {
+    const y = state.candleSeries.priceToCoordinate(p);
+    if (y !== null && y !== undefined) return y;
+    return null;
+  };
+  const timeToX = (t) => {
+    const x = state.chart.timeScale().timeToCoordinate(t);
+    if (x !== null && x !== undefined) return x;
+    return null;
+  };
+
+  // Draw connecting lines between levels
+  const origin = d.type === 'UP' ? d.bottom : d.top;
+  const allPoints = [origin, ...d.levels];
+  
+  ctx.strokeStyle = 'rgba(179, 136, 255, 0.6)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath();
+  let started = false;
+  for (const pt of allPoints) {
+    const x = timeToX(pt.time);
+    const y = priceToY(pt.price);
+    if (x === null || y === null) continue;
+    if (!started) { ctx.moveTo(x, y); started = true; }
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Draw level price lines (dashed horizontal)
+  const levelColors = ['#ff9800', '#b388ff', '#b388ff', '#b388ff'];
+  const levelLabels = [d.type === 'UP' ? 'Bottom' : 'Top', 'L1', 'L2', 'L3'];
+  
+  allPoints.forEach((pt, i) => {
+    const y = priceToY(pt.price);
+    if (y === null || y < -20 || y > h + 20) return;
+    
+    // Dashed price line
+    ctx.strokeStyle = levelColors[i] + '66';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(chartW, y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Label pill on right side
+    const label = levelLabels[i];
+    ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, sans-serif';
+    const tw = ctx.measureText(label).width;
+    const px = chartW - tw - 18, py = y - 9, pw = tw + 12, ph = 18, r = 3;
+    ctx.fillStyle = levelColors[i] + 'cc';
+    ctx.beginPath();
+    ctx.moveTo(px + r, py); ctx.lineTo(px + pw - r, py);
+    ctx.quadraticCurveTo(px + pw, py, px + pw, py + r);
+    ctx.lineTo(px + pw, py + ph - r);
+    ctx.quadraticCurveTo(px + pw, py + ph, px + pw - r, py + ph);
+    ctx.lineTo(px + r, py + ph);
+    ctx.quadraticCurveTo(px, py + ph, px, py + ph - r);
+    ctx.lineTo(px, py + r);
+    ctx.quadraticCurveTo(px, py, px + r, py);
+    ctx.closePath(); ctx.fill();
+
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, px + pw/2, y);
+  });
+
+  // Draw Real TOP + new 3-box levels (review dashboard)
+  const trade = state.filtered[state.selectedIndex];
+  if (trade && trade.real_top && trade.old_top && Math.abs(trade.real_top - trade.old_top) > 1) {
+    const isDown = trade.dir === 'L';
+    const realTop = trade.real_top;
+    
+    // Find the REAL first swing low/high after Real Top from candle data
+    const cacheKey = `${trade.pair}_${trade.tf}_${trade.et}`;
+    const candles = state.candleCache[cacheKey];
+    let newL1 = trade.l1; // fallback to engine L1
+    
+    if (candles && candles.length > 0) {
+      const lb = trade.tf === '1m' ? 10 : 5; // match engine lookback
+      
+      // Find Real Top candle index
+      let topIdx = -1;
+      const entryTime = trade.et;
+      for (let i = 0; i < candles.length; i++) {
+        if (candles[i].time >= entryTime) break;
+        if (isDown && Math.abs(candles[i].high - realTop) < realTop * 0.0002) topIdx = i;
+        if (!isDown && Math.abs(candles[i].low - realTop) < realTop * 0.0002) topIdx = i;
+      }
+      
+      // Scan from Real Top forward to find first swing low/high
+      if (topIdx >= 0) {
+        const searchEnd = candles.findIndex(c => c.time >= entryTime);
+        const endIdx = searchEnd > 0 ? searchEnd : candles.length;
+        
+        for (let i = topIdx + lb; i < endIdx - lb; i++) {
+          if (isDown) {
+            // Swing low: lowest low in lookback window
+            let isSwingLow = true;
+            for (let j = i - lb; j <= i + lb; j++) {
+              if (j !== i && candles[j].low <= candles[i].low) { isSwingLow = false; break; }
+            }
+            if (isSwingLow) { newL1 = candles[i].low; break; }
+          } else {
+            // Swing high: highest high in lookback window
+            let isSwingHigh = true;
+            for (let j = i - lb; j <= i + lb; j++) {
+              if (j !== i && candles[j].high >= candles[i].high) { isSwingHigh = false; break; }
+            }
+            if (isSwingHigh) { newL1 = candles[i].high; break; }
+          }
+        }
+      }
+    }
+    
+    // first_range = Real Top → first swing, then project 3 equal boxes
+    const firstRange = isDown ? (realTop - newL1) : (newL1 - realTop);
+    const newL2 = isDown ? (realTop - 2 * firstRange) : (realTop + 2 * firstRange);
+    const newL3 = isDown ? (realTop - 3 * firstRange) : (realTop + 3 * firstRange);
+    
+    const newLevels = [realTop, newL1, newL2, newL3];
+    const newLabels = [isDown ? 'Real Top' : 'Real Bot', 'New L1', 'New L2', 'New L3'];
+    const newColors = ['#ff1744cc', '#00e676cc', '#00e676cc', '#00e676cc'];
+
+    newLevels.forEach((price, i) => {
+      const ny = priceToY(price);
+      if (ny === null || ny < -20 || ny > h + 20) return;
+
+      // Dashed line
+      ctx.strokeStyle = i === 0 ? '#ff1744aa' : '#00e676aa';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 4]);
+      ctx.beginPath();
+      ctx.moveTo(0, ny);
+      ctx.lineTo(chartW, ny);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Label pill
+      const label = newLabels[i];
+      ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, sans-serif';
+      const ltw = ctx.measureText(label).width;
+      // Position on left side (to avoid overlapping with original labels on right)
+      const lpx = 10, lpy = ny - 9, lpw = ltw + 12, lph = 18;
+      ctx.fillStyle = newColors[i];
+      ctx.beginPath();
+      ctx.moveTo(lpx + 3, lpy); ctx.lineTo(lpx + lpw - 3, lpy);
+      ctx.quadraticCurveTo(lpx + lpw, lpy, lpx + lpw, lpy + 3);
+      ctx.lineTo(lpx + lpw, lpy + lph - 3);
+      ctx.quadraticCurveTo(lpx + lpw, lpy + lph, lpx + lpw - 3, lpy + lph);
+      ctx.lineTo(lpx + 3, lpy + lph);
+      ctx.quadraticCurveTo(lpx, lpy + lph, lpx, lpy + lph - 3);
+      ctx.lineTo(lpx, lpy + 3);
+      ctx.quadraticCurveTo(lpx, lpy, lpx + 3, lpy);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#000';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, lpx + lpw/2, ny);
+    });
+  }
+
+  // Draw V3 corrected TOP/BOTTOM line (cyan)
+  if (trade && trade.v3_fixed) {
+    const isDown = trade.dir === 'L';
+    const v3Price = isDown ? trade.v3_top : trade.v3_bottom;
+    if (v3Price) {
+      const v3y = priceToY(v3Price);
+      if (v3y !== null && v3y > -20 && v3y < h + 20) {
+        // Cyan dashed line
+        ctx.strokeStyle = '#00e5ffcc';
+        ctx.lineWidth = 2.5;
+        ctx.setLineDash([10, 5]);
+        ctx.beginPath();
+        ctx.moveTo(0, v3y);
+        ctx.lineTo(chartW, v3y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Label pill
+        const v3Label = isDown ? 'V3 TOP' : 'V3 BOT';
+        ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, sans-serif';
+        const v3tw = ctx.measureText(v3Label).width;
+        const v3px = chartW/2 - v3tw/2 - 6, v3py = v3y - 9, v3pw = v3tw + 12, v3ph = 18;
+        ctx.fillStyle = '#00e5ffcc';
+        ctx.beginPath();
+        ctx.moveTo(v3px + 3, v3py); ctx.lineTo(v3px + v3pw - 3, v3py);
+        ctx.quadraticCurveTo(v3px + v3pw, v3py, v3px + v3pw, v3py + 3);
+        ctx.lineTo(v3px + v3pw, v3py + v3ph - 3);
+        ctx.quadraticCurveTo(v3px + v3pw, v3py + v3ph, v3px + v3pw - 3, v3py + v3ph);
+        ctx.lineTo(v3px + 3, v3py + v3ph);
+        ctx.quadraticCurveTo(v3px, v3py + v3ph, v3px, v3py + v3ph - 3);
+        ctx.lineTo(v3px, v3py + 3);
+        ctx.quadraticCurveTo(v3px, v3py, v3px + 3, v3py);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#000';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(v3Label, v3px + v3pw/2, v3y);
+      }
+    }
+  }
+
+  // Draw "3 LEVELS" label at top
+  ctx.font = 'bold 13px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.fillStyle = 'rgba(179, 136, 255, 0.85)';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  const dirIcon = d.type === 'UP' ? '📈' : '📉';
+  ctx.fillText(`${dirIcon} 3 Levels (${d.movePct}% move)`, 40, 10);
+}
+
+function scheduleLevelsRedraw() {
+  if (levelsRedrawPending || !levels.data) return;
+  levelsRedrawPending = true;
+  requestAnimationFrame(() => { renderLevelsOverlay(); levelsRedrawPending = false; });
+}
+
+// ============= CHANNEL DRAWING TOOL =============
+const channel = {
+  drawing: false,
+  clickCount: 0,
+  clicks: [],
+  overlay: null,
+  tradeChannels: {},
+  autoChannels: {},
+};
+let channelRedrawPending = false;
+
+function getChannelTradeKey() {
+  if (state.selectedIndex < 0) return null;
+  const t = state.filtered[state.selectedIndex];
+  return `${t.pair}_${t.tf}_${t.et}`;
+}
+
+function createChannelOverlay() {
+  if (channel.overlay) return;
+  const container = document.getElementById('chart-container');
+  const canvas = document.createElement('canvas');
+  canvas.id = 'channel-overlay';
+  container.appendChild(canvas);
+  channel.overlay = canvas;
+  sizeChannelCanvas();
+}
+
+function sizeChannelCanvas() {
+  if (!channel.overlay) return;
+  const container = document.getElementById('chart-container');
+  const dpr = window.devicePixelRatio || 1;
+  const w = container.clientWidth * dpr;
+  const h = container.clientHeight * dpr;
+  if (channel.overlay.width !== w || channel.overlay.height !== h) {
+    channel.overlay.width = w;
+    channel.overlay.height = h;
+    channel.overlay.style.width = container.clientWidth + 'px';
+    channel.overlay.style.height = container.clientHeight + 'px';
+  }
+}
+
+function toggleChannel() {
+  if (!state.candleSeries) return;
+  if (channel.drawing) { cancelChannelDrawing(); return; }
+  if (threeBox.drawing) cancelThreeBoxDrawing();
+  channel.drawing = true;
+  channel.clickCount = 0;
+  channel.clicks = [];
+  document.getElementById('btn-channel').classList.add('drawing');
+  document.getElementById('btn-channel').textContent = '✋ Cancel';
+  document.getElementById('channel-status').textContent = '① Click first trendline point';
+  createChannelOverlay();
+}
+
+function cancelChannelDrawing() {
+  channel.drawing = false;
+  channel.clickCount = 0;
+  channel.clicks = [];
+  const btn = document.getElementById('btn-channel');
+  btn.classList.remove('drawing');
+  btn.textContent = '📐 Channel';
+  document.getElementById('channel-status').textContent = '';
+  renderChannelOverlay();
+}
+
+function clearChannels() {
+  cancelChannelDrawing();
+  const key = getChannelTradeKey();
+  if (key) {
+    delete channel.tradeChannels[key];
+    delete channel.autoChannels[key];
+  }
+  document.getElementById('btn-clear-channels').style.display = 'none';
+  document.getElementById('channel-status').textContent = '';
+  renderChannelOverlay();
+}
+
+function handleChannelClick(param) {
+  if (!channel.drawing || !param.point) return;
+  const price = state.candleSeries.coordinateToPrice(param.point.y);
+  if (price == null || isNaN(price)) return;
+  let time = param.time;
+  if (!time) {
+    try { time = state.chart.timeScale().coordinateToTime(param.point.x); } catch(e) {}
+  }
+  if (!time) return;
+
+  if (channel.clickCount === 0) {
+    channel.clicks[0] = { time, price };
+    channel.clickCount = 1;
+    document.getElementById('channel-status').textContent =
+      '① ' + price.toFixed(2) + ' — ② Click second trendline point';
+    renderChannelOverlay();
+  } else if (channel.clickCount === 1) {
+    channel.clicks[1] = { time, price };
+    channel.clickCount = 2;
+    document.getElementById('channel-status').textContent =
+      '①② Trendline set — ③ Click for parallel offset';
+    renderChannelOverlay();
+  } else if (channel.clickCount === 2) {
+    channel.clicks[2] = { time, price };
+    channel.drawing = false;
+    finalizeChannel();
+  }
+}
+
+function finalizeChannel() {
+  const [pt1, pt2, pt3] = channel.clicks;
+  const dt = pt2.time - pt1.time;
+  if (Math.abs(dt) < 1) { cancelChannelDrawing(); return; }
+  const slope = (pt2.price - pt1.price) / dt;
+  const priceOnLine = pt1.price + slope * (pt3.time - pt1.time);
+  const offset = pt3.price - priceOnLine;
+
+  const key = getChannelTradeKey();
+  if (!key) { cancelChannelDrawing(); return; }
+  if (!channel.tradeChannels[key]) channel.tradeChannels[key] = [];
+  channel.tradeChannels[key].push({
+    t1: pt1.time, p1: pt1.price,
+    t2: pt2.time, p2: pt2.price,
+    offset: offset,
+    type: 'manual',
+  });
+
+  channel.clicks = [];
+  channel.clickCount = 0;
+  document.getElementById('btn-channel').classList.remove('drawing');
+  document.getElementById('btn-channel').textContent = '📐 Channel';
+  document.getElementById('btn-clear-channels').style.display = 'inline-block';
+  document.getElementById('channel-status').textContent =
+    '✅ Channel drawn (' + channel.tradeChannels[key].length + ' total)';
+  renderChannelOverlay();
+}
+
+function autoDetectChannel() {
+  if (state.selectedIndex < 0) return;
+  const trade = state.filtered[state.selectedIndex];
+  const cacheKey = `${trade.pair}_${trade.tf}_${trade.et}`;
+  const candles = state.candleCache[cacheKey];
+  if (!candles || candles.length < 30) {
+    document.getElementById('channel-status').textContent = '⚠️ Not enough candle data';
+    return;
+  }
+
+  const lb = Math.max(3, Math.min(5, Math.floor(candles.length / 10)));
+  const { highs, lows } = findSwingPoints(candles, lb);
+
+  if (lows.length < 2 && highs.length < 2) {
+    document.getElementById('channel-status').textContent = '⚠️ Not enough swing points';
+    return;
+  }
+
+  function linReg(points) {
+    const n = points.length;
+    if (n < 2) return null;
+    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+    for (const p of points) {
+      sumX += p.x; sumY += p.y;
+      sumXY += p.x * p.y; sumX2 += p.x * p.x;
+    }
+    const denom = n * sumX2 - sumX * sumX;
+    if (Math.abs(denom) < 1e-10) return null;
+    const slope = (n * sumXY - sumX * sumY) / denom;
+    const intercept = (sumY - slope * sumX) / n;
+    return { slope, intercept };
+  }
+
+  let result = null;
+
+  if (lows.length >= 2) {
+    const lowReg = linReg(lows.map(l => ({ x: l.idx, y: l.price })));
+    if (lowReg) {
+      let maxOff = 0;
+      const src = highs.length >= 2 ? highs : candles.map((c, i) => ({ idx: i, price: c.high }));
+      for (const h of src) {
+        const off = h.price - (lowReg.intercept + lowReg.slope * h.idx);
+        if (off > maxOff) maxOff = off;
+      }
+      if (maxOff > 0) {
+        result = {
+          t1: candles[0].time,
+          p1: lowReg.intercept,
+          t2: candles[candles.length - 1].time,
+          p2: lowReg.intercept + lowReg.slope * (candles.length - 1),
+          offset: maxOff,
+          type: 'auto',
+        };
+      }
+    }
+  }
+
+  if (!result && highs.length >= 2) {
+    const highReg = linReg(highs.map(h => ({ x: h.idx, y: h.price })));
+    if (highReg) {
+      let maxOff = 0;
+      const src = lows.length >= 2 ? lows : candles.map((c, i) => ({ idx: i, price: c.low }));
+      for (const l of src) {
+        const off = (highReg.intercept + highReg.slope * l.idx) - l.price;
+        if (off > maxOff) maxOff = off;
+      }
+      if (maxOff > 0) {
+        result = {
+          t1: candles[0].time,
+          p1: highReg.intercept - maxOff,
+          t2: candles[candles.length - 1].time,
+          p2: highReg.intercept + highReg.slope * (candles.length - 1) - maxOff,
+          offset: maxOff,
+          type: 'auto',
+        };
+      }
+    }
+  }
+
+  if (!result) {
+    document.getElementById('channel-status').textContent = '⚠️ Could not detect channel';
+    return;
+  }
+
+  const key = getChannelTradeKey();
+  if (!key) return;
+  channel.autoChannels[key] = [result];
+  document.getElementById('btn-clear-channels').style.display = 'inline-block';
+  document.getElementById('channel-status').textContent = '🤖 Auto channel detected';
+  createChannelOverlay();
+  renderChannelOverlay();
+}
+
+function renderChannelOverlay() {
+  if (!channel.overlay || !state.candleSeries) return;
+  sizeChannelCanvas();
+  const canvas = channel.overlay;
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.width / dpr, h = canvas.height / dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  let chartW = w - 55;
+  try { chartW = state.chart.timeScale().width(); } catch(e) {}
+
+  // Draw preview while drawing
+  if (channel.drawing && channel.clicks.length >= 1) {
+    drawChannelPoints(ctx, channel.clicks, chartW, h);
+  }
+
+  const key = getChannelTradeKey();
+  if (!key) return;
+
+  // Manual channels (teal/cyan)
+  const manualChs = channel.tradeChannels[key] || [];
+  for (const ch of manualChs) {
+    drawChannelShape(ctx, ch, chartW, h, '#00bcd4', 'rgba(0, 200, 100, 0.08)');
+  }
+
+  // Auto channels (gold)
+  const autoChs = channel.autoChannels[key] || [];
+  for (const ch of autoChs) {
+    drawChannelShape(ctx, ch, chartW, h, '#ffd700', 'rgba(255, 215, 0, 0.08)');
+  }
+}
+
+function drawChannelPoints(ctx, clicks, chartW, h) {
+  for (let i = 0; i < clicks.length; i++) {
+    const x = state.chart.timeScale().timeToCoordinate(clicks[i].time);
+    const y = state.candleSeries.priceToCoordinate(clicks[i].price);
+    if (x === null || y === null) continue;
+    ctx.fillStyle = '#00bcd4';
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.font = 'bold 11px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(String(i + 1), x, y - 8);
+  }
+  if (clicks.length >= 2) {
+    const x1 = state.chart.timeScale().timeToCoordinate(clicks[0].time);
+    const y1 = state.candleSeries.priceToCoordinate(clicks[0].price);
+    const x2 = state.chart.timeScale().timeToCoordinate(clicks[1].time);
+    const y2 = state.candleSeries.priceToCoordinate(clicks[1].price);
+    if (x1 !== null && y1 !== null && x2 !== null && y2 !== null && Math.abs(x2 - x1) > 0.5) {
+      const slope = (y2 - y1) / (x2 - x1);
+      const yL = y1 + slope * (0 - x1);
+      const yR = y1 + slope * (chartW - x1);
+      ctx.strokeStyle = '#00bcd4';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 4]);
+      ctx.beginPath(); ctx.moveTo(0, yL); ctx.lineTo(chartW, yR); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+}
+
+function drawChannelShape(ctx, ch, chartW, h, lineColor, fillColor) {
+  const x1 = state.chart.timeScale().timeToCoordinate(ch.t1);
+  const x2 = state.chart.timeScale().timeToCoordinate(ch.t2);
+  if (x1 === null || x2 === null || Math.abs(x2 - x1) < 0.5) return;
+
+  const yM1 = state.candleSeries.priceToCoordinate(ch.p1);
+  const yM2 = state.candleSeries.priceToCoordinate(ch.p2);
+  const yP1 = state.candleSeries.priceToCoordinate(ch.p1 + ch.offset);
+  const yP2 = state.candleSeries.priceToCoordinate(ch.p2 + ch.offset);
+  if ([yM1, yM2, yP1, yP2].some(v => v === null || v === undefined)) return;
+
+  const sM = (yM2 - yM1) / (x2 - x1);
+  const sP = (yP2 - yP1) / (x2 - x1);
+  const pad = chartW * 0.3;
+  const xL = -pad, xR = chartW + pad;
+  const yML = yM1 + sM * (xL - x1), yMR = yM1 + sM * (xR - x1);
+  const yPL = yP1 + sP * (xL - x1), yPR = yP1 + sP * (xR - x1);
+
+  // Fill
+  ctx.fillStyle = fillColor;
+  ctx.beginPath();
+  ctx.moveTo(xL, yML); ctx.lineTo(xR, yMR);
+  ctx.lineTo(xR, yPR); ctx.lineTo(xL, yPL);
+  ctx.closePath(); ctx.fill();
+
+  // Main trendline (solid)
+  ctx.strokeStyle = lineColor;
+  ctx.lineWidth = 2;
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(xL, yML); ctx.lineTo(xR, yMR); ctx.stroke();
+
+  // Parallel trendline (dashed)
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([6, 3]);
+  ctx.beginPath(); ctx.moveTo(xL, yPL); ctx.lineTo(xR, yPR); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Label
+  const midX = chartW * 0.85;
+  const midY = (yM1 + sM * (midX - x1) + yP1 + sP * (midX - x1)) / 2;
+  if (midY > 10 && midY < h - 10) {
+    ctx.fillStyle = lineColor + 'cc';
+    ctx.font = 'bold 10px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(ch.type === 'auto' ? '🤖 AUTO' : '📐', midX, midY);
+  }
+}
+
+function scheduleChannelRedraw() {
+  if (channelRedrawPending) return;
+  channelRedrawPending = true;
+  requestAnimationFrame(() => { renderChannelOverlay(); channelRedrawPending = false; });
+}
+
+function restoreChannels() {
+  const key = getChannelTradeKey();
+  const has = key && (
+    (channel.tradeChannels[key] && channel.tradeChannels[key].length > 0) ||
+    (channel.autoChannels[key] && channel.autoChannels[key].length > 0)
+  );
+  document.getElementById('btn-clear-channels').style.display = has ? 'inline-block' : 'none';
+  if (has) createChannelOverlay();
+  if (channel.overlay) renderChannelOverlay();
+}
+
+// ============= EQUITY MODE TOGGLE =============
+function setEquityMode(mode) {
+  state.equityMode = mode;
+  document.getElementById('btn-flat-r').classList.toggle('active', mode === 'flat');
+  document.getElementById('btn-compound').classList.toggle('active', mode === 'compound');
+  renderEquityCurve();
+}
+
+// ============= DATE RANGE EVENTS =============
+document.getElementById('date-from').addEventListener('change', () => applyFilters());
+document.getElementById('date-to').addEventListener('change', () => applyFilters());
+
+// Set "To" date default to today
+document.getElementById('date-to').value = new Date().toISOString().slice(0, 10);
+
+// ============= V11c HONEST TRADE LOADING =============
+async function loadV11cTrades() {
+  try {
+    const resp = await fetch('data/v11c-sweetspot-review.json');
+    const trades = await resp.json();
+    return trades;
+  } catch(e) {
+    console.error('Failed to load V11c trades:', e);
+    return [];
+  }
+}
+
+// ============= INIT =============
+window.addEventListener('DOMContentLoaded', async () => {
+  const bar = document.getElementById('load-more-bar');
+  const status = document.getElementById('load-status');
+  const loadBtn = document.getElementById('load-more-btn');
+
+  const trades = await loadV11cTrades();
+  // Calculate box zone for each trade
+  trades.forEach(t => {
+    let top_price, l1_price, entry_price = t.entry, first_range;
+    if (t.dir === 'L') {
+      top_price = t.top || t.TOP;
+      l1_price = t.l1 || t.L1;
+      if (!top_price || !l1_price) { t.box_zone = 'Unknown'; return; }
+      first_range = top_price - l1_price;
+      if (first_range <= 0) { t.box_zone = 'Unknown'; return; }
+      const box3_top = top_price - 2 * first_range;
+      const box3_bottom = top_price - 3 * first_range;
+      const box4_bottom = top_price - 4 * first_range;
+      if (entry_price >= box3_top) t.box_zone = 'Above Box 3';
+      else if (entry_price >= box3_bottom) t.box_zone = 'Box 3';
+      else if (entry_price >= box4_bottom) t.box_zone = 'Box 4';
+      else t.box_zone = 'Box 5+';
+    } else {
+      top_price = t.bottom || t.BOTTOM;
+      l1_price = t.h1 || t.H1;
+      if (!top_price || !l1_price) { t.box_zone = 'Unknown'; return; }
+      first_range = l1_price - top_price;
+      if (first_range <= 0) { t.box_zone = 'Unknown'; return; }
+      const box3_top = top_price + 2 * first_range;
+      const box3_bottom = top_price + 3 * first_range;
+      const box4_bottom = top_price + 4 * first_range;
+      if (entry_price <= box3_top) t.box_zone = 'Above Box 3';
+      else if (entry_price <= box3_bottom) t.box_zone = 'Box 3';
+      else if (entry_price <= box4_bottom) t.box_zone = 'Box 4';
+      else t.box_zone = 'Box 5+';
+    }
+  });
+
+  TRADE_DATA = trades;
+  document.getElementById('trade-count').textContent = trades.length.toLocaleString();
+  status.textContent = `V11c Sweet Spot: ${trades.length.toLocaleString()} trades · BTC · Box 10-25% + Step 0.5-0.7 · 2017–2026`;
+  loadBtn.style.display = 'none';
+  if (bar) bar.style.display = 'none';
+
+  // Set date range to cover all trades
+  if (trades.length > 0) {
+    const minDate = new Date(Math.min(...trades.map(t => t.et * 1000)));
+    const maxDate = new Date(Math.max(...trades.map(t => t.et * 1000)));
+    document.getElementById('date-from').value = minDate.toISOString().slice(0, 10);
+    document.getElementById('date-to').value = maxDate.toISOString().slice(0, 10);
+  }
+
+  initChart();
+  applyFilters();
+
+  // Restore trade from URL hash if present
+  let startIdx = 0;
+  const hash = window.location.hash.slice(1);
+  if (hash && state.filtered.length > 0) {
+    const [hp, htf, het] = hash.split('_');
+    const et = parseInt(het);
+    if (et) {
+      const found = state.filtered.findIndex(t => t.pair === hp && t.tf === htf && t.et === et);
+      if (found >= 0) startIdx = found;
+    }
+  }
+  if (state.filtered.length > 0) selectTrade(startIdx);
+});
+</script>
+
+</body>
+</html>
