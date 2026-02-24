@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cron Health — OpenClaw</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0b1020 0%, #141a2f 100%);
+      color: #fff;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container { max-width: 1400px; margin: 0 auto; }
+
+    .top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      background: linear-gradient(90deg, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+    }
+
+    .subtitle { color: #9ca3af; font-size: 0.95rem; }
+
+    .pill-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .pill {
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.04);
+      padding: 10px 12px;
+      border-radius: 12px;
+      color: #cbd5e1;
+      font-size: 0.9rem;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+    }
+    .toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.04);
+      padding: 10px 12px;
+      border-radius: 12px;
+      color: #cbd5e1;
+      font-size: 0.9rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .toggle input { accent-color: #a78bfa; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .card {
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.03);
+      border-radius: 16px;
+      padding: 14px;
+    }
+
+    .card-top { display: flex; justify-content: space-between; gap: 12px; }
+
+    .name {
+      font-weight: 700;
+      letter-spacing: -0.2px;
+      line-height: 1.15;
+      font-size: 1.05rem;
+    }
+    .desc { color: #9ca3af; font-size: 0.9rem; margin-top: 6px; line-height: 1.35; }
+
+    .badge {
+      font-size: 0.75rem;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.14);
+      height: fit-content;
+      white-space: nowrap;
+    }
+    .ok { background: rgba(34,197,94,0.14); color: #86efac; border-color: rgba(34,197,94,0.25); }
+    .err { background: rgba(239,68,68,0.12); color: #fecaca; border-color: rgba(239,68,68,0.25); }
+    .warn { background: rgba(245,158,11,0.12); color: #fde68a; border-color: rgba(245,158,11,0.25); }
+    .off { background: rgba(107,114,128,0.12); color: #d1d5db; border-color: rgba(107,114,128,0.25); }
+
+    .meta {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      color: #cbd5e1;
+      font-size: 0.86rem;
+    }
+
+    .meta .k { color: #9ca3af; font-size: 0.78rem; margin-bottom: 2px; }
+    .meta .v { line-height: 1.25; }
+
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace; }
+
+    .errorbox {
+      margin-top: 10px;
+      border: 1px solid rgba(239,68,68,0.25);
+      background: rgba(239,68,68,0.07);
+      border-radius: 12px;
+      padding: 10px;
+      color: #fecaca;
+      font-size: 0.85rem;
+      line-height: 1.35;
+      white-space: pre-wrap;
+    }
+
+    .section {
+      margin-top: 22px;
+      padding: 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .section h2 {
+      font-size: 1rem;
+      color: #e5e7eb;
+      margin-bottom: 10px;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+
+    ul { margin-left: 18px; color: #cbd5e1; }
+    li { margin: 6px 0; line-height: 1.35; }
+
+    .small { font-size: 0.86rem; color: #9ca3af; }
+
+    a { color: #93c5fd; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    @media (max-width: 820px) {
+      .meta { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="top">
+      <div>
+        <h1>⏱️ Cron Health</h1>
+        <div class="subtitle">Quick view of OpenClaw scheduled jobs (enabled/disabled, last run, errors). Data is a trimmed snapshot of the local cron store.</div>
+      </div>
+      <div class="controls">
+        <label class="toggle"><input id="enabledOnly" type="checkbox" /> Enabled only</label>
+        <label class="toggle"><input id="errorsOnly" type="checkbox" /> Errors only</label>
+      </div>
+    </div>
+
+    <div class="pill-row" id="summary"></div>
+
+    <div class="section" style="margin-top: 16px;">
+      <h2>Notes</h2>
+      <ul>
+        <li>This page intentionally <b>does not</b> include cron payload prompts (to avoid leaking sensitive text).</li>
+        <li>If a job is "enabled" but has <span class="mono">consecutiveErrors &gt; 0</span> or <span class="mono">lastStatus=error</span>, it will show as <b>ERROR</b>.</li>
+      </ul>
+      <div class="small" id="generatedAt"></div>
+    </div>
+
+    <div class="grid" id="cards" aria-live="polite"></div>
+
+    <div class="section" id="recommendations" style="display:none;">
+      <h2>Auto Flags (heuristics)</h2>
+      <ul id="recList"></ul>
+    </div>
+  </div>
+
+  <script>
+    const fmt = (iso) => {
+      if (!iso) return '—';
+      try {
+        const d = new Date(iso);
+        return d.toLocaleString(undefined, { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+      } catch { return iso; }
+    };
+
+    const badgeClass = (job) => {
+      if (!job.enabled) return { cls: 'off', label: 'DISABLED' };
+      const st = job.state || {};
+      const ce = st.consecutiveErrors || 0;
+      if (st.lastStatus === 'error' || ce > 0) return { cls: 'err', label: 'ERROR' };
+      if (st.lastStatus === 'ok') return { cls: 'ok', label: 'OK' };
+      return { cls: 'warn', label: (st.lastStatus || 'UNKNOWN').toUpperCase() };
+    };
+
+    const el = (tag, attrs = {}, children = []) => {
+      const n = document.createElement(tag);
+      Object.entries(attrs).forEach(([k, v]) => {
+        if (k === 'class') n.className = v;
+        else if (k === 'html') n.innerHTML = v;
+        else n.setAttribute(k, v);
+      });
+      (Array.isArray(children) ? children : [children]).forEach((c) => {
+        if (c === null || c === undefined) return;
+        if (typeof c === 'string') n.appendChild(document.createTextNode(c));
+        else n.appendChild(c);
+      });
+      return n;
+    };
+
+    let DATA = null;
+
+    const render = () => {
+      const enabledOnly = document.getElementById('enabledOnly').checked;
+      const errorsOnly = document.getElementById('errorsOnly').checked;
+
+      const cards = document.getElementById('cards');
+      cards.innerHTML = '';
+
+      const jobs = (DATA.jobs || []).filter(j => {
+        if (enabledOnly && !j.enabled) return false;
+        if (errorsOnly) {
+          const st = j.state || {};
+          const ce = st.consecutiveErrors || 0;
+          const isErr = (st.lastStatus === 'error') || ce > 0;
+          if (!isErr) return false;
+        }
+        return true;
+      });
+
+      jobs.forEach((j) => {
+        const b = badgeClass(j);
+
+        const meta = el('div', { class: 'meta' }, [
+          el('div', {}, [
+            el('div', { class: 'k' }, 'Schedule'),
+            el('div', { class: 'v mono' }, `${(j.schedule && j.schedule.expr) || '—'}  (${(j.schedule && j.schedule.tz) || '—'})`)
+          ]),
+          el('div', {}, [
+            el('div', { class: 'k' }, 'Delivery'),
+            el('div', { class: 'v mono' }, `${(j.delivery && j.delivery.mode) || '—'}${(j.delivery && j.delivery.channel) ? ' / ' + j.delivery.channel : ''}`)
+          ]),
+          el('div', {}, [
+            el('div', { class: 'k' }, 'Last run'),
+            el('div', { class: 'v' }, fmt(j.state && j.state.lastRunAt))
+          ]),
+          el('div', {}, [
+            el('div', { class: 'k' }, 'Next run'),
+            el('div', { class: 'v' }, fmt(j.state && j.state.nextRunAt))
+          ]),
+          el('div', {}, [
+            el('div', { class: 'k' }, 'Runtime'),
+            el('div', { class: 'v mono' }, (j.state && j.state.lastDurationMs) ? `${j.state.lastDurationMs}ms` : '—')
+          ]),
+          el('div', {}, [
+            el('div', { class: 'k' }, 'Errors'),
+            el('div', { class: 'v mono' }, `${(j.state && j.state.consecutiveErrors) || 0}`)
+          ]),
+        ]);
+
+        const card = el('div', { class: 'card' }, [
+          el('div', { class: 'card-top' }, [
+            el('div', {}, [
+              el('div', { class: 'name' }, j.name || j.id),
+              j.description ? el('div', { class: 'desc' }, j.description) : null,
+            ]),
+            el('div', { class: `badge ${b.cls}` }, b.label)
+          ]),
+          meta,
+          (j.state && j.state.lastError) ? el('div', { class: 'errorbox mono' }, j.state.lastError) : null,
+          el('div', { class: 'small', style: 'margin-top:10px;' }, `ID: ${j.id}`)
+        ]);
+
+        cards.appendChild(card);
+      });
+
+      if (!jobs.length) {
+        cards.appendChild(el('div', { class: 'card' }, [
+          el('div', { class: 'name' }, 'No jobs match this filter.'),
+          el('div', { class: 'desc' }, 'Try toggling Enabled only / Errors only.')
+        ]));
+      }
+
+      // Recommendations
+      const recs = [];
+      (DATA.jobs || []).forEach((j) => {
+        if (!j.enabled) return;
+        const err = (j.state && j.state.lastError) || '';
+        if (err.includes('announce delivery failed')) {
+          recs.push(`“${j.name}”: delivery failing (announce). Consider switching to message-tool delivery or checking Telegram provider health.`);
+        }
+        if (err.includes('execution timed out')) {
+          recs.push(`“${j.name}”: timed out. Consider raising timeoutSeconds or splitting the job into smaller phases.`);
+        }
+        if (err.includes('rate_limit')) {
+          recs.push(`“${j.name}”: rate-limited. Consider switching model/provider or adding backoff.`);
+        }
+      });
+
+      const recSection = document.getElementById('recommendations');
+      const recList = document.getElementById('recList');
+      recList.innerHTML = '';
+
+      if (recs.length) {
+        recSection.style.display = 'block';
+        recs.slice(0, 12).forEach((r) => recList.appendChild(el('li', {}, r)));
+      } else {
+        recSection.style.display = 'none';
+      }
+    };
+
+    const init = async () => {
+      const res = await fetch('cron-health-data.json', { cache: 'no-store' });
+      DATA = await res.json();
+
+      // Summary pills
+      const s = DATA.summary || {};
+      const summary = document.getElementById('summary');
+      summary.innerHTML = '';
+      summary.appendChild(el('div', { class: 'pill' }, `Total jobs: ${s.total ?? '—'}`));
+      summary.appendChild(el('div', { class: 'pill' }, `Enabled: ${s.enabled ?? '—'}`));
+      summary.appendChild(el('div', { class: 'pill' }, `Enabled w/ errors: ${s.enabledWithErrors ?? '—'}`));
+
+      document.getElementById('generatedAt').textContent = `Generated: ${fmt(DATA.generatedAt)} (UTC snapshot)`;
+
+      document.getElementById('enabledOnly').addEventListener('change', render);
+      document.getElementById('errorsOnly').addEventListener('change', render);
+
+      render();
+    };
+
+    init().catch((e) => {
+      const cards = document.getElementById('cards');
+      cards.innerHTML = '';
+      cards.appendChild(el('div', { class: 'card' }, [
+        el('div', { class: 'name' }, 'Failed to load cron-health-data.json'),
+        el('div', { class: 'errorbox mono' }, String(e))
+      ]));
+    });
+  </script>
+</body>
+</html>
