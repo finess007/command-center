@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Copy Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0b0e14; --surface: #141820; --surface2: #1a1f2b;
+  --border: #252b3a; --text: #e0e4ed; --text2: #8b95a8;
+  --green: #00e676; --red: #ff5252; --blue: #448aff;
+  --purple: #b388ff; --amber: #ffd740; --cyan: #18ffff;
+}
+body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+/* Header */
+.header {
+  background: linear-gradient(135deg, rgba(68,138,255,0.08), rgba(179,136,255,0.08));
+  border-bottom: 1px solid var(--border);
+  padding: 24px 32px;
+}
+.header h1 { font-size: 24px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+.header h1 span { font-size: 28px; }
+.header-sub { color: var(--text2); font-size: 13px; margin-top: 6px; }
+.status-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  background: rgba(0,230,118,0.12); color: var(--green); margin-left: 12px;
+}
+.status-badge.offline { background: rgba(255,82,82,0.12); color: var(--red); }
+.status-badge .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+/* Layout */
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+@media (max-width: 768px) {
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+}
+
+/* Cards */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 20px;
+}
+.card-title { font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px; }
+
+/* Stat cards */
+.stat { text-align: center; padding: 16px; }
+.stat-value { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+.stat-value.mono { font-family: 'JetBrains Mono', monospace; }
+.stat-label { font-size: 11px; color: var(--text2); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.stat-sub { font-size: 12px; margin-top: 4px; }
+.green { color: var(--green); }
+.red { color: var(--red); }
+.blue { color: var(--blue); }
+.amber { color: var(--amber); }
+.cyan { color: var(--cyan); }
+.purple { color: var(--purple); }
+
+/* Equity curve */
+.equity-container { position: relative; height: 200px; margin-top: 8px; }
+.equity-canvas { width: 100%; height: 100%; }
+
+/* Table */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; color: var(--text2); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+td { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+tr:hover { background: rgba(255,255,255,0.02); }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.badge-win { background: rgba(0,230,118,0.15); color: var(--green); }
+.badge-loss { background: rgba(255,82,82,0.15); color: var(--red); }
+.badge-open { background: rgba(68,138,255,0.15); color: var(--blue); }
+.badge-skip { background: rgba(255,215,64,0.15); color: var(--amber); }
+
+/* Watchlist */
+.wallet-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.wallet-row:last-child { border: none; }
+.wallet-rank { font-size: 14px; font-weight: 700; color: var(--text2); width: 24px; }
+.wallet-addr { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--cyan); }
+.wallet-stats { display: flex; gap: 16px; margin-left: auto; font-size: 12px; color: var(--text2); }
+
+/* Progress bar */
+.progress-bar { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; margin-top: 8px; }
+.progress-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+
+/* Upload */
+.upload-area {
+  border: 2px dashed var(--border); border-radius: 12px; padding: 32px;
+  text-align: center; cursor: pointer; transition: all 0.2s;
+}
+.upload-area:hover { border-color: var(--blue); background: rgba(68,138,255,0.04); }
+.upload-area input { display: none; }
+
+/* Refresh */
+.refresh-btn {
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+  padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px;
+  transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
+}
+.refresh-btn:hover { background: var(--border); }
+
+.section-gap { margin-top: 24px; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span>🤖</span> Smart Copy Tracker <span class="status-badge" id="statusBadge"><span class="dot"></span>Loading...</span></h1>
+  <div class="header-sub">Self-refreshing wallet watchlist · Paper trading · $25K+ trades only</div>
+</div>
+
+<div class="container">
+
+  <!-- Account Overview -->
+  <div class="grid-4 section-gap" id="statsRow">
+    <div class="card stat">
+      <div class="stat-value mono" id="balance">$10,000</div>
+      <div class="stat-label">Balance</div>
+      <div class="stat-sub" id="balancePct">+0.0%</div>
+    </div>
+    <div class="card stat">
+      <div class="stat-value mono" id="totalPnl">$0</div>
+      <div class="stat-label">Total P&L</div>
+      <div class="stat-sub" id="avgPnl">$0/trade</div>
+    </div>
+    <div class="card stat">
+      <div class="stat-value mono" id="winRate">—</div>
+      <div class="stat-label">Win Rate</div>
+      <div class="stat-sub" id="winLoss">0W / 0L</div>
+    </div>
+    <div class="card stat">
+      <div class="stat-value mono" id="maxDD">0%</div>
+      <div class="stat-label">Max Drawdown</div>
+      <div class="stat-sub" id="highWater">HWM: $10,000</div>
+    </div>
+  </div>
+
+  <!-- Equity Curve + Position Info -->
+  <div class="grid-2 section-gap">
+    <div class="card">
+      <div class="card-title">📈 Equity Curve</div>
+      <div class="equity-container">
+        <canvas id="equityCanvas" class="equity-canvas"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 Performance Breakdown</div>
+      <div id="perfBreakdown" style="font-size: 13px; line-height: 2;">
+        <div class="flex-between"><span style="color:var(--text2)">Position Size</span><span class="mono" id="posSize">$200</span></div>
+        <div class="flex-between"><span style="color:var(--text2)">Open Trades</span><span class="mono" id="openTrades">0</span></div>
+        <div class="flex-between"><span style="color:var(--text2)">Open Exposure</span><span class="mono" id="exposure">$0</span></div>
+        <div class="flex-between"><span style="color:var(--text2)">Best Trade</span><span class="mono green" id="bestTrade">—</span></div>
+        <div class="flex-between"><span style="color:var(--text2)">Worst Trade</span><span class="mono red" id="worstTrade">—</span></div>
+        <div class="flex-between"><span style="color:var(--text2)">Avg Win</span><span class="mono green" id="avgWin">—</span></div>
+        <div class="flex-between"><span style="color:var(--text2)">Avg Loss</span><span class="mono red" id="avgLoss">—</span></div>
+        <div class="flex-between"><span style="color:var(--text2)">Profit Factor</span><span class="mono" id="profitFactor">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Watchlist -->
+  <div class="card section-gap">
+    <div class="flex-between">
+      <div class="card-title">👛 Current Watchlist (<span id="watchlistMonth">—</span>)</div>
+      <div style="font-size:12px; color:var(--text2)">Top 5 by last month's P&L · Auto-refreshes monthly</div>
+    </div>
+    <div id="watchlistBody"></div>
+  </div>
+
+  <!-- Wallet P&L -->
+  <div class="card section-gap">
+    <div class="card-title">🏆 P&L by Wallet</div>
+    <div id="walletPnl"></div>
+  </div>
+
+  <!-- Trade Log -->
+  <div class="card section-gap">
+    <div class="flex-between">
+      <div class="card-title">📜 Trade Log</div>
+      <div style="font-size: 12px; color: var(--text2)"><span id="tradeCount">0</span> trades</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Time</th><th>Wallet</th><th>Side</th><th>Whale Size</th><th>Paper Size</th><th>Price</th><th>Market</th><th>Status</th><th>P&L</th></tr>
+        </thead>
+        <tbody id="tradeLog"></tbody>
+      </table>
+    </div>
+    <div id="noTrades" style="text-align:center; padding:40px; color:var(--text2); display:none;">
+      ⏳ No trades yet. Tracker is monitoring wallets...
+    </div>
+  </div>
+
+  <!-- Data Upload -->
+  <div class="card section-gap">
+    <div class="card-title">📂 Load Data</div>
+    <div class="upload-area" id="uploadArea">
+      <div style="font-size: 32px; margin-bottom: 8px;">📁</div>
+      <div style="font-size: 14px; font-weight: 500;">Drop JSON files here or click to upload</div>
+      <div style="font-size: 12px; color: var(--text2); margin-top: 4px;">account.json · trades.json · watchlist.json</div>
+      <input type="file" id="fileInput" multiple accept=".json">
+    </div>
+    <div style="margin-top:12px; text-align:center;">
+      <button class="refresh-btn" onclick="loadFromUrl()">🔄 Load from URL</button>
+      <button class="refresh-btn" onclick="loadSample()" style="margin-left:8px;">📊 Load Sample</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+// State
+// ============================================================
+let STATE = {
+  account: null,
+  trades: [],
+  watchlist: null,
+};
+
+// ============================================================
+// Data Loading
+// ============================================================
+function loadFile(name, data) {
+  try {
+    const parsed = JSON.parse(data);
+    if (name.includes('account')) {
+      STATE.account = parsed;
+    } else if (name.includes('trades')) {
+      STATE.trades = parsed;
+    } else if (name.includes('watchlist')) {
+      STATE.watchlist = parsed;
+    }
+    render();
+  } catch(e) {
+    console.error('Parse error:', e);
+  }
+}
+
+// File upload
+const uploadArea = document.getElementById('uploadArea');
+const fileInput = document.getElementById('fileInput');
+uploadArea.addEventListener('click', () => fileInput.click());
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.style.borderColor = 'var(--blue)'; });
+uploadArea.addEventListener('dragleave', () => { uploadArea.style.borderColor = 'var(--border)'; });
+uploadArea.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadArea.style.borderColor = 'var(--border)';
+  [...e.dataTransfer.files].forEach(f => f.text().then(t => loadFile(f.name, t)));
+});
+fileInput.addEventListener('change', () => {
+  [...fileInput.files].forEach(f => f.text().then(t => loadFile(f.name, t)));
+});
+
+// Load from URL
+function loadFromUrl() {
+  const base = window.location.href.replace(/[^/]*$/, '');
+  const files = ['polymarket-paper-account.json', 'polymarket-paper-trades.json', 'polymarket-paper-watchlist.json'];
+  files.forEach(f => {
+    fetch(base + f).then(r => r.ok ? r.text() : null).then(t => { if(t) loadFile(f, t); }).catch(() => {});
+  });
+}
+
+// Load sample data for demo
+function loadSample() {
+  STATE.account = {
+    starting_balance: 10000, balance: 10000, total_pnl: 0,
+    total_trades: 0, total_wins: 0, open_exposure: 0,
+    high_water_mark: 10000, max_drawdown: 0,
+  };
+  STATE.trades = [];
+  STATE.watchlist = {
+    month: '2026-02',
+    wallets: [
+      { address: '0x492442eab586f2d65b10621c14acc6f0e1604573', pnl: 10602572, trades: 2597, win_rate: 52 },
+      { address: '0xa5ea13a81d2b7e77e81b0c1a3e5e3017fb3a96e7', pnl: 1702538, trades: 293, win_rate: 55 },
+      { address: '0xb45a797faa52b076acb20b1e6c8520bb7e36c127', pnl: 1122315, trades: 426, win_rate: 62 },
+      { address: '0x26437896ed9dfed2e9d6b62ca55efbbed6c1b098', pnl: 572172, trades: 270, win_rate: 72 },
+      { address: '0x14964aefa2cd7c6d4b24719a65e3808b38e82b37', pnl: 569744, trades: 183, win_rate: 47 },
+    ]
+  };
+  render();
+}
+
+// ============================================================
+// Rendering
+// ============================================================
+function fmt(n, decimals=0) {
+  if (n === null || n === undefined) return '—';
+  const prefix = n < 0 ? '-$' : '$';
+  return prefix + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+function render() {
+  renderAccount();
+  renderWatchlist();
+  renderTrades();
+  renderEquity();
+  renderWalletPnl();
+  renderPerformance();
+}
+
+function renderAccount() {
+  const a = STATE.account;
+  if (!a) return;
+  
+  const pct = ((a.balance - a.starting_balance) / a.starting_balance * 100);
+  const pctClass = pct >= 0 ? 'green' : 'red';
+  
+  document.getElementById('balance').textContent = fmt(a.balance, 2);
+  document.getElementById('balance').className = `stat-value mono ${pctClass}`;
+  document.getElementById('balancePct').innerHTML = `<span class="${pctClass}">${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%</span>`;
+  
+  document.getElementById('totalPnl').textContent = fmt(a.total_pnl, 2);
+  document.getElementById('totalPnl').className = `stat-value mono ${a.total_pnl >= 0 ? 'green' : 'red'}`;
+  const avgPnl = a.total_trades > 0 ? a.total_pnl / a.total_trades : 0;
+  document.getElementById('avgPnl').innerHTML = `${fmt(avgPnl, 2)}/trade`;
+  
+  const wr = a.total_trades > 0 ? (a.total_wins / a.total_trades * 100).toFixed(1) + '%' : '—';
+  document.getElementById('winRate').textContent = wr;
+  document.getElementById('winLoss').textContent = `${a.total_wins}W / ${a.total_trades - a.total_wins}L`;
+  
+  document.getElementById('maxDD').textContent = a.max_drawdown.toFixed(1) + '%';
+  document.getElementById('maxDD').className = `stat-value mono ${a.max_drawdown > 10 ? 'red' : a.max_drawdown > 5 ? 'amber' : 'green'}`;
+  document.getElementById('highWater').textContent = `HWM: ${fmt(a.high_water_mark, 2)}`;
+  
+  const badge = document.getElementById('statusBadge');
+  badge.innerHTML = `<span class="dot"></span>Running`;
+  badge.className = 'status-badge';
+  
+  document.getElementById('posSize').textContent = fmt(Math.min(2000, Math.max(100, a.balance * 0.02)), 0);
+  document.getElementById('openTrades').textContent = STATE.trades.filter(t => t.status === 'filled').length;
+  document.getElementById('exposure').textContent = fmt(a.open_exposure, 0);
+}
+
+function renderPerformance() {
+  const resolved = STATE.trades.filter(t => t.status === 'resolved' && t.pnl !== null);
+  if (!resolved.length) return;
+  
+  const wins = resolved.filter(t => t.won);
+  const losses = resolved.filter(t => !t.won);
+  
+  const best = Math.max(...resolved.map(t => t.pnl));
+  const worst = Math.min(...resolved.map(t => t.pnl));
+  const avgW = wins.length > 0 ? wins.reduce((s,t) => s + t.pnl, 0) / wins.length : 0;
+  const avgL = losses.length > 0 ? losses.reduce((s,t) => s + t.pnl, 0) / losses.length : 0;
+  const grossWin = wins.reduce((s,t) => s + t.pnl, 0);
+  const grossLoss = Math.abs(losses.reduce((s,t) => s + t.pnl, 0));
+  const pf = grossLoss > 0 ? (grossWin / grossLoss).toFixed(2) : '∞';
+  
+  document.getElementById('bestTrade').textContent = fmt(best, 2);
+  document.getElementById('worstTrade').textContent = fmt(worst, 2);
+  document.getElementById('avgWin').textContent = fmt(avgW, 2);
+  document.getElementById('avgLoss').textContent = fmt(avgL, 2);
+  document.getElementById('profitFactor').textContent = pf;
+  document.getElementById('profitFactor').className = `mono ${pf >= 1.5 ? 'green' : pf >= 1 ? 'amber' : 'red'}`;
+}
+
+function renderWatchlist() {
+  const w = STATE.watchlist;
+  if (!w || !w.wallets) return;
+  
+  document.getElementById('watchlistMonth').textContent = w.month || '—';
+  
+  const body = document.getElementById('watchlistBody');
+  body.innerHTML = w.wallets.map((wallet, i) => {
+    const addr = wallet.address || '';
+    const short = addr.slice(0, 8) + '...' + addr.slice(-6);
+    const pnl = wallet.pnl || 0;
+    const pnlClass = pnl >= 0 ? 'green' : 'red';
+    return `
+      <div class="wallet-row">
+        <div class="wallet-rank">#${i+1}</div>
+        <div class="wallet-addr">${short}</div>
+        <div class="wallet-stats">
+          <span class="${pnlClass}">${fmt(pnl)}</span>
+          <span>${wallet.trades || 0} trades</span>
+          <span>WR ${wallet.win_rate || 0}%</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderTrades() {
+  const trades = STATE.trades.slice().sort((a,b) => (b.timestamp||'').localeCompare(a.timestamp||''));
+  
+  document.getElementById('tradeCount').textContent = trades.length;
+  
+  if (!trades.length) {
+    document.getElementById('noTrades').style.display = 'block';
+    document.getElementById('tradeLog').innerHTML = '';
+    return;
+  }
+  document.getElementById('noTrades').style.display = 'none';
+  
+  document.getElementById('tradeLog').innerHTML = trades.slice(0, 50).map(t => {
+    const time = (t.timestamp || '').slice(0, 16).replace('T', ' ');
+    const addr = (t.wallet_address || '').slice(0, 8) + '..';
+    const statusMap = {
+      resolved: t.won ? '<span class="badge badge-win">✅ WIN</span>' : '<span class="badge badge-loss">❌ LOSS</span>',
+      filled: '<span class="badge badge-open">⏳ OPEN</span>',
+      skipped_balance: '<span class="badge badge-skip">⚠️ SKIP</span>',
+      pending: '<span class="badge badge-open">📋 PENDING</span>',
+    };
+    const status = statusMap[t.status] || t.status;
+    const pnl = t.pnl !== null && t.pnl !== undefined ? `<span class="${t.pnl >= 0 ? 'green' : 'red'} mono">${fmt(t.pnl, 2)}</span>` : '—';
+    const side = t.side === 'BUY' ? '<span class="green">BUY</span>' : '<span class="red">SELL</span>';
+    
+    return `<tr>
+      <td class="mono" style="font-size:11px; white-space:nowrap;">${time}</td>
+      <td class="mono" style="font-size:11px; color:var(--cyan);">${addr}</td>
+      <td>${side}</td>
+      <td class="mono">${fmt(t.whale_size, 0)}</td>
+      <td class="mono">${fmt(t.paper_size, 0)}</td>
+      <td class="mono">${(t.price||0).toFixed(3)}</td>
+      <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px;">${t.market_question || '—'}</td>
+      <td>${status}</td>
+      <td>${pnl}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderEquity() {
+  const canvas = document.getElementById('equityCanvas');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+  ctx.scale(dpr, dpr);
+  
+  const W = rect.width, H = rect.height;
+  const pad = { top: 10, right: 10, bottom: 20, left: 60 };
+  const plotW = W - pad.left - pad.right;
+  const plotH = H - pad.top - pad.bottom;
+  
+  // Build equity points
+  const starting = STATE.account ? STATE.account.starting_balance : 10000;
+  const resolved = STATE.trades
+    .filter(t => t.status === 'resolved' && t.pnl !== null)
+    .sort((a,b) => (a.timestamp||'').localeCompare(b.timestamp||''));
+  
+  let equity = [starting];
+  let running = starting;
+  for (const t of resolved) {
+    running += t.pnl;
+    equity.push(running);
+  }
+  
+  if (equity.length < 2) {
+    // Draw flat line
+    ctx.strokeStyle = 'rgba(68,138,255,0.3)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(pad.left, pad.top + plotH / 2);
+    ctx.lineTo(pad.left + plotW, pad.top + plotH / 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    ctx.fillStyle = 'var(--text2)';
+    ctx.font = '13px Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText('Waiting for resolved trades...', W/2, H/2);
+    return;
+  }
+  
+  const min = Math.min(...equity) * 0.98;
+  const max = Math.max(...equity) * 1.02;
+  const range = max - min || 1;
+  
+  const xStep = plotW / (equity.length - 1);
+  const yScale = v => pad.top + plotH - ((v - min) / range * plotH);
+  
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + (plotH / 4 * i);
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + plotW, y); ctx.stroke();
+    const val = max - (range / 4 * i);
+    ctx.fillStyle = '#6b7280';
+    ctx.font = '10px JetBrains Mono';
+    ctx.textAlign = 'right';
+    ctx.fillText('$' + val.toFixed(0), pad.left - 8, y + 3);
+  }
+  
+  // Starting line
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(pad.left, yScale(starting));
+  ctx.lineTo(pad.left + plotW, yScale(starting));
+  ctx.stroke();
+  ctx.setLineDash([]);
+  
+  // Gradient fill
+  const lastVal = equity[equity.length - 1];
+  const color = lastVal >= starting ? [0, 230, 118] : [255, 82, 82];
+  const gradient = ctx.createLinearGradient(0, pad.top, 0, pad.top + plotH);
+  gradient.addColorStop(0, `rgba(${color.join(',')}, 0.15)`);
+  gradient.addColorStop(1, `rgba(${color.join(',')}, 0.01)`);
+  
+  ctx.beginPath();
+  ctx.moveTo(pad.left, yScale(equity[0]));
+  for (let i = 1; i < equity.length; i++) {
+    ctx.lineTo(pad.left + i * xStep, yScale(equity[i]));
+  }
+  ctx.lineTo(pad.left + (equity.length-1) * xStep, pad.top + plotH);
+  ctx.lineTo(pad.left, pad.top + plotH);
+  ctx.closePath();
+  ctx.fillStyle = gradient;
+  ctx.fill();
+  
+  // Line
+  ctx.beginPath();
+  ctx.moveTo(pad.left, yScale(equity[0]));
+  for (let i = 1; i < equity.length; i++) {
+    ctx.lineTo(pad.left + i * xStep, yScale(equity[i]));
+  }
+  ctx.strokeStyle = `rgb(${color.join(',')})`;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  
+  // Current value dot
+  const lastX = pad.left + (equity.length - 1) * xStep;
+  const lastY = yScale(lastVal);
+  ctx.beginPath();
+  ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
+  ctx.fillStyle = `rgb(${color.join(',')})`;
+  ctx.fill();
+}
+
+function renderWalletPnl() {
+  const resolved = STATE.trades.filter(t => t.status === 'resolved' && t.pnl !== null);
+  const byWallet = {};
+  for (const t of resolved) {
+    const addr = (t.wallet_address || '?').slice(0, 10) + '..';
+    if (!byWallet[addr]) byWallet[addr] = { wins: 0, losses: 0, pnl: 0 };
+    byWallet[addr].pnl += t.pnl;
+    t.won ? byWallet[addr].wins++ : byWallet[addr].losses++;
+  }
+  
+  const entries = Object.entries(byWallet).sort((a,b) => b[1].pnl - a[1].pnl);
+  const el = document.getElementById('walletPnl');
+  
+  if (!entries.length) {
+    el.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text2);">No resolved trades yet</div>';
+    return;
+  }
+  
+  const maxPnl = Math.max(...entries.map(([,v]) => Math.abs(v.pnl)), 1);
+  
+  el.innerHTML = entries.map(([addr, v]) => {
+    const n = v.wins + v.losses;
+    const wr = (v.wins / n * 100).toFixed(0);
+    const pct = Math.abs(v.pnl) / maxPnl * 100;
+    const color = v.pnl >= 0 ? 'var(--green)' : 'var(--red)';
+    return `
+      <div style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04);">
+        <div class="flex-between" style="margin-bottom: 4px;">
+          <span class="mono" style="font-size:13px; color:var(--cyan);">${addr}</span>
+          <span class="mono" style="color:${color}; font-weight:600;">${fmt(v.pnl, 2)}</span>
+        </div>
+        <div class="flex-between" style="font-size:11px; color:var(--text2);">
+          <span>${n} trades · WR ${wr}% · ${v.wins}W/${v.losses}L</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width:${pct}%; background:${color};"></div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ============================================================
+// Init — try auto-load, then show sample
+// ============================================================
+window.addEventListener('resize', () => { if (STATE.account) renderEquity(); });
+
+// Try loading from JSON files in same directory
+loadFromUrl();
+
+// If nothing loaded after 1s, load sample
+setTimeout(() => {
+  if (!STATE.account) loadSample();
+}, 1000);
+</script>
+</body>
+</html>
