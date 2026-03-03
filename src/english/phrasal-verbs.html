@@ -145,6 +145,16 @@
             border-radius: 6px;
             font-size: 0.75rem;
         }
+        .verb-chip.expand-btn {
+            cursor: pointer;
+            color: #00d4ff;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            transition: all 0.2s;
+        }
+        .verb-chip.expand-btn:hover {
+            background: rgba(0, 212, 255, 0.2);
+        }
         
         .sessions-section { margin-bottom: 24px; }
         .session-item {
@@ -327,6 +337,8 @@
             
             document.getElementById('leitnerBoxes').innerHTML = boxLabels.map((label, i) => {
                 const vList = boxVerbs[i] || [];
+                const preview = vList.slice(0, 10);
+                const remaining = vList.length - 10;
                 return `
                     <div class="leitner-box box-${i}">
                         <div class="box-header">
@@ -334,13 +346,16 @@
                             <span class="box-count">${vList.length}</span>
                         </div>
                         <div class="box-interval">${label.interval}</div>
-                        <div class="box-verbs">
-                            ${vList.slice(0, 10).map(v => `<span class="verb-chip">${v}</span>`).join('')}
-                            ${vList.length > 10 ? `<span class="verb-chip" style="color:#666">+${vList.length - 10} more</span>` : ''}
+                        <div class="box-verbs" id="box-verbs-${i}">
+                            ${preview.map(v => `<span class="verb-chip">${v}</span>`).join('')}
+                            ${remaining > 0 ? `<span class="verb-chip expand-btn" onclick="toggleBox(${i})">+${remaining} more</span>` : ''}
                         </div>
                     </div>
                 `;
             }).join('');
+            
+            // Store for expand/collapse
+            window._boxVerbs = boxVerbs;
             
             // Session history (latest 15)
             const sessionsHtml = sessions.slice().reverse().slice(0, 15).map(s => {
@@ -364,6 +379,24 @@
             
             // Last updated
             document.getElementById('lastUpdated').textContent = verbs.lastUpdated || progress.lastSession || '—';
+        }
+        
+        function toggleBox(boxNum) {
+            const container = document.getElementById('box-verbs-' + boxNum);
+            const vList = window._boxVerbs[boxNum] || [];
+            const isExpanded = container.dataset.expanded === 'true';
+            
+            if (isExpanded) {
+                // Collapse back to 10
+                container.innerHTML = vList.slice(0, 10).map(v => `<span class="verb-chip">${v}</span>`).join('') +
+                    `<span class="verb-chip expand-btn" onclick="toggleBox(${boxNum})">+${vList.length - 10} more</span>`;
+                container.dataset.expanded = 'false';
+            } else {
+                // Show all
+                container.innerHTML = vList.map(v => `<span class="verb-chip">${v}</span>`).join('') +
+                    `<span class="verb-chip expand-btn" onclick="toggleBox(${boxNum})">Show less</span>`;
+                container.dataset.expanded = 'true';
+            }
         }
         
         // Clear old localStorage (no longer needed)
