@@ -34,6 +34,34 @@ for json_file in $(find src -name "*.json" -type f); do
     cp "$json_file" "$rel_path"
 done
 
+# 3. Mirror everything to public/ (Vercel deploys from public/ when it exists)
+echo ""
+echo "📦 Mirroring to public/..."
+# Copy encrypted HTML files
+for f in $(find . -maxdepth 1 -name "*.html" -type f ! -name "*.original.html"); do
+    cp "$f" "public/$(basename $f)"
+done
+# Copy subdirectory HTML files
+for d in english habits data; do
+    if [ -d "$d" ] && ls "$d"/*.html 1>/dev/null 2>&1; then
+        mkdir -p "public/$d"
+        cp "$d"/*.html "public/$d/"
+    fi
+done
+# Copy JSON files to public
+for f in $(find . -maxdepth 1 -name "*.json" -type f ! -name "package*.json"); do
+    cp "$f" "public/$(basename $f)" 2>/dev/null
+done
+for d in english data; do
+    if [ -d "$d" ] && ls "$d"/*.json 1>/dev/null 2>&1; then
+        mkdir -p "public/$d"
+        cp "$d"/*.json "public/$d/"
+    fi
+done
+# Copy .vercel output too
+mkdir -p .vercel/output/static
+cp -R public/* .vercel/output/static/ 2>/dev/null
+
 echo ""
 echo "✅ Build complete!"
 echo ""
