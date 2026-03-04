@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Avia Daily Training</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d27;
+    --card-hover: #222636;
+    --accent: #a78bfa;
+    --accent2: #7c3aed;
+    --green: #34d399;
+    --green-dim: rgba(52,211,153,0.15);
+    --yellow: #fbbf24;
+    --yellow-dim: rgba(251,191,36,0.15);
+    --red: #f87171;
+    --text: #e2e8f0;
+    --text-dim: #94a3b8;
+    --border: #2d3148;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 16px;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+  .header {
+    text-align: center;
+    padding: 20px 0 10px;
+  }
+  .header h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), #f0abfc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .header .subtitle {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    margin-top: 4px;
+  }
+
+  /* Streak Banner */
+  .streak-banner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    margin: 16px 0;
+    padding: 14px;
+    background: var(--card);
+    border-radius: 14px;
+    border: 1px solid var(--border);
+  }
+  .streak-stat {
+    text-align: center;
+  }
+  .streak-stat .num {
+    font-size: 1.8rem;
+    font-weight: 800;
+  }
+  .streak-stat .label {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .streak-fire { color: var(--yellow); }
+  .streak-star { color: var(--accent); }
+  .streak-check { color: var(--green); }
+
+  /* Date Nav */
+  .date-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin: 12px 0 16px;
+  }
+  .date-nav button {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .date-nav button:active { background: var(--card-hover); }
+  .date-nav .date-label {
+    font-size: 1rem;
+    font-weight: 600;
+    min-width: 160px;
+    text-align: center;
+  }
+  .date-nav .today-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+
+  /* Activity Cards */
+  .activity-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .activity-card:active { transform: scale(0.98); }
+  .activity-card.done {
+    border-color: rgba(52,211,153,0.3);
+    background: rgba(52,211,153,0.06);
+  }
+  .activity-card .icon {
+    font-size: 1.6rem;
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: rgba(167,139,250,0.1);
+    flex-shrink: 0;
+  }
+  .activity-card.done .icon {
+    background: var(--green-dim);
+  }
+  .activity-card .info {
+    flex: 1;
+  }
+  .activity-card .info .name {
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+  .activity-card .info .detail {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+  .activity-card .check {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .activity-card.done .check {
+    border-color: var(--green);
+    background: var(--green);
+    color: #0f1117;
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+
+  /* Progress Ring */
+  .day-progress {
+    text-align: center;
+    margin: 8px 0 16px;
+  }
+  .progress-bar-bg {
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--green));
+    border-radius: 3px;
+    transition: width 0.3s;
+  }
+  .progress-label {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-top: 6px;
+  }
+
+  /* Calendar Grid */
+  .section-title {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 24px 0 10px;
+    font-weight: 600;
+  }
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 20px;
+  }
+  .cal-header {
+    text-align: center;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    padding: 4px 0;
+    font-weight: 600;
+  }
+  .cal-day {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-dim);
+    position: relative;
+  }
+  .cal-day.empty { visibility: hidden; }
+  .cal-day.has-data { color: var(--text); }
+  .cal-day.full {
+    background: var(--green-dim);
+    color: var(--green);
+    font-weight: 700;
+  }
+  .cal-day.partial {
+    background: var(--yellow-dim);
+    color: var(--yellow);
+  }
+  .cal-day.today {
+    outline: 2px solid var(--accent);
+    outline-offset: -1px;
+  }
+  .cal-day.selected {
+    outline: 2px solid var(--text);
+    outline-offset: -1px;
+  }
+
+  /* Notes */
+  .notes-area {
+    margin-top: 16px;
+  }
+  .notes-area textarea {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    padding: 10px 12px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 60px;
+    outline: none;
+  }
+  .notes-area textarea:focus {
+    border-color: var(--accent);
+  }
+  .notes-area textarea::placeholder {
+    color: var(--text-dim);
+  }
+
+  /* Completion celebration */
+  .celebration {
+    text-align: center;
+    padding: 12px;
+    margin: 8px 0;
+    background: var(--green-dim);
+    border-radius: 12px;
+    font-weight: 600;
+    color: var(--green);
+    display: none;
+  }
+  .celebration.show { display: block; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🌟 Avia Daily Training</h1>
+  <div class="subtitle">Building habits, one day at a time</div>
+</div>
+
+<div class="streak-banner">
+  <div class="streak-stat">
+    <div class="num streak-fire" id="currentStreak">0</div>
+    <div class="label">🔥 Streak</div>
+  </div>
+  <div class="streak-stat">
+    <div class="num streak-star" id="totalDays">0</div>
+    <div class="label">⭐ Total Days</div>
+  </div>
+  <div class="streak-stat">
+    <div class="num streak-check" id="completionRate">0%</div>
+    <div class="label">✅ This Month</div>
+  </div>
+</div>
+
+<div class="date-nav">
+  <button onclick="changeDate(-1)">‹</button>
+  <div class="date-label" id="dateLabel"></div>
+  <button onclick="changeDate(1)">›</button>
+</div>
+
+<div class="day-progress">
+  <div class="progress-bar-bg">
+    <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+  </div>
+  <div class="progress-label" id="progressLabel">0 / 5 completed</div>
+</div>
+
+<div class="celebration" id="celebration">🎉 All done for today! Great job Avia!</div>
+
+<div id="activities"></div>
+
+<div class="notes-area">
+  <textarea id="notes" placeholder="Notes for the day..." oninput="saveNotes()"></textarea>
+</div>
+
+<div class="section-title" id="calendarTitle">This Month</div>
+<div class="calendar-grid" id="calendarGrid"></div>
+
+<script>
+const STORAGE_KEY = 'avia-training-v1';
+const ACTIVITIES = [
+  { id: 'reading', icon: '📖', name: 'Reading', detail: '15 min — phonics, sight words, or reading together' },
+  { id: 'english', icon: '🇬🇧', name: 'English', detail: '15 min — cartoon, game, or conversation' },
+  { id: 'math', icon: '🔢', name: 'Math', detail: '5-10 min — counting, adding with real objects' },
+  { id: 'cards', icon: '🃏', name: 'Карти за умници', detail: 'Memory & cognitive games' },
+  { id: 'challenge', icon: '🧩', name: 'Hard Thing', detail: 'Puzzle, building, or a task she has to think through' }
+];
+
+let selectedDate = todayStr();
+let data = loadData();
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function loadData() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
+}
+
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function getDayData(dateStr) {
+  if (!data[dateStr]) data[dateStr] = { done: [], notes: '' };
+  return data[dateStr];
+}
+
+function toggleActivity(id) {
+  const day = getDayData(selectedDate);
+  const idx = day.done.indexOf(id);
+  if (idx === -1) day.done.push(id);
+  else day.done.splice(idx, 1);
+  saveData();
+  render();
+}
+
+function saveNotes() {
+  const day = getDayData(selectedDate);
+  day.notes = document.getElementById('notes').value;
+  saveData();
+}
+
+function changeDate(delta) {
+  const d = new Date(selectedDate + 'T12:00:00');
+  d.setDate(d.getDate() + delta);
+  const newDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  if (newDate > todayStr()) return;
+  selectedDate = newDate;
+  render();
+}
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]}`;
+}
+
+function calcStreak() {
+  let streak = 0;
+  const d = new Date(todayStr() + 'T12:00:00');
+  // Check if today is complete; if not, start from yesterday
+  const todayData = data[todayStr()];
+  if (!todayData || todayData.done.length < ACTIVITIES.length) {
+    d.setDate(d.getDate() - 1);
+  }
+  while (true) {
+    const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const dd = data[ds];
+    if (dd && dd.done.length === ACTIVITIES.length) {
+      streak++;
+      d.setDate(d.getDate() - 1);
+    } else break;
+  }
+  return streak;
+}
+
+function calcStats() {
+  const today = new Date(todayStr() + 'T12:00:00');
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  let totalDays = 0;
+  let monthComplete = 0;
+  let monthDays = 0;
+
+  for (const [ds, dd] of Object.entries(data)) {
+    if (dd.done && dd.done.length === ACTIVITIES.length) totalDays++;
+    const dt = new Date(ds + 'T12:00:00');
+    if (dt.getFullYear() === year && dt.getMonth() === month) {
+      monthDays++;
+      if (dd.done && dd.done.length === ACTIVITIES.length) monthComplete++;
+    }
+  }
+
+  const daysInMonth = today.getDate();
+  const rate = daysInMonth > 0 ? Math.round((monthComplete / daysInMonth) * 100) : 0;
+
+  return { totalDays, rate };
+}
+
+function renderCalendar() {
+  const d = new Date(selectedDate + 'T12:00:00');
+  const year = d.getFullYear();
+  const month = d.getMonth();
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('calendarTitle').textContent = months[month] + ' ' + year;
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const today = todayStr();
+
+  const headers = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  let html = headers.map(h => `<div class="cal-header">${h}</div>`).join('');
+
+  for (let i = 0; i < firstDay; i++) html += '<div class="cal-day empty"></div>';
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const dd = data[ds];
+    const doneCount = dd ? dd.done.length : 0;
+    let cls = 'cal-day';
+    if (ds === today) cls += ' today';
+    if (ds === selectedDate) cls += ' selected';
+    if (doneCount === ACTIVITIES.length) cls += ' full has-data';
+    else if (doneCount > 0) cls += ' partial has-data';
+    html += `<div class="${cls}" onclick="selectedDate='${ds}';render()">${day}</div>`;
+  }
+
+  document.getElementById('calendarGrid').innerHTML = html;
+}
+
+function render() {
+  const day = getDayData(selectedDate);
+  const isToday = selectedDate === todayStr();
+
+  // Date label
+  let label = formatDate(selectedDate);
+  if (isToday) label += '<span class="today-dot"></span>';
+  document.getElementById('dateLabel').innerHTML = label;
+
+  // Activities
+  let html = '';
+  for (const a of ACTIVITIES) {
+    const done = day.done.includes(a.id);
+    html += `
+      <div class="activity-card ${done ? 'done' : ''}" onclick="toggleActivity('${a.id}')">
+        <div class="icon">${a.icon}</div>
+        <div class="info">
+          <div class="name">${a.name}</div>
+          <div class="detail">${a.detail}</div>
+        </div>
+        <div class="check">${done ? '✓' : ''}</div>
+      </div>`;
+  }
+  document.getElementById('activities').innerHTML = html;
+
+  // Progress
+  const doneCount = day.done.length;
+  const pct = Math.round((doneCount / ACTIVITIES.length) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = `${doneCount} / ${ACTIVITIES.length} completed`;
+
+  // Celebration
+  const cel = document.getElementById('celebration');
+  cel.classList.toggle('show', doneCount === ACTIVITIES.length);
+
+  // Notes
+  document.getElementById('notes').value = day.notes || '';
+
+  // Stats
+  document.getElementById('currentStreak').textContent = calcStreak();
+  const stats = calcStats();
+  document.getElementById('totalDays').textContent = stats.totalDays;
+  document.getElementById('completionRate').textContent = stats.rate + '%';
+
+  // Calendar
+  renderCalendar();
+}
+
+render();
+</script>
+</body>
+</html>
