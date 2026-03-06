@@ -1977,6 +1977,29 @@ function greetAvia() {
 // Greet on first tap/click (browser requires user gesture for audio)
 document.addEventListener('click', greetAvia, { once: true });
 document.addEventListener('touchstart', greetAvia, { once: true });
+
+// ============ AUTO-DETECT NEW DAY ============
+let lastKnownDay = todayStr();
+
+// Check every 30 seconds if the day changed
+setInterval(() => {
+  const now = todayStr();
+  if (now !== lastKnownDay) {
+    lastKnownDay = now;
+    render(); // re-render with new day's words
+  }
+}, 30000);
+
+// Also check when tab becomes visible again (e.g. phone unlocked, tab switched back)
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    const now = todayStr();
+    if (now !== lastKnownDay) {
+      lastKnownDay = now;
+      render();
+    }
+  }
+});
 </script>
 </body>
 </html>
