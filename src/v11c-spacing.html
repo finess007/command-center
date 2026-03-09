@@ -562,6 +562,11 @@ body {
         <button class="three-box-btn" id="btn-auto-channel" onclick="autoDetectChannel()">🤖 Auto Ch</button>
         <button class="three-box-btn" id="btn-clear-channels" onclick="clearChannels()" style="display:none">🗑️ Ch Clear</button>
         <span class="channel-status" id="channel-status"></span>
+        <span style="width:1px;height:20px;background:var(--border);margin:0 6px;display:inline-block"></span>
+        <button class="three-box-btn" id="btn-mark-real" onclick="toggleMarkReal()" style="border-color:#ff9800">📌 Mark Real</button>
+        <button class="three-box-btn" id="btn-clear-real" onclick="clearRealMark()" style="display:none;border-color:#ff1744">🗑️ Clear Mark</button>
+        <button class="three-box-btn" id="btn-export-marks" onclick="exportRealMarks()" style="border-color:#00e676">📤 Export</button>
+        <span class="three-box-status" id="mark-real-status" style="color:#ff9800"></span>
       </div>
     </div>
     <div id="chart-container">
@@ -1069,6 +1074,7 @@ function initChart() {
   // 3-Box tool: subscribe to chart clicks and scale changes
   state.chart.subscribeClick(handleThreeBoxClick);
   state.chart.subscribeClick(handleChannelClick);
+  state.chart.subscribeClick(handleMarkRealClick);
   state.chart.timeScale().subscribeVisibleLogicalRangeChange(() => { scheduleThreeBoxRedraw(); scheduleLevelsRedraw(); scheduleChannelRedraw(); });
   state.chart.subscribeCrosshairMove(() => { scheduleThreeBoxRedraw(); scheduleLevelsRedraw(); scheduleChannelRedraw(); });
 }
@@ -1272,7 +1278,25 @@ async function selectTrade(idx) {
 
     const tradeDuration = Math.max(trade.xt - trade.et, TF_MINUTES[trade.tf] * 60 * 10);
     const viewPad = Math.max(tradeDuration * 0.5, TF_MINUTES[trade.tf] * 60 * 15);
-    const viewFrom = trade.et - viewPad;
+    
+    // Include L1 in the view (but NOT the distant origin which can be way off)
+    const isDown = trade.dir === 'L';
+    const l1Price = isDown ? trade.l1 : trade.h1;
+    let viewFrom = trade.et - viewPad;
+    
+    if (l1Price && candles.length) {
+      const tol = Math.abs(l1Price) * 0.001;
+      for (let ci = candles.length - 1; ci >= 0; ci--) {
+        const c = candles[ci];
+        const cp = isDown ? c.low : c.high;
+        if (Math.abs(cp - l1Price) < tol && c.time < trade.et) {
+          viewFrom = Math.min(viewFrom, c.time - tradeDuration * 0.3);
+          break;
+        }
+      }
+      viewFrom = Math.max(viewFrom, trade.et - tradeDuration * 3);
+    }
+    
     const viewTo = trade.xt + viewPad;
     state.chart.timeScale().setVisibleRange({ from: viewFrom, to: viewTo });
 
@@ -1280,6 +1304,9 @@ async function selectTrade(idx) {
     
     // Restore channels for this trade
     restoreChannels();
+    
+    // Restore real origin mark for this trade
+    restoreRealMark();
 
   } catch (e) {
     console.error('Error loading trade:', e);
@@ -1716,7 +1743,7 @@ async function computeLevels() {
   if (!levels.active || state.selectedIndex < 0) return;
   const trade = state.filtered[state.selectedIndex];
   
-  // Use pre-computed levels from trade data if available
+  // Use pre-computed levels from trade data if available (full format)
   if (trade.levels) {
     const lv = trade.levels;
     levels.data = {
@@ -1737,6 +1764,111 @@ async function computeLevels() {
     const originLabel = lv.type === 'UP' ? 'Bottom' : 'Top';
     document.getElementById('levels-status').textContent =
       `${dir} | Move: ${levels.data.movePct}% | ${originLabel}: ${lv.origin.price.toFixed(2)} → L1 → L2 → L3`;
+    refreshCandleMarkers();
+    renderLevelsOverlay();
+    return;
+  }
+  
+  // Use engine pre-computed prices — locate candle times
+  // LONG (down move): top, l1, l2, l3 (descending lows)
+  // SHORT (up move): bottom, h1, h2, h3 (ascending highs)
+  const isDown = trade.dir === 'L';
+  const origin = isDown ? trade.top : trade.bottom;
+  const lv1 = isDown ? trade.l1 : trade.h1;
+  const lv2 = isDown ? trade.l2 : trade.h2;
+  const lv3 = isDown ? trade.l3 : trade.h3;
+  
+  if (origin && lv1 && lv2 && lv3) {
+    const cacheKey = `${trade.pair}_${trade.tf}_${trade.et}`;
+    let candles = state.candleCache[cacheKey];
+    if (!candles || !candles.length) {
+      document.getElementById('levels-status').textContent = '⏳ Waiting for candles...';
+      setTimeout(() => computeLevels(), 500);
+      return;
+    }
+    
+    const entryTime = trade.et;
+    const beforeEntry = candles.filter(c => c.time <= entryTime);
+    
+    // Find candle time for a price (search backward from entry, wider tolerance)
+    function findCandleTime(price, useHigh) {
+      const tol = Math.abs(price) * 0.001; // 0.1% tolerance
+      let best = null, bestDist = Infinity;
+      for (let i = beforeEntry.length - 1; i >= 0; i--) {
+        const c = beforeEntry[i];
+        const cp = useHigh ? c.high : c.low;
+        const dist = Math.abs(cp - price);
+        if (dist < tol && dist < bestDist) {
+          bestDist = dist;
+          best = c.time;
+        }
+      }
+      // Broader fallback: find closest match within 0.5%
+      if (!best) {
+        const broadTol = Math.abs(price) * 0.005;
+        for (let i = beforeEntry.length - 1; i >= 0; i--) {
+          const c = beforeEntry[i];
+          const cp = useHigh ? c.high : c.low;
+          const dist = Math.abs(cp - price);
+          if (dist < broadTol && dist < bestDist) {
+            bestDist = dist;
+            best = c.time;
+          }
+        }
+      }
+      return best;
+    }
+    
+    // For DOWN move: origin=high, swings=lows. For UP move: origin=low, swings=highs
+    const originTime = findCandleTime(origin, isDown);
+    const lv1Time = findCandleTime(lv1, !isDown);
+    const lv2Time = findCandleTime(lv2, !isDown);
+    const lv3Time = findCandleTime(lv3, !isDown);
+    
+    // Even if we can't find exact candle times, use approximate timestamps
+    // based on proportional position between origin and entry
+    const approxTime = (fraction) => {
+      const earliest = candles[0]?.time || (entryTime - 3600);
+      return Math.floor(earliest + fraction * (entryTime - earliest));
+    };
+    
+    const oTime = originTime || approxTime(0.05);
+    const t1 = lv1Time || approxTime(0.3);
+    const t2 = lv2Time || approxTime(0.55);
+    const t3 = lv3Time || approxTime(0.8);
+    
+    const totalMove = isDown ? (origin - lv3) : (lv3 - origin);
+    const movePct = ((Math.abs(totalMove) / origin) * 100).toFixed(2);
+    
+    levels.data = {
+      type: isDown ? 'DOWN' : 'UP',
+      levels: [
+        { time: t1, price: lv1 },
+        { time: t2, price: lv2 },
+        { time: t3, price: lv3 },
+      ],
+      movePct: movePct,
+    };
+    if (isDown) {
+      levels.data.top = { time: oTime, price: origin };
+    } else {
+      levels.data.bottom = { time: oTime, price: origin };
+    }
+    
+    // 3-box projection: origin → lv1 = box size, project 3 equal boxes
+    const boxSize = Math.abs(origin - lv1);
+    levels.data.boxSize = boxSize;
+    levels.data.boxProjection = isDown
+      ? [origin - boxSize, origin - 2*boxSize, origin - 3*boxSize]
+      : [origin + boxSize, origin + 2*boxSize, origin + 3*boxSize];
+    
+    const dir = isDown ? '📉 DOWN' : '📈 UP';
+    const originLabel = isDown ? 'Top' : 'Bottom';
+    const deviationPct = trade.box_deviation !== undefined
+      ? ` | 3-Box Dev: ${(trade.box_deviation * 100).toFixed(1)}%`
+      : '';
+    document.getElementById('levels-status').textContent =
+      `${dir} | Move: ${movePct}% | ${originLabel}: ${origin.toFixed(2)} → L1: ${lv1.toFixed(2)} → L2: ${lv2.toFixed(2)} → L3: ${lv3.toFixed(2)}${deviationPct}`;
     refreshCandleMarkers();
     renderLevelsOverlay();
     return;
@@ -1797,10 +1929,10 @@ async function computeLevels() {
     refreshCandleMarkers();
     return;
   }
-  const dir = result.type === 'UP' ? '📈 UP' : '📉 DOWN';
-  const origin = result.type === 'UP' ? result.bottom : result.top;
+  const dir2 = result.type === 'UP' ? '📈 UP' : '📉 DOWN';
+  const origin2 = result.type === 'UP' ? result.bottom : result.top;
   document.getElementById('levels-status').textContent =
-    `${dir} | Move: ${result.movePct}% | ${result.type === 'UP' ? 'Bottom' : 'Top'}: ${origin.price.toFixed(2)} → L1 → L2 → L3`;
+    `${dir2} | Move: ${result.movePct}% | ${result.type === 'UP' ? 'Bottom' : 'Top'}: ${origin2.price.toFixed(2)} → L1 → L2 → L3`;
   
   refreshCandleMarkers();
   renderLevelsOverlay();
@@ -1943,13 +2075,64 @@ function renderLevelsOverlay() {
     ctx.fillText(label, px + pw/2, y);
   });
 
+  // Draw 3-Box Projection (green dashed lines)
+  if (d.boxProjection && d.boxSize) {
+    const boxLabels = ['Box 1', 'Box 2', 'Box 3'];
+    d.boxProjection.forEach((price, i) => {
+      const by = priceToY(price);
+      if (by === null || by < -20 || by > h + 20) return;
+      
+      // Green dashed line
+      ctx.strokeStyle = i === 2 ? '#00e676cc' : '#00e67666'; // Box 3 = bright (reversal zone)
+      ctx.lineWidth = i === 2 ? 2.5 : 1.5;
+      ctx.setLineDash([8, 4]);
+      ctx.beginPath();
+      ctx.moveTo(0, by);
+      ctx.lineTo(chartW, by);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      
+      // Label pill on left side
+      const label = boxLabels[i];
+      ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, sans-serif';
+      const ltw = ctx.measureText(label).width;
+      const lpx = 10, lpy = by - 9, lpw = ltw + 12, lph = 18;
+      ctx.fillStyle = i === 2 ? '#00e676cc' : '#00e67688';
+      ctx.beginPath();
+      ctx.moveTo(lpx + 3, lpy); ctx.lineTo(lpx + lpw - 3, lpy);
+      ctx.quadraticCurveTo(lpx + lpw, lpy, lpx + lpw, lpy + 3);
+      ctx.lineTo(lpx + lpw, lpy + lph - 3);
+      ctx.quadraticCurveTo(lpx + lpw, lpy + lph, lpx + lpw - 3, lpy + lph);
+      ctx.lineTo(lpx + 3, lpy + lph);
+      ctx.quadraticCurveTo(lpx, lpy + lph, lpx, lpy + lph - 3);
+      ctx.lineTo(lpx, lpy + 3);
+      ctx.quadraticCurveTo(lpx, lpy, lpx + 3, lpy);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#000';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, lpx + lpw/2, by);
+    });
+    
+    // Draw shaded Box 3 zone (reversal zone)
+    const box3Top = priceToY(d.boxProjection[1]);
+    const box3Bot = priceToY(d.boxProjection[2]);
+    if (box3Top !== null && box3Bot !== null) {
+      ctx.fillStyle = 'rgba(0, 230, 118, 0.06)';
+      const yMin = Math.min(box3Top, box3Bot);
+      const yMax = Math.max(box3Top, box3Bot);
+      ctx.fillRect(0, yMin, chartW, yMax - yMin);
+    }
+  }
+
   // Draw "3 LEVELS" label at top
   ctx.font = 'bold 13px -apple-system, BlinkMacSystemFont, sans-serif';
   ctx.fillStyle = 'rgba(179, 136, 255, 0.85)';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
   const dirIcon = d.type === 'UP' ? '📈' : '📉';
-  ctx.fillText(`${dirIcon} 3 Levels (${d.movePct}% move)`, 40, 10);
+  const boxInfo = d.boxSize ? ` · Box: ${d.boxSize.toFixed(2)}` : '';
+  ctx.fillText(`${dirIcon} 3 Levels (${d.movePct}% move${boxInfo})`, 40, 10);
 }
 
 function scheduleLevelsRedraw() {
@@ -2316,6 +2499,198 @@ function restoreChannels() {
   document.getElementById('btn-clear-channels').style.display = has ? 'inline-block' : 'none';
   if (has) createChannelOverlay();
   if (channel.overlay) renderChannelOverlay();
+}
+
+// ============= MARK REAL ORIGIN =============
+const realMarks = {
+  active: false,  // click-to-mark mode
+  data: {},       // keyed by tradeKey → { price, originalOrigin, tradeDir }
+};
+
+// Load from localStorage
+try {
+  const saved = localStorage.getItem('v11c-spacing-real-marks');
+  if (saved) realMarks.data = JSON.parse(saved);
+} catch(e) {}
+
+function saveRealMarks() {
+  try { localStorage.setItem('v11c-spacing-real-marks', JSON.stringify(realMarks.data)); } catch(e) {}
+}
+
+function getTradeKey(trade) {
+  if (!trade) return null;
+  return `${trade.pair}_${trade.tf}_${trade.et}`;
+}
+
+function toggleMarkReal() {
+  const btn = document.getElementById('btn-mark-real');
+  if (realMarks.active) {
+    realMarks.active = false;
+    btn.classList.remove('drawing');
+    document.getElementById('mark-real-status').textContent = '';
+    return;
+  }
+  realMarks.active = true;
+  btn.classList.add('drawing');
+  const trade = state.filtered[state.selectedIndex];
+  const label = trade?.dir === 'L' ? 'TOP' : 'BOTTOM';
+  document.getElementById('mark-real-status').textContent = `Click chart to mark Real ${label}`;
+}
+
+function handleMarkRealClick(param) {
+  if (!realMarks.active || !param.point || !param.seriesData) return;
+  const trade = state.filtered[state.selectedIndex];
+  if (!trade) return;
+  
+  // Get price from crosshair position
+  const price = state.candleSeries.coordinateToPrice(param.point.y);
+  if (!price || price <= 0) return;
+  
+  const key = getTradeKey(trade);
+  const isDown = trade.dir === 'L';
+  const engineOrigin = isDown ? trade.top : trade.bottom;
+  
+  realMarks.data[key] = {
+    price: parseFloat(price.toFixed(2)),
+    engineOrigin: engineOrigin,
+    dir: trade.dir,
+    diff: parseFloat((price - engineOrigin).toFixed(2)),
+    diffPct: parseFloat(((price - engineOrigin) / engineOrigin * 100).toFixed(3)),
+    markedAt: new Date().toISOString(),
+  };
+  saveRealMarks();
+  
+  // Exit mark mode
+  realMarks.active = false;
+  document.getElementById('btn-mark-real').classList.remove('drawing');
+  document.getElementById('btn-clear-real').style.display = 'inline-block';
+  
+  const label = isDown ? 'TOP' : 'BOTTOM';
+  const diffStr = realMarks.data[key].diff >= 0 ? '+' : '';
+  document.getElementById('mark-real-status').textContent = 
+    `✅ Real ${label}: ${price.toFixed(2)} (${diffStr}${realMarks.data[key].diff.toFixed(2)} from engine)`;
+  
+  // Recalculate levels with new origin
+  if (levels.active) {
+    recalcLevelsWithRealOrigin(trade, key);
+  }
+  
+  // Add real origin price line
+  drawRealOriginLine(trade, key);
+}
+
+function recalcLevelsWithRealOrigin(trade, key) {
+  const mark = realMarks.data[key];
+  if (!mark || !levels.data) return;
+  
+  const isDown = trade.dir === 'L';
+  const realOrigin = mark.price;
+  const lv1 = isDown ? trade.l1 : trade.h1;
+  
+  // Recalculate 3-box from real origin
+  const boxSize = Math.abs(realOrigin - lv1);
+  levels.data.boxSize = boxSize;
+  levels.data.boxProjection = isDown
+    ? [realOrigin - boxSize, realOrigin - 2*boxSize, realOrigin - 3*boxSize]
+    : [realOrigin + boxSize, realOrigin + 2*boxSize, realOrigin + 3*boxSize];
+  
+  // Update origin in levels data
+  if (isDown && levels.data.top) {
+    levels.data.top.price = realOrigin;
+  } else if (!isDown && levels.data.bottom) {
+    levels.data.bottom.price = realOrigin;
+  }
+  
+  renderLevelsOverlay();
+}
+
+function drawRealOriginLine(trade, key) {
+  const mark = realMarks.data[key];
+  if (!mark) return;
+  
+  // Remove previous real origin line
+  if (state.realOriginLine) {
+    state.candleSeries.removePriceLine(state.realOriginLine);
+  }
+  
+  const isDown = trade.dir === 'L';
+  const label = isDown ? 'REAL TOP' : 'REAL BOT';
+  
+  state.realOriginLine = state.candleSeries.createPriceLine({
+    price: mark.price,
+    color: '#ff9800',
+    lineWidth: 2,
+    lineStyle: 0,
+    axisLabelVisible: true,
+    title: `📌 ${label} ${mark.price.toLocaleString()}`,
+  });
+}
+
+function clearRealMark() {
+  const trade = state.filtered[state.selectedIndex];
+  if (!trade) return;
+  const key = getTradeKey(trade);
+  delete realMarks.data[key];
+  saveRealMarks();
+  
+  if (state.realOriginLine) {
+    state.candleSeries.removePriceLine(state.realOriginLine);
+    state.realOriginLine = null;
+  }
+  
+  document.getElementById('btn-clear-real').style.display = 'none';
+  document.getElementById('mark-real-status').textContent = '';
+  
+  // Recalc levels from engine origin
+  if (levels.active) computeLevels();
+}
+
+function restoreRealMark() {
+  const trade = state.filtered[state.selectedIndex];
+  if (!trade) return;
+  const key = getTradeKey(trade);
+  const mark = realMarks.data[key];
+  
+  if (state.realOriginLine) {
+    state.candleSeries.removePriceLine(state.realOriginLine);
+    state.realOriginLine = null;
+  }
+  
+  if (mark) {
+    document.getElementById('btn-clear-real').style.display = 'inline-block';
+    const isDown = trade.dir === 'L';
+    const label = isDown ? 'TOP' : 'BOTTOM';
+    const diffStr = mark.diff >= 0 ? '+' : '';
+    document.getElementById('mark-real-status').textContent = 
+      `📌 Real ${label}: ${mark.price.toFixed(2)} (${diffStr}${mark.diff.toFixed(2)})`;
+    drawRealOriginLine(trade, key);
+    
+    // Recalc levels with real origin
+    if (levels.active) {
+      recalcLevelsWithRealOrigin(trade, key);
+    }
+  } else {
+    document.getElementById('btn-clear-real').style.display = 'none';
+    document.getElementById('mark-real-status').textContent = '';
+  }
+}
+
+function exportRealMarks() {
+  const marks = realMarks.data;
+  const count = Object.keys(marks).length;
+  if (!count) {
+    document.getElementById('mark-real-status').textContent = '⚠️ No marks to export';
+    return;
+  }
+  
+  const blob = new Blob([JSON.stringify(marks, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `real-origin-marks-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  document.getElementById('mark-real-status').textContent = `📤 Exported ${count} marks`;
 }
 
 // ============= EQUITY MODE TOGGLE =============

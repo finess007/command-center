@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 1 — Dual ATR Detector Review</title>
+<script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --surface2: #1a1a28;
+  --border: #2a2a3a;
+  --text: #e0e0e0;
+  --text-dim: #888;
+  --accent: #00bcd4;
+  --green: #00c853;
+  --red: #ff1744;
+  --gold: #ffd700;
+  --blue: #448aff;
+  --purple: #b388ff;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* Header */
+.header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.header h1 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.header .subtitle {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-left: 12px;
+}
+.header-links { display: flex; gap: 16px; align-items: center; }
+.header .home-link {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+.header .home-link:hover { color: var(--accent); }
+
+/* Stats bar */
+.stats-bar {
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+}
+.stat { display: flex; align-items: center; gap: 6px; }
+.stat-label { color: var(--text-dim); }
+.stat-value { font-weight: 700; }
+.stat-value.positive { color: var(--green); }
+.stat-value.negative { color: var(--red); }
+.stat-value.gold { color: var(--gold); }
+.stat-value.accent { color: var(--accent); }
+
+/* Config table */
+.config-section {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.config-section h3 {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+.config-section h3:hover { color: var(--accent); }
+.config-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+.config-table th {
+  text-align: left;
+  padding: 6px 10px;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+}
+.config-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.config-table tr.best {
+  background: rgba(0, 188, 212, 0.08);
+}
+.config-table tr.best td { color: var(--accent); font-weight: 600; }
+.config-table tr.champion-row { background: rgba(255, 215, 0, 0.08); }
+.config-table tr.champion-row td { color: var(--gold); }
+
+/* Main layout */
+.main {
+  display: flex;
+  height: calc(100vh - 260px);
+  min-height: 500px;
+}
+
+/* Trade list panel */
+.trade-list-panel {
+  width: 320px;
+  min-width: 280px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+.trade-list-header {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+.trade-list {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.trade-item {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  transition: background 0.1s;
+}
+.trade-item:hover { background: var(--surface2); }
+.trade-item.active { background: var(--surface2); border-left: 3px solid var(--accent); }
+.trade-item .left { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.trade-item .right { display: flex; gap: 6px; align-items: center; }
+.trade-item .pair-badge {
+  font-weight: 700; font-size: 0.7rem;
+  padding: 2px 6px; border-radius: 3px;
+  background: #f7931a22; color: #f7931a;
+}
+.trade-item .tf-badge { color: var(--text-dim); font-size: 0.7rem; }
+.trade-item .dir-badge { font-weight: 700; font-size: 0.7rem; }
+.trade-item .dir-badge.L { color: var(--green); }
+.trade-item .dir-badge.S { color: var(--red); }
+.trade-item .r-value { font-weight: 700; font-size: 0.85rem; min-width: 45px; text-align: right; }
+.trade-item .r-value.positive { color: var(--green); }
+.trade-item .r-value.negative { color: var(--red); }
+.trade-item .date-text { color: var(--text-dim); font-size: 0.7rem; }
+.trade-item .diff-icons { font-size: 0.7rem; display: flex; gap: 2px; }
+
+/* Chart panel */
+.chart-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.chart-info {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chart-info .trade-detail {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 0.82rem;
+  flex-wrap: wrap;
+}
+.chart-info .nav-btns { display: flex; gap: 8px; align-items: center; }
+.nav-btn {
+  padding: 4px 16px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.nav-btn:hover { border-color: var(--accent); }
+
+/* Toggle buttons */
+.toggle-bar {
+  padding: 6px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.toggle-btn {
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.15s;
+}
+.toggle-btn:hover { border-color: var(--accent); color: var(--text); }
+.toggle-btn.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
+
+#chart-container { flex: 1; position: relative; }
+.chart-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--text-dim);
+  font-size: 1rem;
+}
+
+/* Sort buttons */
+.sort-btns { display: flex; gap: 4px; }
+.sort-btn {
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+.sort-btn.active { color: var(--accent); border-color: var(--accent); }
+
+/* Zone overlay canvas */
+#zone-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .main { flex-direction: column; height: auto; }
+  .trade-list-panel { width: 100%; min-width: 0; max-height: 250px; border-right: none; border-bottom: 1px solid var(--border); }
+  #chart-container { min-height: 400px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>🎯 Phase 1 — Dual ATR Detector Review</h1>
+    <span class="subtitle">Coarse Zone + Fine Pivot | 41 Sweet Spot Trades</span>
+  </div>
+  <div class="header-links">
+    <a href="index.html" class="home-link">← Dashboard</a>
+    <a href="v11c-sweetspot-review.html" class="home-link">← Sweet Spot Review</a>
+    <a href="v11c-improvements.html" class="home-link">■ Tests</a>
+  </div>
+</div>
+
+<div class="stats-bar" id="stats-bar"></div>
+
+<div class="config-section" id="config-section">
+  <h3 onclick="toggleConfigs()">📊 Config Comparison <span id="config-chevron">▼</span></h3>
+  <div id="config-body">
+    <table class="config-table" id="config-table"></table>
+  </div>
+</div>
+
+<div class="main">
+  <div class="trade-list-panel">
+    <div class="trade-list-header">
+      <span id="filtered-count">41 trades</span>
+      <div class="sort-btns">
+        <button class="sort-btn active" data-sort="date" onclick="setSort('date',this)">Date</button>
+        <button class="sort-btn" data-sort="diff-asc" onclick="setSort('diff-asc',this)">Diff ↑</button>
+        <button class="sort-btn" data-sort="diff-desc" onclick="setSort('diff-desc',this)">Diff ↓</button>
+        <button class="sort-btn" data-sort="r-desc" onclick="setSort('r-desc',this)">R ↓</button>
+      </div>
+    </div>
+    <div class="trade-list" id="trade-list"></div>
+  </div>
+
+  <div class="chart-panel">
+    <div class="chart-info">
+      <div class="trade-detail" id="trade-detail">
+        <span>Select a trade to view chart</span>
+      </div>
+      <div class="nav-btns">
+        <button class="nav-btn" id="btn-prev" onclick="navigate(-1)">◀ Prev</button>
+        <button class="nav-btn" id="btn-next" onclick="navigate(1)">Next ▶</button>
+      </div>
+    </div>
+    <div class="toggle-bar">
+      <button class="toggle-btn active" id="tog-levels" onclick="toggleFeature('levels')">◆ Levels</button>
+      <button class="toggle-btn active" id="tog-zones" onclick="toggleFeature('zones')">◆ Zones</button>
+      <button class="toggle-btn active" id="tog-sm" onclick="toggleFeature('sm')">◆ SM v3</button>
+      <button class="toggle-btn" id="tog-3box" onclick="toggleFeature('3box')">◆ 3-Box</button>
+    </div>
+    <div id="chart-container">
+      <canvas id="zone-overlay"></canvas>
+      <div class="chart-loading" id="chart-loading">← Select a trade from the list</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============= CONSTANTS =============
+const SYMBOL_MAP = { BTC: 'BTCUSDT', ETH: 'ETHUSDT', SOL: 'SOLUSDT' };
+const INTERVAL_MAP = { '1m': '1m', '15m': '15m', '1H': '1h' };
+const TF_MINUTES = { '1m': 1, '15m': 15, '1H': 60 };
+const CANDLE_PADDING = { '1m': 600, '15m': 300, '1H': 200 };
+const BINANCE_API = 'https://api.binance.com/api/v3/klines';
+
+// ============= STATE =============
+let DATA = { trades: [], configs: [], champion: {}, best_config: '' };
+let state = {
+  trades: [],
+  sort: 'date',
+  dateAsc: true,
+  selectedIndex: -1,
+  chart: null,
+  candleSeries: null,
+  volumeSeries: null,
+  markerSeries: null,
+  priceLines: [],
+  candleCache: {},
+  configVisible: true,
+  features: { levels: true, zones: true, sm: true, '3box': false },
+  zoneLines: [],
+};
+
+// ============= DATA LOADING =============
+async function loadData() {
+  try {
+    const resp = await fetch('data/dual-detector-phase1-review.json');
+    DATA = await resp.json();
+    state.trades = [...DATA.trades].sort((a, b) => a.et - b.et);
+    renderStats();
+    renderConfigs();
+    renderTradeList();
+    initChart();
+    // Auto-select from hash or first trade
+    const hash = location.hash.slice(1);
+    if (hash) {
+      const idx = state.trades.findIndex(t => `${t.pair}_${t.tf}_${t.et}` === hash);
+      if (idx >= 0) { selectTrade(idx); return; }
+    }
+    selectTrade(0);
+  } catch (e) {
+    console.error('Failed to load data:', e);
+  }
+}
+
+// ============= STATS =============
+function renderStats() {
+  const trades = state.trades;
+  const n = trades.length;
+  const within50h = trades.filter(t => Math.abs(t.dual_v2_diff) <= 50).length;
+  const within50o = trades.filter(t => Math.abs(t.dual_v2_closest_diff) <= 50).length;
+  const avgDiff = Math.round(trades.reduce((s, t) => s + Math.abs(t.dual_v2_diff), 0) / n);
+  const avgDiffOracle = Math.round(trades.reduce((s, t) => s + Math.abs(t.dual_v2_closest_diff), 0) / n);
+  const champ = DATA.champion;
+
+  document.getElementById('stats-bar').innerHTML = `
+    <div class="stat"><span class="stat-label">Trades:</span><span class="stat-value">${n}</span></div>
+    <div class="stat"><span class="stat-label">Within $50 (highest):</span><span class="stat-value accent">${within50h}/${n} (${Math.round(within50h/n*100)}%)</span></div>
+    <div class="stat"><span class="stat-label">Within $50 (oracle):</span><span class="stat-value positive">${within50o}/${n} (${Math.round(within50o/n*100)}%)</span></div>
+    <div class="stat"><span class="stat-label">Avg Diff (highest):</span><span class="stat-value ${avgDiff < 200 ? 'positive' : 'negative'}">$${avgDiff}</span></div>
+    <div class="stat"><span class="stat-label">Avg Diff (oracle):</span><span class="stat-value ${avgDiffOracle < 200 ? 'positive' : 'negative'}">$${avgDiffOracle}</span></div>
+    <div class="stat"><span class="stat-label">SM v3 Champion:</span><span class="stat-value gold">${champ.within_50}/${n} within $50</span></div>
+  `;
+}
+
+// ============= CONFIG TABLE =============
+function renderConfigs() {
+  const best = DATA.best_config;
+  const champ = DATA.champion;
+  let html = `<thead><tr>
+    <th>Config</th><th>Coarse</th><th>Fine</th><th>Zones</th>
+    <th>&lt;$50 Highest</th><th>&lt;$50 Oracle</th><th>&lt;$200</th><th>Avg Diff</th>
+  </tr></thead><tbody>`;
+
+  for (const c of DATA.configs) {
+    const isBest = c.label === best;
+    html += `<tr class="${isBest ? 'best' : ''}">
+      <td>${c.label}${isBest ? ' 🏆' : ''}</td>
+      <td>${c.coarse}</td><td>${c.fine}</td><td>${c.n_zones}</td>
+      <td>${c.highest_within_50}</td>
+      <td>${c.closest_within_50}</td>
+      <td>${c.highest_within_200}</td>
+      <td>$${c.avg_diff_highest}</td>
+    </tr>`;
+  }
+
+  // Champion row
+  html += `<tr class="champion-row">
+    <td>${champ.label} ⭐</td>
+    <td colspan="3" style="color:var(--text-dim)">baseline</td>
+    <td>${champ.within_50}</td>
+    <td>—</td><td>—</td><td>—</td>
+  </tr>`;
+
+  html += '</tbody>';
+  document.getElementById('config-table').innerHTML = html;
+}
+
+function toggleConfigs() {
+  state.configVisible = !state.configVisible;
+  document.getElementById('config-body').style.display = state.configVisible ? '' : 'none';
+  document.getElementById('config-chevron').textContent = state.configVisible ? '▼' : '▶';
+}
+
+// ============= TRADE LIST =============
+function renderTradeList() {
+  const list = document.getElementById('trade-list');
+  document.getElementById('filtered-count').textContent = state.trades.length + ' trades';
+  const html = [];
+  for (let i = 0; i < state.trades.length; i++) {
+    const t = state.trades[i];
+    const date = t.date ? t.date.slice(0, 10) : new Date(t.et * 1000).toISOString().slice(0, 10);
+    const rStr = (t.r >= 0 ? '+' : '') + t.r.toFixed(2) + 'R';
+    const rClass = t.r >= 0 ? 'positive' : 'negative';
+    const active = i === state.selectedIndex ? 'active' : '';
+    const diffH = Math.abs(t.dual_v2_diff);
+    const diffO = Math.abs(t.dual_v2_closest_diff);
+    const iconH = diffH <= 50 ? '✅' : diffH <= 200 ? '⚠️' : '❌';
+    const iconO = diffO <= 50 ? '✅' : diffO <= 200 ? '⚠️' : '❌';
+    html.push(`<div class="trade-item ${active}" data-idx="${i}" onclick="selectTrade(${i})">
+      <div class="left">
+        <span class="pair-badge">${t.pair}</span>
+        <span class="tf-badge">${t.tf}</span>
+        <span class="dir-badge ${t.dir}">${t.dir === 'L' ? 'LONG' : 'SHORT'}</span>
+        <span class="date-text">${date}</span>
+        <span class="diff-icons" title="H:${iconH} O:${iconO}">${iconH}${iconO}</span>
+      </div>
+      <div class="right">
+        <span class="r-value ${rClass}">${rStr}</span>
+      </div>
+    </div>`);
+  }
+  list.innerHTML = html.join('');
+}
+
+function setSort(sort, btn) {
+  if (sort === 'date' && state.sort === 'date') state.dateAsc = !state.dateAsc;
+  state.sort = sort;
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const trades = state.trades;
+  if (sort === 'date') trades.sort((a, b) => state.dateAsc ? a.et - b.et : b.et - a.et);
+  else if (sort === 'diff-asc') trades.sort((a, b) => Math.abs(a.dual_v2_diff) - Math.abs(b.dual_v2_diff));
+  else if (sort === 'diff-desc') trades.sort((a, b) => Math.abs(b.dual_v2_diff) - Math.abs(a.dual_v2_diff));
+  else if (sort === 'r-desc') trades.sort((a, b) => b.r - a.r);
+  state.selectedIndex = -1;
+  renderTradeList();
+}
+
+// ============= CHART =============
+function initChart() {
+  const container = document.getElementById('chart-container');
+  state.chart = LightweightCharts.createChart(container, {
+    layout: { background: { color: '#0a0a0f' }, textColor: '#888' },
+    grid: { vertLines: { color: '#1e1e2e' }, horzLines: { color: '#1e1e2e' } },
+    crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+    rightPriceScale: { borderColor: '#2a2a3a' },
+    timeScale: { borderColor: '#2a2a3a', timeVisible: true, secondsVisible: false },
+    width: container.clientWidth,
+    height: container.clientHeight,
+  });
+
+  state.candleSeries = state.chart.addCandlestickSeries({
+    upColor: '#00c853', downColor: '#ff1744',
+    borderUpColor: '#00c853', borderDownColor: '#ff1744',
+    wickUpColor: '#00c853', wickDownColor: '#ff1744',
+    priceScaleId: 'right',
+  });
+  state.chart.priceScale('right').applyOptions({ scaleMargins: { top: 0.02, bottom: 0.06 } });
+
+  state.volumeSeries = state.chart.addHistogramSeries({
+    priceFormat: { type: 'volume' },
+    priceScaleId: 'vol',
+  });
+  state.chart.priceScale('vol').applyOptions({ scaleMargins: { top: 0.93, bottom: 0 } });
+
+  // Invisible line series for markers
+  state.markerSeries = state.chart.addLineSeries({
+    color: 'transparent', lineWidth: 0,
+    crosshairMarkerVisible: false,
+    lastValueVisible: false, priceLineVisible: false,
+    priceScaleId: 'right',
+  });
+
+  const ro = new ResizeObserver(() => {
+    state.chart.applyOptions({ width: container.clientWidth, height: container.clientHeight });
+    scheduleZoneRedraw();
+  });
+  ro.observe(container);
+
+  // Redraw zones on scroll/zoom
+  state.chart.timeScale().subscribeVisibleLogicalRangeChange(scheduleZoneRedraw);
+  state.chart.subscribeCrosshairMove(scheduleZoneRedraw);
+}
+
+async function fetchCandles(trade) {
+  const cacheKey = `${trade.pair}_${trade.tf}_${trade.et}`;
+  if (state.candleCache[cacheKey]) return state.candleCache[cacheKey];
+
+  const symbol = SYMBOL_MAP[trade.pair];
+  const interval = INTERVAL_MAP[trade.tf];
+  const pad = CANDLE_PADDING[trade.tf];
+  const tfMs = TF_MINUTES[trade.tf] * 60 * 1000;
+
+  const startTime = (trade.et * 1000) - (pad * tfMs);
+  const endTime = Math.max(trade.xt * 1000, trade.et * 1000) + (pad * tfMs);
+
+  let allCandles = [];
+  let cursor = startTime;
+
+  while (cursor < endTime) {
+    const url = `${BINANCE_API}?symbol=${symbol}&interval=${interval}&startTime=${cursor}&endTime=${endTime}&limit=1000`;
+    try {
+      const resp = await fetch(url);
+      const data = await resp.json();
+      if (!data || !data.length) break;
+      allCandles = allCandles.concat(data);
+      cursor = data[data.length - 1][0] + 1;
+      if (data.length < 1000) break;
+    } catch (e) { console.error('Fetch error:', e); break; }
+  }
+
+  const candles = allCandles.map(c => ({
+    time: Math.floor(c[0] / 1000),
+    open: parseFloat(c[1]),
+    high: parseFloat(c[2]),
+    low: parseFloat(c[3]),
+    close: parseFloat(c[4]),
+    volume: parseFloat(c[5]),
+  }));
+
+  state.candleCache[cacheKey] = candles;
+  return candles;
+}
+
+async function selectTrade(idx) {
+  if (idx < 0 || idx >= state.trades.length) return;
+  state.selectedIndex = idx;
+  const trade = state.trades[idx];
+
+  try { history.replaceState(null, '', '#' + trade.pair + '_' + trade.tf + '_' + trade.et); } catch(e) {}
+
+  updateTradeDetail(trade, idx);
+  renderTradeList();
+  scrollToActive();
+
+  document.getElementById('chart-loading').style.display = 'block';
+  document.getElementById('chart-loading').textContent = 'Loading candles...';
+
+  try {
+    const candles = await fetchCandles(trade);
+    if (state.selectedIndex !== idx) return;
+    if (!candles.length) {
+      document.getElementById('chart-loading').textContent = 'No candle data available';
+      return;
+    }
+    document.getElementById('chart-loading').style.display = 'none';
+
+    state.candleSeries.setData(candles);
+    state.volumeSeries.setData(candles.map(c => ({
+      time: c.time,
+      value: c.volume,
+      color: c.close >= c.open ? 'rgba(0,200,83,0.8)' : 'rgba(255,23,68,0.8)',
+    })));
+
+    // Clear old lines
+    if (state.priceLines) state.priceLines.forEach(pl => state.candleSeries.removePriceLine(pl));
+    state.priceLines = [];
+
+    // Clear old zone lines
+    if (state.zoneLines) state.zoneLines.forEach(zl => state.candleSeries.removePriceLine(zl));
+    state.zoneLines = [];
+
+    // Build markers
+    const markers = [];
+
+    // Entry marker
+    markers.push({
+      time: trade.et,
+      position: trade.dir === 'L' ? 'belowBar' : 'aboveBar',
+      color: '#00c853',
+      shape: 'arrowUp',
+      text: '▲ ENTRY ' + trade.entry.toLocaleString(),
+    });
+
+    // Stop marker
+    markers.push({
+      time: trade.et,
+      position: trade.dir === 'L' ? 'aboveBar' : 'belowBar',
+      color: '#ff1744',
+      shape: 'arrowDown',
+      text: '▼ STOP ' + trade.stop.toLocaleString(),
+    });
+
+    // Exit marker
+    markers.push({
+      time: trade.xt,
+      position: 'aboveBar',
+      color: '#448aff',
+      shape: 'circle',
+      text: '● EXIT ' + trade.exit.toLocaleString(),
+    });
+
+    // Real TOP marker
+    const realTopTs = findPriceOnChart(candles, trade.real_top, trade.et, trade.dir);
+    if (realTopTs) {
+      markers.push({
+        time: realTopTs,
+        position: trade.dir === 'S' ? 'belowBar' : 'aboveBar',
+        color: '#ffd700',
+        shape: 'arrowDown',
+        text: '▼ REAL TOP $' + trade.real_top.toLocaleString(),
+      });
+    }
+
+    // Dual Detector TOP (highest) marker
+    if (trade.dual_v2_top != null) {
+      // Find timestamp for the highest candidate
+      const highestCandidate = trade.dual_v2_candidates ?
+        trade.dual_v2_candidates.find(c => c.price === trade.dual_v2_top) : null;
+      const dualTs = highestCandidate ? (highestCandidate.raw_max_ts || highestCandidate.zone_end_ts) : trade.et;
+      const dualChartTs = findNearestCandleTime(candles, dualTs);
+      if (dualChartTs) {
+        markers.push({
+          time: dualChartTs,
+          position: 'aboveBar',
+          color: '#00bcd4',
+          shape: 'arrowDown',
+          text: '▼ DUAL TOP $' + trade.dual_v2_top.toLocaleString(),
+        });
+      }
+    }
+
+    // Best zone (oracle) marker — only if different from highest
+    if (trade.dual_v2_best_zone_price != null && trade.dual_v2_best_zone_price !== trade.dual_v2_top) {
+      const bestTs = findNearestCandleTime(candles, trade.dual_v2_best_zone_ts);
+      if (bestTs) {
+        markers.push({
+          time: bestTs,
+          position: 'aboveBar',
+          color: '#00c853',
+          shape: 'arrowDown',
+          text: '▼ BEST ZONE $' + trade.dual_v2_best_zone_price.toLocaleString(),
+        });
+      }
+    }
+
+    // SM v3 TOP marker
+    if (state.features.sm && trade.sm_top != null) {
+      const smTs = findNearestCandleTime(candles, trade.sm_top_ts);
+      if (smTs) {
+        markers.push({
+          time: smTs,
+          position: 'aboveBar',
+          color: '#b388ff',
+          shape: 'arrowDown',
+          text: '▼ SM TOP $' + trade.sm_top.toLocaleString(),
+        });
+      }
+    }
+
+    // Deduplicate markers by time (lightweight-charts needs unique times per series)
+    // Offset duplicates by 1 second
+    markers.sort((a, b) => a.time - b.time);
+    for (let i = 1; i < markers.length; i++) {
+      if (markers[i].time <= markers[i-1].time) {
+        markers[i].time = markers[i-1].time + 1;
+      }
+    }
+
+    // Set marker data for invisible series
+    state.markerSeries.setData(markers.map(m => ({ time: m.time, value: 0 })).filter((v, i, a) => i === 0 || v.time !== a[i-1].time));
+    state.markerSeries.setMarkers(markers);
+
+    // Price lines
+    // Real TOP — gold
+    state.priceLines.push(state.candleSeries.createPriceLine({
+      price: trade.real_top,
+      color: '#ffd700',
+      lineWidth: 2,
+      lineStyle: 0,
+      axisLabelVisible: true,
+      title: 'Real TOP',
+    }));
+
+    // Dual TOP — cyan
+    if (trade.dual_v2_top != null) {
+      state.priceLines.push(state.candleSeries.createPriceLine({
+        price: trade.dual_v2_top,
+        color: '#00bcd4',
+        lineWidth: 2,
+        lineStyle: 2,
+        axisLabelVisible: true,
+        title: 'Dual TOP (highest)',
+      }));
+    }
+
+    // Best zone — green dashed (only if different)
+    if (trade.dual_v2_best_zone_price != null && trade.dual_v2_best_zone_price !== trade.dual_v2_top) {
+      state.priceLines.push(state.candleSeries.createPriceLine({
+        price: trade.dual_v2_best_zone_price,
+        color: '#00c853',
+        lineWidth: 1,
+        lineStyle: 2,
+        axisLabelVisible: true,
+        title: 'Best Zone (oracle)',
+      }));
+    }
+
+    // SM v3 TOP — purple
+    if (state.features.sm && trade.sm_top != null) {
+      state.priceLines.push(state.candleSeries.createPriceLine({
+        price: trade.sm_top,
+        color: '#b388ff',
+        lineWidth: 1,
+        lineStyle: 2,
+        axisLabelVisible: true,
+        title: 'SM v3 TOP',
+      }));
+    }
+
+    // Entry / Stop / Exit price lines
+    state.priceLines.push(state.candleSeries.createPriceLine({
+      price: trade.entry, color: '#00bcd4', lineWidth: 1, lineStyle: 0, axisLabelVisible: false, title: 'Entry',
+    }));
+    state.priceLines.push(state.candleSeries.createPriceLine({
+      price: trade.stop, color: '#ff1744', lineWidth: 1, lineStyle: 2, axisLabelVisible: false, title: 'Stop',
+    }));
+
+    // Levels L1, L2, L3
+    if (state.features.levels) {
+      for (const [label, price] of [['L1', trade.l1], ['L2', trade.l2], ['L3', trade.l3]]) {
+        if (price != null) {
+          state.priceLines.push(state.candleSeries.createPriceLine({
+            price: price,
+            color: '#b388ff',
+            lineWidth: 1,
+            lineStyle: 2,
+            axisLabelVisible: true,
+            title: label,
+          }));
+        }
+      }
+    }
+
+    // 3-Box projection lines
+    if (state.features['3box'] && trade.real_top != null && trade.l1 != null) {
+      const boxSize = Math.abs(trade.real_top - trade.l1);
+      const isDown = trade.dir === 'S';
+      for (let b = 1; b <= 3; b++) {
+        const boxPrice = isDown ? trade.real_top + (boxSize * b) : trade.real_top - (boxSize * b);
+        state.priceLines.push(state.candleSeries.createPriceLine({
+          price: boxPrice,
+          color: '#ff9800',
+          lineWidth: 1,
+          lineStyle: 1,
+          axisLabelVisible: true,
+          title: 'Box ' + b,
+        }));
+      }
+    }
+
+    // Set visible range
+    const tradeDuration = Math.max(trade.xt - trade.et, TF_MINUTES[trade.tf] * 60 * 10);
+    const viewPad = Math.max(tradeDuration * 0.5, TF_MINUTES[trade.tf] * 60 * 15);
+    let viewFrom = trade.et - viewPad;
+    const viewTo = trade.xt + viewPad;
+
+    // Extend to show earliest zone
+    if (trade.dual_v2_candidates && trade.dual_v2_candidates.length > 0) {
+      const earliestZone = Math.min(...trade.dual_v2_candidates.filter(c => c.zone_start_ts).map(c => c.zone_start_ts));
+      if (earliestZone && earliestZone < viewFrom) {
+        viewFrom = earliestZone - TF_MINUTES[trade.tf] * 60 * 10;
+      }
+    }
+
+    state.chart.timeScale().setVisibleRange({ from: viewFrom, to: viewTo });
+
+    // Draw zone rectangles
+    setTimeout(drawZones, 100);
+
+  } catch (e) {
+    console.error('Error loading trade:', e);
+    document.getElementById('chart-loading').textContent = 'Error loading candles';
+    document.getElementById('chart-loading').style.display = 'block';
+  }
+}
+
+function updateTradeDetail(trade, idx) {
+  const dir = trade.dir === 'L' ? '🟢 LONG' : '🔴 SHORT';
+  const rStr = (trade.r >= 0 ? '+' : '') + trade.r.toFixed(2) + 'R';
+  const rColor = trade.r >= 0 ? 'var(--green)' : 'var(--red)';
+  const diffH = Math.abs(trade.dual_v2_diff);
+  const diffO = Math.abs(trade.dual_v2_closest_diff);
+  const smDiff = trade.sm_top != null ? Math.abs(trade.sm_top - trade.real_top) : null;
+
+  let detail = `
+    <span style="font-weight:700;color:#f7931a">${trade.pair}</span>
+    <span>${trade.tf}</span>
+    <span>● ${dir}</span>
+    <span style="font-weight:700;color:${rColor}">${rStr}</span>
+    <span style="color:var(--text-dim)">|</span>
+    <span style="color:var(--gold)">Real TOP: $${trade.real_top.toLocaleString()}</span>
+    <span style="color:var(--accent)">Dual TOP: $${trade.dual_v2_top != null ? trade.dual_v2_top.toLocaleString() : '—'} <span style="color:${diffH <= 50 ? 'var(--green)' : diffH <= 200 ? '#ff9800' : 'var(--red)'}">(Δ$${diffH.toFixed(0)})</span></span>
+  `;
+  if (smDiff != null) {
+    detail += `<span style="color:var(--purple)">SM TOP: $${trade.sm_top.toLocaleString()} <span style="color:${smDiff <= 50 ? 'var(--green)' : smDiff <= 200 ? '#ff9800' : 'var(--red)'}">(Δ$${smDiff.toFixed(0)})</span></span>`;
+  }
+  detail += `<span style="color:var(--green)">Oracle: $${trade.dual_v2_best_zone_price != null ? trade.dual_v2_best_zone_price.toLocaleString() : '—'} <span style="color:${diffO <= 50 ? 'var(--green)' : diffO <= 200 ? '#ff9800' : 'var(--red)'}">(Δ$${diffO.toFixed(0)})</span></span>`;
+  detail += `<span style="color:var(--text-dim)">Trade ${idx + 1}/${state.trades.length}</span>`;
+
+  document.getElementById('trade-detail').innerHTML = detail;
+}
+
+function scrollToActive() {
+  const active = document.querySelector('.trade-item.active');
+  if (active) active.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+// ============= HELPERS =============
+function findPriceOnChart(candles, price, beforeTs, dir) {
+  if (!price || !candles.length) return null;
+  const tol = Math.abs(price) * 0.001;
+  const isLong = dir === 'L';
+  // Search backwards from entry
+  for (let i = candles.length - 1; i >= 0; i--) {
+    const c = candles[i];
+    if (c.time >= beforeTs) continue;
+    if (isLong && Math.abs(c.high - price) <= tol) return c.time;
+    if (!isLong && Math.abs(c.low - price) <= tol) return c.time;
+  }
+  // Fallback: find extreme
+  let bestPrice = isLong ? -Infinity : Infinity;
+  let bestTime = null;
+  for (const c of candles) {
+    if (c.time >= beforeTs) break;
+    if (isLong && c.high > bestPrice) { bestPrice = c.high; bestTime = c.time; }
+    if (!isLong && c.low < bestPrice) { bestPrice = c.low; bestTime = c.time; }
+  }
+  return bestTime;
+}
+
+function findNearestCandleTime(candles, ts) {
+  if (!ts || !candles.length) return null;
+  let best = candles[0].time;
+  let bestDist = Math.abs(candles[0].time - ts);
+  for (const c of candles) {
+    const d = Math.abs(c.time - ts);
+    if (d < bestDist) { bestDist = d; best = c.time; }
+  }
+  return best;
+}
+
+// ============= ZONE DRAWING (canvas overlay) =============
+let zoneRedrawPending = false;
+function scheduleZoneRedraw() {
+  if (zoneRedrawPending) return;
+  zoneRedrawPending = true;
+  requestAnimationFrame(() => { zoneRedrawPending = false; drawZones(); });
+}
+
+function drawZones() {
+  const canvas = document.getElementById('zone-overlay');
+  const container = document.getElementById('chart-container');
+  if (!canvas || !container || !state.chart) return;
+
+  canvas.width = container.clientWidth;
+  canvas.height = container.clientHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (!state.features.zones) return;
+  if (state.selectedIndex < 0) return;
+
+  const trade = state.trades[state.selectedIndex];
+  const candidates = trade.dual_v2_candidates;
+  if (!candidates || !candidates.length) return;
+
+  const timeScale = state.chart.timeScale();
+  const priceScale = state.chart.priceScale('right');
+
+  // Colors for zones
+  const zoneColors = [
+    'rgba(0, 188, 212, 0.12)',
+    'rgba(0, 200, 83, 0.12)',
+    'rgba(179, 136, 255, 0.12)',
+    'rgba(255, 215, 0, 0.12)',
+    'rgba(68, 138, 255, 0.12)',
+    'rgba(255, 23, 68, 0.12)',
+    'rgba(255, 152, 0, 0.12)',
+    'rgba(0, 230, 118, 0.12)',
+  ];
+  const zoneBorderColors = [
+    'rgba(0, 188, 212, 0.5)',
+    'rgba(0, 200, 83, 0.5)',
+    'rgba(179, 136, 255, 0.5)',
+    'rgba(255, 215, 0, 0.5)',
+    'rgba(68, 138, 255, 0.5)',
+    'rgba(255, 23, 68, 0.5)',
+    'rgba(255, 152, 0, 0.5)',
+    'rgba(0, 230, 118, 0.5)',
+  ];
+
+  for (let i = 0; i < candidates.length; i++) {
+    const zone = candidates[i];
+    if (!zone.zone_start_ts || !zone.zone_end_ts) continue;
+
+    const startTs = zone.zone_start_ts;
+    const endTs = zone.zone_end_ts;
+    const zonePrice = zone.price || zone.raw_max || zone.coarse_anchor;
+    if (!zonePrice) continue;
+
+    // Determine zone price range
+    const zoneHeight = Math.abs(zonePrice - zone.coarse_anchor);
+    const topPrice = Math.max(zonePrice, zone.coarse_anchor) + zoneHeight * 0.1;
+    const bottomPrice = Math.min(zonePrice, zone.coarse_anchor) - zoneHeight * 0.1;
+
+    // Convert to pixel coordinates
+    try {
+      const x1 = timeScale.timeToCoordinate(startTs);
+      const x2 = timeScale.timeToCoordinate(endTs);
+      const y1 = state.candleSeries.priceToCoordinate(topPrice);
+      const y2 = state.candleSeries.priceToCoordinate(bottomPrice);
+
+      if (x1 == null || x2 == null || y1 == null || y2 == null) continue;
+
+      const left = Math.min(x1, x2);
+      const right = Math.max(x1, x2);
+      const top = Math.min(y1, y2);
+      const bottom = Math.max(y1, y2);
+      const width = Math.max(right - left, 4);
+      const height = Math.max(bottom - top, 4);
+
+      ctx.fillStyle = zoneColors[i % zoneColors.length];
+      ctx.fillRect(left, top, width, height);
+      ctx.strokeStyle = zoneBorderColors[i % zoneBorderColors.length];
+      ctx.lineWidth = 1;
+      ctx.strokeRect(left, top, width, height);
+
+      // Label
+      ctx.fillStyle = zoneBorderColors[i % zoneBorderColors.length].replace('0.5', '0.9');
+      ctx.font = '10px sans-serif';
+      ctx.fillText(`Z${i+1} $${zonePrice.toFixed(0)} (${zone.fine_count}f)`, left + 2, top - 3);
+    } catch (e) { /* coordinate conversion can fail for off-screen zones */ }
+  }
+}
+
+// ============= TOGGLES =============
+function toggleFeature(name) {
+  state.features[name] = !state.features[name];
+  const btn = document.getElementById('tog-' + name);
+  if (btn) btn.classList.toggle('active', state.features[name]);
+  // Re-render current trade
+  if (state.selectedIndex >= 0) selectTrade(state.selectedIndex);
+}
+
+// ============= NAVIGATION =============
+function navigate(delta) {
+  const newIdx = state.selectedIndex + delta;
+  if (newIdx >= 0 && newIdx < state.trades.length) selectTrade(newIdx);
+  else if (state.selectedIndex === -1 && state.trades.length > 0) selectTrade(0);
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') { e.preventDefault(); navigate(-1); }
+  else if (e.key === 'ArrowDown' || e.key === 'ArrowRight') { e.preventDefault(); navigate(1); }
+});
+
+// ============= INIT =============
+loadData();
+</script>
+</body>
+</html>
