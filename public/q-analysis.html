@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Q Analysis Dashboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a0a0f;color:#e0e0e0}
+.header{background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);padding:24px 32px;border-bottom:2px solid #e94560}
+.header h1{font-size:28px;color:#fff;margin-bottom:4px}
+.header .sub{color:#aaa;font-size:14px}
+.chips{display:flex;gap:16px;margin-top:12px;flex-wrap:wrap}
+.chip{background:rgba(233,69,96,.15);border:1px solid rgba(233,69,96,.3);padding:6px 14px;border-radius:20px;font-size:13px;color:#e94560}
+.tabs{display:flex;background:#111;border-bottom:1px solid #333}
+.tab{padding:12px 24px;cursor:pointer;color:#888;font-size:14px;border-bottom:2px solid transparent;white-space:nowrap;transition:.2s}
+.tab:hover{color:#ccc}.tab.active{color:#e94560;border-bottom-color:#e94560}
+.content{max-width:900px;margin:0 auto;padding:24px}
+.search{width:100%;padding:12px 16px;background:#151520;border:1px solid #333;border-radius:8px;color:#fff;font-size:14px;margin-bottom:20px}
+.search:focus{outline:none;border-color:#e94560}.search::placeholder{color:#555}
+
+.post-card{background:#151520;border:1px solid #2a2a3a;border-left:4px solid #e94560;border-radius:8px;padding:20px;margin-bottom:20px}
+.post-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.pnum{background:#e94560;color:#fff;padding:4px 12px;border-radius:12px;font-weight:bold;font-size:14px}
+.pdate{color:#888;font-size:13px}
+.pboard{background:rgba(255,255,255,.05);padding:3px 10px;border-radius:10px;font-size:12px;color:#aaa}
+.ptext{background:#0d0d15;padding:16px;border-radius:6px;font-family:'Courier New',monospace;font-size:13px;line-height:1.6;white-space:pre-wrap;margin-bottom:14px;border:1px solid #222}
+.analysis-box{background:rgba(46,125,50,.08);border:1px solid rgba(46,125,50,.2);border-radius:6px;padding:16px}
+.analysis-box h4{color:#66bb6a;margin-bottom:8px;font-size:14px}
+.analysis-box p{font-size:14px;line-height:1.8;color:#ccc}
+.kp{display:inline-block;background:rgba(233,69,96,.12);border:1px solid rgba(233,69,96,.25);padding:2px 8px;border-radius:4px;font-size:12px;color:#e94560;margin:2px}
+
+.fw-section{background:#151520;border:1px solid #2a2a3a;border-radius:8px;padding:24px;margin-bottom:20px}
+.fw-section h3{color:#e94560;margin-bottom:12px;font-size:18px}
+.fw-section p{font-size:14px;line-height:1.8;color:#ccc}
+
+.last-upd{color:#555;font-size:12px;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>🔍 Q Analysis Dashboard</h1>
+  <div class="sub">Intelligence Drops — Sequential Analysis & Framework Building</div>
+  <div class="chips" id="stats"></div>
+  <div class="last-upd" id="last-upd"></div>
+</div>
+<div class="tabs" id="tab-bar"></div>
+<div class="content" id="main"></div>
+
+<script src="q-data.js"></script>
+<script>
+const D = Q_DATA;
+const TABS = [
+  {id:'posts',icon:'📜',label:'Posts & Analysis'},
+  {id:'proofs',icon:'✅',label:'Q Proofs'},
+  {id:'framework',icon:'🧠',label:'Framework'}
+];
+let activeTab = 'posts';
+
+function init(){
+  document.getElementById('stats').innerHTML =
+    `<div class="chip">Posts Analyzed: ${D.posts.length}</div>` +
+    `<div class="chip">Last Post: ${D.posts[D.posts.length-1].date}</div>` +
+    (D.proofs ? `<div class="chip" style="border-color:rgba(46,125,50,.4);color:#66bb6a;background:rgba(46,125,50,.15)">Q Proofs: ${D.proofs.length}</div>` : '');
+  document.getElementById('last-upd').textContent = 'Last updated: ' + D.lastUpdated;
+  document.getElementById('tab-bar').innerHTML = TABS.map(t =>
+    `<div class="tab ${t.id===activeTab?'active':''}" onclick="showTab('${t.id}')">${t.icon} ${t.label}</div>`
+  ).join('');
+  render();
+}
+
+function showTab(id){
+  activeTab = id;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.textContent.includes(TABS.find(x=>x.id===id).label)));
+  render();
+}
+
+function render(){
+  const m = document.getElementById('main');
+  switch(activeTab){
+    case 'posts': m.innerHTML = renderPosts(); break;
+    case 'proofs': m.innerHTML = renderProofs(); break;
+    case 'framework': m.innerHTML = renderFramework(); break;
+  }
+}
+
+function renderPosts(filter=''){
+  const f = filter.toLowerCase();
+  const posts = D.posts.filter(p => !f || p.text.toLowerCase().includes(f) || p.analysis.toLowerCase().includes(f) || p.keyPoints.some(k=>k.toLowerCase().includes(f)));
+  return `<input class="search" placeholder="Search posts, analysis, keywords..." oninput="document.getElementById('main').innerHTML=renderPosts(this.value)" value="${filter}">` +
+    posts.map(p => `
+    <div class="post-card">
+      <div class="post-head">
+        <div><span class="pnum">#${p.num}</span> <span class="pboard">${p.board}</span></div>
+        <span class="pdate">${p.date}</span>
+      </div>
+      <div class="ptext">${esc(p.text)}</div>
+      <div class="analysis-box">
+        <h4>🔎 Analysis</h4>
+        <p>${esc(p.analysis)}</p>
+        <div style="margin-top:10px">${p.keyPoints.map(k=>`<span class="kp">${esc(k)}</span>`).join('')}</div>
+      </div>
+    </div>`).join('');
+}
+
+function renderProofs(){
+  if(!D.proofs || !D.proofs.length) return '<p style="color:#888">No proofs added yet.</p>';
+  return D.proofs.map(p => `
+    <div class="post-card" style="border-left-color:#66bb6a">
+      <div class="post-head">
+        <div><span class="pnum" style="background:#66bb6a">${esc(p.category)}</span></div>
+        <span class="pdate">${p.posts ? 'Posts: '+p.posts.join(', ') : ''}</span>
+      </div>
+      <h3 style="color:#66bb6a;margin-bottom:10px;font-size:16px">${esc(p.title)}</h3>
+      <div class="analysis-box" style="background:rgba(46,125,50,.12)">
+        <p>${esc(p.proof)}</p>
+      </div>
+      ${p.verified ? '<div style="margin-top:10px"><span class="kp" style="background:rgba(46,125,50,.2);color:#66bb6a;border-color:rgba(46,125,50,.4)">✅ VERIFIED</span></div>' : ''}
+    </div>`).join('');
+}
+
+function renderFramework(){
+  return D.framework.map(f => `
+    <div class="fw-section">
+      <h3>${esc(f.title)}</h3>
+      <p>${esc(f.text)}</p>
+    </div>`).join('');
+}
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+init();
+</script>
+</body>
+</html>
