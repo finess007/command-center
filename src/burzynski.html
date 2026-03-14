@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Burzynski Research Hub</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0f; color: #e0e0e0; min-height: 100vh; }
+        
+        .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); padding: 2rem; text-align: center; border-bottom: 2px solid #e94560; }
+        .header h1 { font-size: 2rem; color: #fff; margin-bottom: 0.5rem; }
+        .header .subtitle { color: #a0a0b0; font-size: 0.95rem; }
+        .header .update { color: #666; font-size: 0.8rem; margin-top: 0.5rem; }
+        
+        .tabs { display: flex; overflow-x: auto; background: #111; border-bottom: 1px solid #333; padding: 0 1rem; }
+        .tab { padding: 0.8rem 1.2rem; cursor: pointer; color: #888; font-size: 0.85rem; white-space: nowrap; border-bottom: 2px solid transparent; transition: all 0.2s; }
+        .tab:hover { color: #ccc; }
+        .tab.active { color: #e94560; border-bottom-color: #e94560; }
+        
+        .content { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .card { background: #151520; border: 1px solid #252535; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.2rem; }
+        .card h2 { color: #e94560; font-size: 1.2rem; margin-bottom: 1rem; }
+        .card h3 { color: #60a5fa; font-size: 1rem; margin: 1rem 0 0.5rem; }
+        .card p { line-height: 1.7; margin-bottom: 0.8rem; color: #bbb; }
+        .card ul { padding-left: 1.5rem; margin-bottom: 0.8rem; }
+        .card li { line-height: 1.7; margin-bottom: 0.4rem; color: #bbb; }
+        
+        .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+        .stat-card { background: #1a1a2e; border: 1px solid #333; border-radius: 10px; padding: 1.2rem; text-align: center; }
+        .stat-card .number { font-size: 2rem; font-weight: 700; color: #e94560; }
+        .stat-card .label { font-size: 0.8rem; color: #888; margin-top: 0.3rem; }
+        .stat-card.green .number { color: #4ade80; }
+        .stat-card.blue .number { color: #60a5fa; }
+        .stat-card.yellow .number { color: #facc15; }
+        .stat-card.purple .number { color: #a78bfa; }
+        
+        .timeline { position: relative; padding-left: 2rem; }
+        .timeline::before { content: ''; position: absolute; left: 0.5rem; top: 0; bottom: 0; width: 2px; background: #333; }
+        .timeline-item { position: relative; margin-bottom: 1.5rem; }
+        .timeline-item::before { content: ''; position: absolute; left: -1.65rem; top: 0.5rem; width: 10px; height: 10px; border-radius: 50%; background: #e94560; }
+        .timeline-item.green::before { background: #4ade80; }
+        .timeline-item.blue::before { background: #60a5fa; }
+        .timeline-item.red::before { background: #ef4444; }
+        .timeline-item .year { font-weight: 700; color: #e94560; font-size: 0.9rem; }
+        .timeline-item .event { color: #bbb; font-size: 0.9rem; margin-top: 0.2rem; }
+        
+        .comparison-table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+        .comparison-table th { background: #1a1a2e; color: #60a5fa; padding: 0.8rem; text-align: left; font-size: 0.85rem; border-bottom: 2px solid #333; }
+        .comparison-table td { padding: 0.8rem; border-bottom: 1px solid #222; font-size: 0.85rem; color: #bbb; }
+        .comparison-table tr:hover { background: #1a1a25; }
+        .comparison-table .highlight { color: #4ade80; font-weight: 600; }
+        .comparison-table .bad { color: #ef4444; }
+        
+        .quote { border-left: 3px solid #e94560; padding: 1rem 1.5rem; margin: 1rem 0; background: #1a1a25; border-radius: 0 8px 8px 0; font-style: italic; color: #ccc; }
+        .quote .author { font-style: normal; color: #888; font-size: 0.85rem; margin-top: 0.5rem; }
+        
+        .tag { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.75rem; margin: 0.2rem; }
+        .tag.red { background: #3b1111; color: #ef4444; }
+        .tag.green { background: #0b3b0b; color: #4ade80; }
+        .tag.blue { background: #0b1a3b; color: #60a5fa; }
+        .tag.yellow { background: #3b3b0b; color: #facc15; }
+        
+        .patient-card { background: #1a1a2e; border: 1px solid #252535; border-radius: 10px; padding: 1.2rem; margin-bottom: 1rem; }
+        .patient-card .name { font-weight: 700; color: #60a5fa; font-size: 1.1rem; }
+        .patient-card .diagnosis { color: #e94560; font-size: 0.85rem; margin: 0.3rem 0; }
+        .patient-card .outcome { margin-top: 0.5rem; }
+        .patient-card .outcome.survived { border-left: 3px solid #4ade80; padding-left: 0.8rem; }
+        .patient-card .outcome.died { border-left: 3px solid #ef4444; padding-left: 0.8rem; }
+        .patient-card .outcome.unknown { border-left: 3px solid #facc15; padding-left: 0.8rem; }
+        
+        .access-box { background: linear-gradient(135deg, #1a2e1a 0%, #1a1a2e 100%); border: 1px solid #2a4a2a; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.2rem; }
+        .access-box h3 { color: #4ade80; }
+        
+        .warning-box { background: #2e1a1a; border: 1px solid #4a2a2a; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.2rem; }
+        .warning-box h3 { color: #ef4444; }
+        
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.5rem; }
+            .stat-grid { grid-template-columns: repeat(2, 1fr); }
+            .tabs { padding: 0; }
+            .tab { padding: 0.7rem 0.8rem; font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🧬 Burzynski Research Hub</h1>
+        <div class="subtitle">Antineoplastons · Gene-Targeted Therapy · Clinical Data · Access Guide</div>
+        <div class="update">Last updated: March 13, 2026 · Sources: FDA trials, PubMed, Burzynski Clinic, Kurume University</div>
+    </div>
+    
+    <div class="tabs">
+        <div class="tab active" onclick="showTab('overview')">Overview</div>
+        <div class="tab" onclick="showTab('science')">Science</div>
+        <div class="tab" onclick="showTab('trials')">Clinical Trials</div>
+        <div class="tab" onclick="showTab('patients')">Patient Cases</div>
+        <div class="tab" onclick="showTab('timeline')">Timeline</div>
+        <div class="tab" onclick="showTab('system')">The System</div>
+        <div class="tab" onclick="showTab('access')">How To Access</div>
+    </div>
+    
+    <div class="content">
+        <!-- OVERVIEW TAB -->
+        <div id="overview" class="tab-content active">
+            <div class="stat-grid">
+                <div class="stat-card">
+                    <div class="number">10,000+</div>
+                    <div class="label">Total Patients Treated</div>
+                </div>
+                <div class="stat-card green">
+                    <div class="number">349</div>
+                    <div class="label">Brain Tumor Long-Term Survivors (3-38+ yrs)</div>
+                </div>
+                <div class="stat-card blue">
+                    <div class="number">14</div>
+                    <div class="label">Completed Phase 2 FDA Trials</div>
+                </div>
+                <div class="stat-card yellow">
+                    <div class="number">49</div>
+                    <div class="label">Years of Practice (1977-2026)</div>
+                </div>
+                <div class="stat-card purple">
+                    <div class="number">245</div>
+                    <div class="label">Patents Worldwide</div>
+                </div>
+                <div class="stat-card">
+                    <div class="number">0</div>
+                    <div class="label">Phase 3 Trials Allowed (hospitals refuse)</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>What Are Antineoplastons?</h2>
+                <p>Peptides and amino acid derivatives naturally occurring in human blood and urine. Discovered by Dr. Stanisław Burzynski during his PhD research at Lublin Medical University, Poland.</p>
+                <p><strong>Key finding:</strong> Cancer patients have significantly lower levels of these peptides compared to healthy individuals. Reintroducing them appears to activate tumor-suppressing genes (p53, p21) and deactivate oncogenes.</p>
+                <h3>How They Work</h3>
+                <ul>
+                    <li><strong>Molecular switches</strong> — regulate gene expression through demethylation and histone acetylation</li>
+                    <li><strong>Target 400+ mutated genes</strong> simultaneously (vs. commercial drugs targeting 1-3 genes each)</li>
+                    <li><strong>Non-toxic</strong> — confirmed by FDA's own safety reviews</li>
+                    <li><strong>Two main compounds:</strong> Antineoplaston A10 (phenylacetylglutamine) and AS2-1 (phenylbutyrate + phenylacetylglutamine)</li>
+                </ul>
+            </div>
+            
+            <div class="card">
+                <h2>Two Treatment Tracks</h2>
+                <h3>Track 1: Antineoplastons (10% of patients)</h3>
+                <ul>
+                    <li>Original invention — peptide infusions via catheter, 24/7</li>
+                    <li>FDA restricts access: must fail chemo/radiation first, then FDA reviews case individually</li>
+                    <li>Available under Texas Right to Try Law for advanced patients</li>
+                    <li>Targets 400+ genes simultaneously, essentially non-toxic</li>
+                </ul>
+                <h3>Track 2: Personalized Gene-Targeted Therapy (90% of patients)</h3>
+                <ul>
+                    <li>Workaround because FDA blocks antineoplastons for most patients</li>
+                    <li>Full genomic profiling (24,000 genes) via Caris Life Sciences</li>
+                    <li>Cocktail of 5-7 commercially available FDA-approved drugs, prescribed off-label</li>
+                    <li>PB (phenylbutyrate) tablets as the ANP component — can be prescribed off-label</li>
+                    <li>Pioneered by Burzynski ~2000. MD Anderson announced the same approach in 2011 with $50M grant, calling it "revolutionary"</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- SCIENCE TAB -->
+        <div id="science" class="tab-content">
+            <div class="card">
+                <h2>🧬 The Core Chemistry</h2>
+                <h3>Antineoplaston AS2-1 (the main compound)</h3>
+                <ul>
+                    <li><strong>Phenylbutyrate (PB)</strong> — sodium 4-phenylbutyrate, ATC code A16AX03</li>
+                    <li><strong>Phenylacetylglutamine (PAG)</strong> — the active metabolite</li>
+                    <li>PB metabolizes into <strong>phenylacetate</strong> in the body → the primary active agent</li>
+                    <li>PB is FDA-approved for urea cycle disorders → can be prescribed off-label for cancer</li>
+                </ul>
+                
+                <h3>Mechanism of Action</h3>
+                <ul>
+                    <li><strong>Histone deacetylase inhibitor</strong> — more effective than structural analogs (2- and 3-phenylbutyrate)</li>
+                    <li><strong>Gene regulation:</strong> Activates p53 and p21 tumor suppressors via promoter demethylation</li>
+                    <li><strong>Amino acid uptake:</strong> Inhibits cancer cell absorption of L-glutamine and L-leucine</li>
+                    <li><strong>Induces differentiation:</strong> Forces cancer cells to mature/normalize instead of proliferating</li>
+                    <li><strong>Cytostasis:</strong> Halts cancer cell division</li>
+                </ul>
+                
+                <h3>Even Sigma-Aldrich (Merck) Admits It</h3>
+                <div class="quote">
+                    "A novel anti-neoplastic agent and transcriptional regulator. Acts as an inducer of tumor cytostasis and differentiation."
+                    <div class="author">— Sigma-Aldrich Product Description for Sodium 4-Phenylbutyrate (Cat# 567616)</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>🔬 The US Government's Own Patents Say It Works</h2>
+                <p>Between 1991-1995, the US Department of Health and Human Services filed <strong>11 copycat patents</strong> on antineoplaston AS2-1 — while simultaneously trying to put Burzynski in prison.</p>
+                <div class="quote">
+                    "Current approaches to combat cancer rely primarily on the use of chemicals and radiation which are themselves carcinogenic and may promote recurrences and the development of metastatic disease."
+                    <div class="author">— US Government Patent on Antineoplastons AS2-1 (filed by Dr. Dvorit Samid, DHHS)</div>
+                </div>
+                <p>The patents list treatable conditions: neuroblastoma, leukemia, glioma, prostate cancer, breast cancer, melanoma, lung cancer, and lymphoma. They also state antineoplastons can be used as a <strong>cancer preventative</strong>.</p>
+            </div>
+            
+            <div class="card">
+                <h2>🇯🇵 Japanese Independent Validation (Kurume University)</h2>
+                <p>27 years of independent research by Dr. Hideaki Tsuda at Kurume University Hospital, Japan.</p>
+                <ul>
+                    <li><strong>Phase 1:</strong> 43 patients, ~50% response rate</li>
+                    <li><strong>Phase 2:</strong> Focused on liver cancer (best responder from Phase 1)</li>
+                    <li><strong>Prospective Randomized Clinical Trial</strong> (the gold standard):</li>
+                </ul>
+                <table class="comparison-table">
+                    <tr><th>Group</th><th>Treatment</th><th>Median Survival</th></tr>
+                    <tr><td>Control (33 patients)</td><td>Standard chemo only</td><td class="bad">36 months</td></tr>
+                    <tr><td>Antineoplaston (30 patients)</td><td>Standard + ANP A10 + AS2-1</td><td class="highlight">70 months</td></tr>
+                </table>
+                <div class="quote">
+                    "We tested it. We found Dr. Burzynski was right. It's not anecdotal anymore."
+                    <div class="author">— Dr. Hideaki Tsuda, Kurume University Hospital</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- CLINICAL TRIALS TAB -->
+        <div id="trials" class="tab-content">
+            <div class="card">
+                <h2>📊 Phase 2 Clinical Trial Results (FDA-Supervised)</h2>
+                
+                <h3>Brain Stem Glioma (DIPG) — The Most Deadly Cancer</h3>
+                <table class="comparison-table">
+                    <tr><th>Treatment</th><th>Patients</th><th>5-Year Survival</th><th>Source</th></tr>
+                    <tr><td>Standard (radiation + chemo)</td><td>Thousands</td><td class="bad">~0%</td><td>The Lancet Oncology, 2006</td></tr>
+                    <tr><td class="highlight">Antineoplastons (Burzynski)</td><td>40</td><td class="highlight">25%</td><td>Pediatric Drugs, 2006</td></tr>
+                </table>
+                
+                <h3>Brainstem Glioma — Recurrent/High-Grade</h3>
+                <table class="comparison-table">
+                    <tr><th>Metric</th><th>Result</th></tr>
+                    <tr><td>Total patients (4 Phase 2 trials)</td><td>169</td></tr>
+                    <tr><td>Cured or 5+ year survivors</td><td class="highlight">33 (19.5%)</td></tr>
+                    <tr><td>Complete response (one trial, n=12)</td><td class="highlight">20%</td></tr>
+                    <tr><td>Partial response</td><td>30%</td></tr>
+                    <tr><td>Stable disease</td><td>30%</td></tr>
+                    <tr><td>Progressive disease</td><td class="bad">20%</td></tr>
+                </table>
+                
+                <h3>All Brain Tumors — 40-Year Follow-Up</h3>
+                <table class="comparison-table">
+                    <tr><th>Metric</th><th>Result</th></tr>
+                    <tr><td>Patients tracked</td><td>349</td></tr>
+                    <tr><td>Survival range</td><td class="highlight">3 to 38+ years</td></tr>
+                    <tr><td>Longest survivor</td><td class="highlight">38+ years (John, aggressive brain tumor)</td></tr>
+                </table>
+                
+                <h3>Other Cancers — Long-Term Survivors</h3>
+                <table class="comparison-table">
+                    <tr><th>Metric</th><th>Result</th></tr>
+                    <tr><td>Cancer types</td><td>28 different types</td></tr>
+                    <tr><td>Long-term survivors</td><td class="highlight">61 patients (10-32+ years)</td></tr>
+                </table>
+            </div>
+            
+            <div class="card">
+                <h2>⚖️ The Double Standard — FDA Accelerated Approval</h2>
+                <p>Two brain cancer drugs were approved WITHOUT Phase 3 trials. Antineoplastons — with stronger data — were denied.</p>
+                <table class="comparison-table">
+                    <tr><th>Drug</th><th>Approval Basis</th><th>Response</th><th>Survival Benefit</th><th>Phase 3 Required?</th></tr>
+                    <tr>
+                        <td>Temodar (1999)</td>
+                        <td>Single Phase 2, 54 patients</td>
+                        <td>5 complete responses (9%)</td>
+                        <td class="bad">15.9 months median</td>
+                        <td class="highlight">No (post-market only)</td>
+                    </tr>
+                    <tr>
+                        <td>Avastin (2009)</td>
+                        <td>Two Phase 2 studies</td>
+                        <td>19-26% response, lasting ~4 months</td>
+                        <td class="bad">~4 months response duration</td>
+                        <td class="highlight">No (post-market only)</td>
+                    </tr>
+                    <tr>
+                        <td>Antineoplastons</td>
+                        <td>14 Phase 2 trials, 169+ patients</td>
+                        <td class="highlight">25% five-year survival (DIPG)</td>
+                        <td class="highlight">Patients alive 5-38+ years</td>
+                        <td class="bad">Yes — ONLY exception in FDA history</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div class="card">
+                <h2>🔬 NCI Sabotage — The Diluted Trials</h2>
+                <p>The National Cancer Institute ran their own antineoplaston trials in the 1990s — but deliberately administered drastically lower doses:</p>
+                <table class="comparison-table">
+                    <tr><th>Compound</th><th>NCI Dose (blood level)</th><th>Burzynski Dose</th><th>Dilution Factor</th></tr>
+                    <tr><td>Phenylacetate</td><td>Low</td><td>Standard</td><td class="bad">2.7× lower</td></tr>
+                    <tr><td>Phenylacetylglutamine</td><td>Trace</td><td>Standard</td><td class="bad">36× lower</td></tr>
+                    <tr><td>Phenylisoglutamine (A10)</td><td>Trace</td><td>Standard</td><td class="bad">170× lower</td></tr>
+                </table>
+                <p>NCI then published "no patient demonstrated tumor regression" — using their own pharmacokinetic data that proves the sabotage. They closed trials early, then published the "failed" results in peer-reviewed journals.</p>
+            </div>
+        </div>
+        
+        <!-- PATIENTS TAB -->
+        <div id="patients" class="tab-content">
+            <div class="card">
+                <h2>👥 Documented Patient Cases</h2>
+                <p>From both documentaries and clinic records. Includes both successes and cases where treatment didn't save the patient.</p>
+            </div>
+            
+            <div class="patient-card">
+                <div class="name">Tori Moreno</div>
+                <div class="diagnosis">DIPG (brainstem glioma) · Diagnosed at 7 weeks old · Given 6 weeks to live</div>
+                <span class="tag green">Survived</span> <span class="tag blue">Youngest ANP patient ever</span>
+                <div class="outcome survived">
+                    <p>20-25% tumor reduction in first 2 months. Celebrated <strong>14 birthdays</strong>. Alive and well. Local oncologists were "baffled," suggested "spontaneous remission" — which doesn't occur in DIPG.</p>
+                </div>
+            </div>
+            
+            <div class="patient-card">
+                <div class="name">Laura Hymas</div>
+                <div class="diagnosis">Glioblastoma Grade 4 · Age 24 · UK · Mother of Jacob (16 months)</div>
+                <span class="tag green">Complete Response</span> <span class="tag blue">Filmed in real-time</span>
+                <div class="outcome survived">
+                    <p>Tumor shrank <strong>77% in 228 days</strong>. Completely disappeared after 9 months. NHS oncologist refused support, told her not to bother with pension. Raised £75,000 in 5 weeks through crowdfunding. Planning wedding at time of filming.</p>
+                </div>
+            </div>
+            
+            <div class="patient-card">
+                <div class="name">Hannah (Pete Cohen's partner)</div>
+                <div class="diagnosis">Brain tumor · UK</div>
+                <span class="tag green">Complete Response</span>
+                <div class="outcome survived">
+                    <p>Tumor shrank <strong>63% within weeks</strong> of starting ANP. Complete response achieved. 7 more months of maintenance treatment then finished.</p>
+                </div>
+            </div>
+            
+            <div class="patient-card">
+                <div class="name">Jody Gold</div>
+                <div class="diagnosis">Advanced malignant brain tumor · Diagnosed before age 32</div>
+                <span class="tag green">Survived</span> <span class="tag blue">Phase 2 trial participant</span>
+                <div class="outcome survived">
+                    <p>Participated in FDA-supervised clinical trial. Alive and appeared in documentary as a survivor.</p>
+                </div>
+            </div>
+            
+            <div class="patient-card">
+                <div class="name">Chris</div>
+                <div class="diagnosis">Stage 1 Colon Cancer</div>
+                <span class="tag green">Tumor Gone</span> <span class="tag yellow">Gene-Targeted Track</span>
+                <div class="outcome survived">
+                    <p>Treated with 3 off-label gene-targeted medications (NOT antineoplastons). Tumor gone in <strong>under 3 months</strong>. No surgery, no standard chemo.</p>
+                </div>
+            </div>
+
+            <div class="patient-card">
+                <div class="name">Mrs. Wright</div>
+                <div class="diagnosis">Merkel Cell Carcinoma · Age 66 · 5 failed surgeries + failed radiation</div>
+                <span class="tag green">Tumors Gone</span> <span class="tag yellow">Gene-Targeted (Sutent off-label)</span>
+                <div class="outcome survived">
+                    <p>No FDA-approved drugs exist for Merkel cell cancer. Burzynski prescribed Sutent off-label. All tumors disappeared. Her own surgeon endorsed the approach: "She needed someone out of the box."</p>
+                </div>
+            </div>
+            
+            <div class="patient-card">
+                <div class="name">Lindsay</div>
+                <div class="diagnosis">Advanced cancer · Lungs, liver, abdomen, pelvis, femur</div>
+                <span class="tag yellow">Responded then lost access</span>
+                <div class="outcome unknown">
+                    <p>7 gene-targeted medications. All tumors inactive in <strong>2 months</strong>. "Christmas miracle." Insurance refused coverage. Local oncologist refused to follow Burzynski's protocol, wanted standard chemo instead. Lost access to treatment.</p>
+                </div>
+            </div>
+            
+            <div class="patient-card">
+                <div class="name">Mark</div>
+                <div class="diagnosis">Advanced cancer · Wheelchair-bound, constant oxygen</div>
+                <span class="tag green">Dramatic Response</span> <span class="tag yellow">Gene-Targeted Track</span>
+                <div class="outcome survived">
+                    <p>Arrived in wheelchair on oxygen. After ~1 month: walking, off oxygen, weight gained, bulky lymph nodes almost gone. His own oncologist changed his mind about Burzynski after seeing the results.</p>
+                </div>
+            </div>
+            
+            <div class="patient-card">
+                <div class="name">Sgt. Rick Schiff's daughter Kirsty</div>
+                <div class="diagnosis">Highly malignant brain tumor spread through spine and brain · Age 4 (identical twin)</div>
+                <span class="tag red">Died cancer-free</span>
+                <div class="outcome died">
+                    <p>18 months on ANP → cancer cleared. Stopped treatment → cancer returned in 1 month. Restarted ANP → tumor completely gone in 9 weeks. <strong>Died of neurological necrosis from prior radiation, NOT cancer.</strong> Autopsy confirmed: completely cancer-free. Out of 52 cases of her disease ever, "no one died cancer-free, just Kirsty."</p>
+                </div>
+            </div>
+            
+            <div class="patient-card">
+                <div class="name">Amelia Saunders</div>
+                <div class="diagnosis">DIPG · Age 4 · UK</div>
+                <span class="tag red">Did not survive</span>
+                <div class="outcome died">
+                    <p>Stabilized for months (tumor didn't grow). Parents given 1-3 months at diagnosis; Amelia lived significantly longer. Condition eventually deteriorated. Parents discontinued ANP. Died January 6, 2013. Parents: "We never regretted the decision."</p>
+                </div>
+            </div>
+            
+            <div class="patient-card">
+                <div class="name">Billy</div>
+                <div class="diagnosis">DIPG · Child · UK</div>
+                <span class="tag red">Did not survive</span>
+                <div class="outcome died">
+                    <p>Had prior radiation (which Burzynski noted reduces ANP effectiveness in DIPG). Did not survive. Mother: "It's a lot easier to deal with knowing that we did absolutely everything possible."</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- TIMELINE TAB -->
+        <div id="timeline" class="tab-content">
+            <div class="card">
+                <h2>📅 The Burzynski Story — Full Timeline</h2>
+                <div class="timeline">
+                    <div class="timeline-item green">
+                        <div class="year">1967</div>
+                        <div class="event">Burzynski discovers antineoplastons during PhD research at Lublin Medical University, Poland</div>
+                    </div>
+                    <div class="timeline-item green">
+                        <div class="year">1968</div>
+                        <div class="event">Graduates medical school first in class at age 24, receives PhD in biochemistry the following year</div>
+                    </div>
+                    <div class="timeline-item blue">
+                        <div class="year">1977</div>
+                        <div class="event">Opens Burzynski Clinic in Houston, Texas. Begins treating cancer patients with antineoplastons</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="year">1983</div>
+                        <div class="event">FDA commences civil action to close the clinic</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="year">1984</div>
+                        <div class="event">Texas Board of Medical Examiners sends agents across the country to convince patients to file complaints. No patient complaints exist.</div>
+                    </div>
+                    <div class="timeline-item red">
+                        <div class="year">1985</div>
+                        <div class="event">FDA raids clinic, seizes 200,000 documents including all patient records. Grand jury — NO indictment</div>
+                    </div>
+                    <div class="timeline-item red">
+                        <div class="year">1986</div>
+                        <div class="event">Second raid, 100,000 more documents seized. Another grand jury — NO indictment</div>
+                    </div>
+                    <div class="timeline-item green">
+                        <div class="year">1991 (Oct 4)</div>
+                        <div class="event">National Cancer Institute site visit verifies antineoplastons show anti-tumor activity</div>
+                    </div>
+                    <div class="timeline-item red">
+                        <div class="year">1991 (Oct 21)</div>
+                        <div class="event">17 DAYS LATER: US Government files first copycat patent on antineoplastons. Cites Burzynski as reference.</div>
+                    </div>
+                    <div class="timeline-item red">
+                        <div class="year">1991-1995</div>
+                        <div class="event">US Government files 11 total copycat patents on antineoplastons AS2-1. All eventually approved.</div>
+                    </div>
+                    <div class="timeline-item red">
+                        <div class="year">1990s</div>
+                        <div class="event">NCI runs own antineoplaston trials with 2.7× to 170× lower doses. Publishes "no response." Pharmacokinetic data in their own paper proves the dilution.</div>
+                    </div>
+                    <div class="timeline-item blue">
+                        <div class="year">1995</div>
+                        <div class="event">FDA finally manages to indict Burzynski — 75 counts. Criminal trial begins. Cost to taxpayers: $60 million</div>
+                    </div>
+                    <div class="timeline-item green">
+                        <div class="year">1997 (Mar)</div>
+                        <div class="event">First trial: mistrial (deadlocked jury). Judge acquits nearly half of 75 counts for insufficient evidence</div>
+                    </div>
+                    <div class="timeline-item green">
+                        <div class="year">1997 (May)</div>
+                        <div class="event">Second trial: FDA drops 40 of 41 remaining charges. Jury acquits on final charge in ~3 hours. FULLY ACQUITTED.</div>
+                    </div>
+                    <div class="timeline-item blue">
+                        <div class="year">1995-2008</div>
+                        <div class="event">14 Phase 2 FDA-supervised clinical trials completed. All show efficacy.</div>
+                    </div>
+                    <div class="timeline-item green">
+                        <div class="year">~2000</div>
+                        <div class="event">Burzynski pioneers personalized gene-targeted therapy — genomic profiling + off-label drug cocktails</div>
+                    </div>
+                    <div class="timeline-item blue">
+                        <div class="year">2006</div>
+                        <div class="event">Peer-reviewed DIPG results published: 25% five-year survival (vs 0% standard). Pediatric Drugs journal.</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="year">2008</div>
+                        <div class="event">FDA grants permission for Phase 3 randomized trials for brainstem glioma</div>
+                    </div>
+                    <div class="timeline-item red">
+                        <div class="year">2008-2013</div>
+                        <div class="event">Every children's hospital in US, Canada, and England REFUSES to participate in Phase 3 trials</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="year">2011</div>
+                        <div class="event">MD Anderson announces $50M "Institute for Personalized Cancer Therapy" — same approach Burzynski pioneered a decade earlier</div>
+                    </div>
+                    <div class="timeline-item red">
+                        <div class="year">2012</div>
+                        <div class="event">Lancet Oncology rejects Phase 2 glioblastoma survival study — 2 hours after submission</div>
+                    </div>
+                    <div class="timeline-item red">
+                        <div class="year">2013</div>
+                        <div class="event">FDA's longest-ever clinic inspection (~3 months). Texas Medical Board continues harassment. IRS audit. SEC audit.</div>
+                    </div>
+                    <div class="timeline-item green">
+                        <div class="year">2026</div>
+                        <div class="event">Clinic still operating. 10,000+ patients treated. 349 brain tumor long-term survivors documented. Still no Phase 3 allowed.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- SYSTEM TAB -->
+        <div id="system" class="tab-content">
+            <div class="card">
+                <h2>🏛️ How The System Blocks Cures</h2>
+                <p>The Burzynski case reveals a repeating pattern of institutional capture that applies to any treatment threatening pharma revenue.</p>
+            </div>
+            
+            <div class="card">
+                <h2>💰 The FDA Revolving Door</h2>
+                <div class="quote">
+                    "A former manager of mine in the Office of Drug Safety told me that industry was our client. When I said to him the public is my client, he said I was wrong."
+                    <div class="author">— Dr. David Graham, FDA Senior Official (20 years)</div>
+                </div>
+                <ul>
+                    <li><strong>1992:</strong> Prescription Drug User Fee Act — pharma companies now PAY the FDA to review drugs</li>
+                    <li><strong>4 out of 5 dollars</strong> the FDA spends on drug regulation comes from pharma fees</li>
+                    <li>FDA officials leave for pharma jobs. Pharma execs join FDA. Same people on both sides.</li>
+                    <li>Dr. Michael Friedman: left NCI → became FDA Deputy Commissioner → during Burzynski prosecution</li>
+                </ul>
+            </div>
+            
+            <div class="card">
+                <h2>🔄 The Phase 3 Catch-22</h2>
+                <ul>
+                    <li>FDA says: "Complete Phase 3 trials for approval"</li>
+                    <li>Phase 3 requires independent hospitals to run the trials</li>
+                    <li>Every hospital refuses (fear of pharma retaliation, reputation risk)</li>
+                    <li>No Phase 3 = no approval</li>
+                    <li>Meanwhile, Temodar and Avastin were approved WITHOUT Phase 3</li>
+                </ul>
+                <div class="quote">
+                    "It is physically impossible to get a personalized regimen approved when our current clinical trial structure is based exclusively on everyone getting the exact same medicines."
+                    <div class="author">— Documentary narrator on the fundamental incompatibility of personalized medicine with FDA trial structure</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>📰 The Skeptic Machine</h2>
+                <ul>
+                    <li>Organized group hijacked Burzynski's Wikipedia page, locked all neutral edits</li>
+                    <li>Wikipedia contradicts peer-reviewed medical research <strong>90% of the time</strong> on medical topics</li>
+                    <li>Key skeptic receives funding from: Dept. of Defense, NCI, American Society for Clinical Oncology, pharma industry</li>
+                    <li>Publishes "death lists" of children who died at Burzynski's clinic</li>
+                    <li>Created astroturf organization "Skeptics for the Protection of Cancer Patients"</li>
+                    <li>Compared FDA-approved clinical trials to the Tuskegee experiment</li>
+                    <li>Harasses patients and families on social media</li>
+                </ul>
+            </div>
+            
+            <div class="card">
+                <h2>🏥 The Incentive Structure</h2>
+                <div class="quote">
+                    "The best drugs in the pharma world are the ones that people have to continue taking forever. That's the big money. They want to dose people over and over and keep them alive for a couple of years on all the drugs. If you found the cure for cancer — boom — now you're out of business."
+                    <div class="author">— Documentary interview</div>
+                </div>
+                <div class="quote">
+                    "We haven't had a major medical breakthrough in 50 years. Because today, medical breakthroughs put at risk the entire financial underpinnings. If you have breakthroughs that replace failing therapies, the profits are lost forever."
+                    <div class="author">— Documentary interview</div>
+                </div>
+                <ul>
+                    <li>Cancer treatment in the US = <strong>$200+ billion/year industry</strong></li>
+                    <li>Universities with cancer research programs lose matching funds if cancer is cured</li>
+                    <li>Insurance paid <strong>$800,000/month</strong> for one child's standard chemo (vs. Burzynski's ~$10K/month)</li>
+                    <li>The same pattern applies to any "forbidden cure" — institutional incentives prevent adoption</li>
+                </ul>
+            </div>
+            
+            <div class="card">
+                <h2>🔗 The Playbook (Same Pattern Every Time)</h2>
+                <ol>
+                    <li><strong>Verify it works</strong> (NCI site visit, 1991)</li>
+                    <li><strong>Try to steal it</strong> (11 copycat patents)</li>
+                    <li><strong>Try to destroy the inventor</strong> (raids, grand juries, criminal trials)</li>
+                    <li><strong>Sabotage independent trials</strong> (170× lower doses)</li>
+                    <li><strong>Create impossible regulatory barriers</strong> (Phase 3 with no willing hospitals)</li>
+                    <li><strong>Manufacture public opposition</strong> (Wikipedia hijacking, funded skeptics)</li>
+                    <li><strong>Suppress publications</strong> (Lancet rejects paper in 2 hours)</li>
+                    <li><strong>Repeat until inventor gives up or dies</strong></li>
+                </ol>
+                <p>Burzynski is still standing after 49 years. Most don't last this long.</p>
+            </div>
+        </div>
+        
+        <!-- ACCESS TAB -->
+        <div id="access" class="tab-content">
+            <div class="access-box">
+                <h3>🏥 The Burzynski Clinic</h3>
+                <ul>
+                    <li><strong>Location:</strong> Houston, Texas, USA</li>
+                    <li><strong>Website:</strong> <a href="https://www.burzynskiclinic.com" style="color:#4ade80">burzynskiclinic.com</a></li>
+                    <li><strong>Start here:</strong> <a href="https://www.burzynskiclinic.com/new-patient-process" style="color:#4ade80">New Patient Process</a></li>
+                    <li><strong>International patients:</strong> Accepted (patients from UK and worldwide documented in films)</li>
+                    <li><strong>Operating since:</strong> 1977</li>
+                </ul>
+            </div>
+            
+            <div class="card">
+                <h2>📋 How Treatment Works</h2>
+                <h3>Step 1: Initial Consultation</h3>
+                <p>Contact clinic → submit medical records → financial clearance</p>
+                
+                <h3>Step 2: Houston Visit (1-3 weeks)</h3>
+                <ul>
+                    <li>Non-advanced cancer (PB tablets + targeted drugs): <strong>&lt;1 week</strong></li>
+                    <li>Advanced cancer (ANP infusions under Texas Right to Try): <strong>1-3 weeks</strong></li>
+                    <li>Genetic profiling (24,000 genes via Caris Life Sciences)</li>
+                    <li>Personalized treatment plan created</li>
+                    <li>Training on home infusion equipment (if applicable)</li>
+                </ul>
+                
+                <h3>Step 3: Home Treatment (4-12 months)</h3>
+                <ul>
+                    <li>Weekly monitoring by clinic staff (phone/video)</li>
+                    <li>Regular blood tests and MRI scans (can be done locally)</li>
+                    <li>Return visits every 2-3 months</li>
+                </ul>
+                
+                <h3>Estimated Costs</h3>
+                <ul>
+                    <li>Initial setup + Houston stay + testing: ~$15-30K</li>
+                    <li>Monthly treatment: ~$7-15K/month</li>
+                    <li>Full course (6-12 months): ~$60-200K total</li>
+                    <li>Insurance: generally does NOT cover (unless prescribed by local oncologist)</li>
+                </ul>
+            </div>
+            
+            <div class="access-box">
+                <h3>💊 PB (Phenylbutyrate) — Available in Europe</h3>
+                <ul>
+                    <li><strong>Drug name:</strong> Sodium 4-Phenylbutyrate (Натриев фенилбутират)</li>
+                    <li><strong>ATC code:</strong> A16AX03</li>
+                    <li><strong>Brand names:</strong> Buphenyl (US), Pheburane / Ammonaps (EU)</li>
+                    <li><strong>FDA/EMA approved for:</strong> Urea cycle disorders</li>
+                    <li><strong>Can be prescribed off-label</strong> by any doctor for cancer</li>
+                    <li><strong>In Bulgarian pharmacological database:</strong> <a href="https://medpedia.framar.bg" style="color:#4ade80">framar.bg</a></li>
+                    <li><strong>Dosage (Burzynski protocol):</strong> 10-13 g/m²/day, divided into 4 doses</li>
+                    <li><strong>Research grade (lab):</strong> Available from Sigma-Aldrich (Merck) — NOT for human use</li>
+                </ul>
+            </div>
+            
+            <div class="warning-box">
+                <h3>⚠️ Important Notes</h3>
+                <ul>
+                    <li>PB alone is only HALF of the antineoplaston protocol (missing PAG infusions)</li>
+                    <li>The full gene-targeted protocol requires genomic profiling + personalized drug combinations</li>
+                    <li>Self-treatment without medical supervision is risky</li>
+                    <li>Finding a European oncologist willing to follow Burzynski's protocol off-label is the biggest challenge</li>
+                    <li>For ANP infusions: must be physically in Texas (Texas Right to Try Law)</li>
+                    <li>The treatment does NOT work for everyone — Burzynski himself says this openly</li>
+                </ul>
+            </div>
+            
+            <div class="card">
+                <h2>🌍 Alternative Access Points</h2>
+                <ul>
+                    <li><strong>Japan:</strong> Kurume University Hospital has independent ANP research program (Dr. Hideaki Tsuda)</li>
+                    <li><strong>Germany/Netherlands:</strong> Some oncologists work with off-label and experimental protocols</li>
+                    <li><strong>Mexico/Turkey:</strong> Alternative cancer clinics with fewer regulatory barriers</li>
+                    <li><strong>Any country:</strong> PB tablets can potentially be obtained off-label through a cooperative doctor</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>
